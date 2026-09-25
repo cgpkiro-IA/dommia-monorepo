@@ -1,0 +1,21 @@
+{
+  "name": "dommia-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DOMMIA - El Sistema Operativo de tu Comunidad",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "turbo": "^2.4.4",
+    "typescript": "^5.8.2"
+  },
+  "packageManager": "pnpm@12.6.0"
+}

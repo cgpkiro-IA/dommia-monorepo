@@ -24,6 +24,17 @@ export enum ResidentClassification {
 // ------------------------------------------------------------------------------
 // Tiers & Modules
 // ------------------------------------------------------------------------------
+export enum TenantModule {
+  FINANCE = 'FINANCE',
+  RESIDENT_APP = 'RESIDENT_APP',
+  ACCESS_QR = 'ACCESS_QR',
+  RFID_UHF = 'RFID_UHF',
+  STRIPE = 'STRIPE',
+  STRIPE_CONNECT = 'STRIPE_CONNECT',
+  FINANCE_STRIPE = 'FINANCE_STRIPE',
+  GUARD_CONSOLE = 'GUARD_CONSOLE',
+}
+
 export enum SubscriptionTier {
   BASIC = 'BASIC',             // Hasta 50 casas
   STANDARD = 'STANDARD',       // Hasta 150 casas

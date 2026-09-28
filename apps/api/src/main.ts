@@ -1,10 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { json } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const logger = new Logger('DommiaAPI');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
+  app.use(json({ limit: '6mb' }));
 
   // Global API Prefix
   app.setGlobalPrefix('api/v1');

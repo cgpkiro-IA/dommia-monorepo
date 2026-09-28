@@ -51,34 +51,7 @@ export const DynamicQRModal: React.FC<DynamicQRModalProps> = ({
           {/* Animated Laser Scanner Line */}
           <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-bounce opacity-80" />
 
-          {/* SVG QR Code Simulation with DOMMIA Center logo */}
-          <svg viewBox="0 0 100 100" className="w-full h-full text-slate-900">
-            {/* Corner Marker Top Left */}
-            <rect x="5" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" strokeWidth="6" />
-            <rect x="13" y="13" width="10" height="10" rx="2" fill="currentColor" />
-            {/* Corner Marker Top Right */}
-            <rect x="69" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" strokeWidth="6" />
-            <rect x="77" y="13" width="10" height="10" rx="2" fill="currentColor" />
-            {/* Corner Marker Bottom Left */}
-            <rect x="5" y="69" width="26" height="26" rx="4" fill="none" stroke="currentColor" strokeWidth="6" />
-            <rect x="13" y="77" width="10" height="10" rx="2" fill="currentColor" />
-            {/* Data matrix pattern */}
-            <rect x="36" y="8" width="6" height="6" fill="currentColor" />
-            <rect x="46" y="8" width="8" height="6" fill="currentColor" />
-            <rect x="36" y="18" width="14" height="6" fill="currentColor" />
-            <rect x="8" y="36" width="12" height="6" fill="currentColor" />
-            <rect x="24" y="36" width="6" height="12" fill="currentColor" />
-            <rect x="36" y="36" width="28" height="28" rx="6" fill="#0F172A" />
-            <rect x="68" y="36" width="12" height="6" fill="currentColor" />
-            <rect x="84" y="36" width="8" height="12" fill="currentColor" />
-            <rect x="36" y="68" width="12" height="8" fill="currentColor" />
-            <rect x="52" y="68" width="14" height="6" fill="currentColor" />
-            <rect x="70" y="68" width="12" height="12" fill="currentColor" />
-            <rect x="86" y="74" width="6" height="16" fill="currentColor" />
-            {/* Center Dommia D badge */}
-            <circle cx="50" cy="50" r="10" fill="#2563EB" />
-            <path d="M47 45 L52 45 C54 45 55 47 55 50 C55 53 54 55 52 55 L47 55 Z" fill="white" />
-          </svg>
+          {totp.qrImage ? <img src={totp.qrImage} alt="Credencial QR temporal" className="h-full w-full" /> : <span className="text-xs text-slate-500">{totp.error || 'Renovando credencial...'}</span>}
         </div>
 
         {/* 6-digit TOTP Pin */}
@@ -88,7 +61,7 @@ export const DynamicQRModal: React.FC<DynamicQRModalProps> = ({
           </span>
         </div>
 
-        {/* 30-Second Countdown Progress Bar */}
+        {/* Countdown Progress Bar */}
         <div className="mb-4">
           <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5 font-medium">
             <span className="flex items-center gap-1">
@@ -107,13 +80,12 @@ export const DynamicQRModal: React.FC<DynamicQRModalProps> = ({
           </div>
         </div>
 
-        {/* Offline Guarantee note */}
         <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-center gap-2">
           {!isOnline && <WifiOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
           <span>
             {!isOnline
-              ? 'Generado localmente. La cámara de la caseta lo validará sin conexión.'
-              : 'Código anti-capturas de pantalla. Cambia automáticamente cada 30 segundos.'}
+              ? 'Se requiere conexión para renovar y validar este código en caseta.'
+              : 'Código firmado por el servidor. Vence cada 15 segundos y se valida en línea.'}
           </span>
         </div>
       </div>

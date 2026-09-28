@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@dommia/ui';
-import { Calendar, Wallet, Receipt, Plus } from 'lucide-react';
+import { Calendar, Wallet, Receipt, Plus, AlertTriangle } from 'lucide-react';
 import { useFees } from '../hooks/useFees';
 import { useBillingOperations } from '../hooks/useBillingOperations';
 import { FeeConfigCard } from './FeeConfigCard';
@@ -14,11 +14,15 @@ import { FinanceMetricsHeader } from './FinanceMetricsHeader';
 import { MonthlyChargesTable } from './MonthlyChargesTable';
 import { PaymentsHistoryTable } from './PaymentsHistoryTable';
 import { Property } from '@/types';
+import { AnnualCampaignPanel } from './AnnualCampaignPanel';
+import { useAnnualCampaigns } from '../hooks/useAnnualCampaigns';
 
 interface ChargesAndPaymentsViewProps {
   tenantSlug: string;
   properties: Property[];
   showToast: (message: string, type?: 'success' | 'error') => void;
+  stripeEnabled?: boolean;
+  authToken?: string;
 }
 
 type FinanceSubTab = 'STRUCTURES' | 'CHARGES' | 'PAYMENTS';
@@ -27,9 +31,12 @@ export function ChargesAndPaymentsView({
   tenantSlug,
   properties,
   showToast,
+  stripeEnabled = false,
+  authToken,
 }: ChargesAndPaymentsViewProps) {
   const feesHook = useFees();
-  const opsHook = useBillingOperations();
+  const opsHook = useBillingOperations(authToken);
+  const annualHook = useAnnualCampaigns(authToken);
   const [activeSubTab, setActiveSubTab] = useState<FinanceSubTab>('STRUCTURES');
 
   React.useEffect(() => {
@@ -51,6 +58,7 @@ export function ChargesAndPaymentsView({
     (opsHook.filterPaymentMethod === 'ALL' || p.payment_method === opsHook.filterPaymentMethod) &&
     (!q || p.reference.toLowerCase().includes(q) || (p.payer_name && p.payer_name.toLowerCase().includes(q)) || (p.street && p.street.toLowerCase().includes(q)))
   );
+  const pendingPayments = opsHook.payments.filter((p) => p.status === 'PENDING_APPROVAL');
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
@@ -92,6 +100,22 @@ export function ChargesAndPaymentsView({
           </Button>
         </div>
       </div>
+
+      {pendingPayments.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('PAYMENTS')}
+          className="flex w-full items-center justify-between rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left shadow-2xs hover:bg-amber-100"
+        >
+          <span className="flex items-center gap-2 text-xs font-bold text-amber-900">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            {pendingPayments.length} comprobante(s) SPEI esperan validación.
+          </span>
+          <span className="text-[11px] font-black uppercase text-amber-700">Revisar ahora</span>
+        </button>
+      )}
+
+      <AnnualCampaignPanel tenantSlug={tenantSlug} properties={properties} {...annualHook} />
 
       {/* KPI Summary Cards */}
       <FinanceMetricsHeader
@@ -183,6 +207,7 @@ export function ChargesAndPaymentsView({
           onSearchChange={opsHook.setFilterSearch}
           filterMethod={opsHook.filterPaymentMethod}
           onMethodChange={opsHook.setFilterPaymentMethod}
+          onReview={(paymentId, status) => opsHook.reviewPayment(tenantSlug, paymentId, status, showToast)}
         />
       )}
 
@@ -197,6 +222,7 @@ export function ChargesAndPaymentsView({
         charges={opsHook.charges}
         loading={opsHook.actionLoading}
         error={opsHook.formError}
+        stripeEnabled={stripeEnabled}
       />
 
       <MonthlyCutoffModal

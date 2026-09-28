@@ -1,13 +1,14 @@
 'use client';
 
-import React from 'react';
-import { QrCode, ShieldCheck, Home, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { QrCode, ShieldCheck, Home, CheckCircle2, AlertCircle, Copy, Check } from 'lucide-react';
 import { ResidentProfile } from '../../../types';
 
 interface ResidentCardProps {
   profile: ResidentProfile;
   totpCode: string;
   onOpenQR: () => void;
+  accessQrEnabled: boolean;
   onOpenFinance?: () => void;
 }
 
@@ -15,9 +16,21 @@ export const ResidentCard: React.FC<ResidentCardProps> = ({
   profile,
   totpCode,
   onOpenQR,
+  accessQrEnabled,
   onOpenFinance,
 }) => {
   const isUpToDate = profile.paymentStatus === 'UP_TO_DATE';
+  const [tenantCopied, setTenantCopied] = useState(false);
+
+  const copyTenantId = async () => {
+    try {
+      await navigator.clipboard.writeText(profile.communitySlug);
+      setTenantCopied(true);
+      window.setTimeout(() => setTenantCopied(false), 1800);
+    } catch {
+      setTenantCopied(false);
+    }
+  };
 
   return (
     <div className="mx-4 mb-6 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#020617] border border-slate-700/60 shadow-2xl p-5 text-white">
@@ -34,9 +47,13 @@ export const ResidentCard: React.FC<ResidentCardProps> = ({
           <h2 className="text-base font-extrabold text-white font-heading">
             {profile.communityName}
           </h2>
+          <button type="button" onClick={() => void copyTenantId()} className="mt-1 inline-flex min-h-7 items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900/80 px-2 text-[10px] font-semibold text-slate-300 hover:border-blue-500/70 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400" aria-label={tenantCopied ? `IDTENANT ${profile.communitySlug} copiado` : `Copiar IDTENANT ${profile.communitySlug}`}>
+            {tenantCopied ? <Check className="h-3 w-3 text-emerald-300" /> : <Copy className="h-3 w-3 text-blue-300" />}
+            <span>IDTENANT</span><code className="font-mono text-blue-200">{profile.communitySlug}</code>
+          </button>
         </div>
 
-        <button
+        {accessQrEnabled && <button
           type="button"
           onClick={onOpenFinance}
           title="Ver estado de cuenta y cuotas"
@@ -57,7 +74,7 @@ export const ResidentCard: React.FC<ResidentCardProps> = ({
               <span>Cuota Pendiente ›</span>
             </>
           )}
-        </button>
+        </button>}
       </div>
 
       {/* Resident Info Body */}
@@ -109,9 +126,9 @@ export const ResidentCard: React.FC<ResidentCardProps> = ({
       {/* Card Footer: Offline Security note */}
       <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
         <span className="font-mono text-slate-500">ID: {profile.id.slice(0, 14)}...</span>
-        <span className="text-emerald-400 font-semibold text-[10px] flex items-center gap-1">
+          <span className="text-emerald-400 font-semibold text-[10px] flex items-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          <span>Acceso Vehicular Autorizado</span>
+          <span>{accessQrEnabled ? 'Credencial QR habilitada' : 'Credencial QR no habilitada'}</span>
         </span>
       </div>
     </div>

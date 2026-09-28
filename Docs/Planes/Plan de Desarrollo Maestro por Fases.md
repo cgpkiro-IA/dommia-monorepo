@@ -3,8 +3,10 @@
 **Marca Principal:** DOMMIA  
 **Producto Principal:** Dommia Communities  
 **Tagline:** *El Sistema Operativo de tu Comunidad*  
-**Versión:** 1.1.0  
-**Última Actualización:** 2026-09-24  
+**Versión:** 1.9.0
+
+**Última Actualización:** 2026-09-27
+
 **Estado:** Activo / En Evolución Continua
 
 ---
@@ -15,6 +17,14 @@
 | **1.0.0** | 2026-09-24 | Arquitectura & Pair Programmer | Creación del baseline integrando los 4 documentos iniciales de `/Docs` (Arquitectura C4, Anexo A, Recomendaciones y Plan Maestro v3). |
 | **1.1.0** | 2026-09-24 | Arquitectura & Brand Alignment | Integración formal del Manual de Marca (`Saas Modular Frac Marca.md`), ecosistema de 8 productos (`Dommia Communities`, `Dommia CRM`, `Dommia Resident`, `Dommia Guard`, `Dommia Access`, `Dommia Finance`, `Dommia IoT`, `Dommia Analytics`), Design Tokens universales (Midnight Blue, Royal Blue, Inter, Manrope) y lineamientos de comunicación para el sitio web principal. |
 | **1.2.0** | 2026-09-24 | Arquitectura & Pair Programmer | Expansión y formalización de **Dommia Guard**: Especificación como PWA Offline-First táctica para caseta de vigilancia, validación de QR con notificación al anfitrión, semáforo y auditoría de morosos, clasificador visual de placas de vehículos (LPR asistido) y canal de incidencias urgentes. |
+| **1.3.0** | 2026-09-27 | Arquitectura & Pair Programmer | Cierre de PRE-F4: onboarding Resident seguro, aislamiento multi-tenant, login por correo/celular, recuperación, rate limiting, auditoría y revocación de sesiones. Configuración y entrega SMTP/WhatsApp bajo entitlement `NOTIFICATIONS_PREMIUM`. |
+| **1.4.0** | 2026-09-27 | Arquitectura & Pair Programmer | Fase 5 pospuesta post-MVP. Fase 6 priorizada como control digital de accesos QR y consola Dommia Guard sin dependencia de plumas, RFID, Gateway, MQTT ni apertura física automática. |
+| **1.5.0** | 2026-09-27 | Arquitectura & Pair Programmer | Inicio de Fase 6: emisión y validación API de QR TOTP para residentes y visitas, prevención de replay, pases persistidos y vista pública de invitación. Fase 6 queda desacoplada de Stripe y hardware; Dommia Guard scanner sigue pendiente. |
+| **1.6.0** | 2026-09-27 | Arquitectura & Pair Programmer | Dommia Guard PWA implementada en puerto 3004 con login tenant-scoped GUARD, escaneo QR por cámara/entrada manual y autorización en línea. Communities permite aprovisionar y consultar cuentas de vigilancia para tenants con `ACCESS_QR`. |
+| **1.7.0** | 2026-09-27 | Arquitectura & Pair Programmer | Aviso opcional al anfitrión después de validar visitas: WhatsApp Business con fallback SMTP, estado de entrega visible para Guard y sin modificar la autorización si no hay canal o falla el proveedor. |
+| **1.8.0** | 2026-09-27 | Arquitectura & Pair Programmer | Excepción de acceso por morosidad con ticket HMAC de cinco minutos, ligado a tenant/guardia, justificación obligatoria, consumo único y auditoría actor/motivo. La aprobación independiente de un supervisor queda pendiente. |
+| **1.8.0** | 2026-09-27 | Arquitectura & Pair Programmer | Excepción manual por morosidad con ticket HMAC de cinco minutos ligado al tenant y al guardia, motivo obligatorio, consumo único del pase y auditoría actor/motivo. QR inválido, vencido o revocado no admite override. |
+| **1.9.0** | 2026-09-27 | Arquitectura & Pair Programmer | Inicio de implementación P1 en Dommia Guard: consulta tenant-scoped de residentes y placas; registro auditado de paquetería con estados pendiente/entregado y confirmación de retiro. Incidencias e historial operativo siguen pendientes. |
 
 ---
 
@@ -106,8 +116,9 @@ flowchart TD
     F1 --> F2["Fase 2: Dommia Communities & Dommia Resident (PWA)"]
     F2 --> F3["Fase 3: Dommia Finance (Cuotas & Conciliación Manual)"]
     F3 --> F4["Fase 4: Dommia Finance (Fintech Stripe & SPEI)"]
-    F4 --> F5["Fase 5: Dommia IoT & Dommia Access (RFID & Offline)"]
-    F5 --> F6["Fase 6: Dommia Access (QR TOTP) & Dommia Guard"]
+    F3 --> F6["Fase 6: Dommia Access (QR TOTP) & Dommia Guard"]
+    F4 --> F7
+    F5["Fase 5: IoT, RFID & Acceso físico (Post-MVP)"] -. "no bloquea" .-> F6
     F6 --> F7["Fase 7: Dommia Analytics, Hardening & Go-Live"]
 ```
 
@@ -293,7 +304,7 @@ flowchart TD
     - Feed móvil reactivo en pestaña dedicada con badges visuales clasificados por color según urgencia o tipo de circular.
     - Sincronización en línea bidireccional con fallback automático y persistencia en IndexedDB (`db.notices`) para lectura instantánea sin conexión.
 
-#### Criterios de Aceptación:
+#### Criterios de Aceptación de Onboarding:
 - El administrador no puede registrar la casa `N+1` si el tier contratado es para `N` viviendas.
 - Dommia Resident se instala correctamente en dispositivos móviles (iOS y Android) y abre de inmediato aun sin señal celular.
 
@@ -302,7 +313,7 @@ flowchart TD
 ### 💵 FASE 3: Dommia Finance (Cuotas & Conciliación Manual)
 **Objetivo:** Proveer a los administradores del fraccionamiento el control total de las finanzas comunitarias antes de integrar pasarelas automatizadas.
 
-* **Estado:** `🟡 En curso`
+* **Estado:** `🟢 Completada`
 * **Dependencias:** Fase 2
 
 #### Tareas Técnicas:
@@ -310,19 +321,71 @@ flowchart TD
   - **Base de Datos & Esquema Tenant:** Tabla `fee_configurations` aprovisionada con soporte para cuotas ordinarias fijas (`FIXED_RECURRENT`), cuotas variables por metraje de lote m² (`VARIABLE_LOT_SIZE`) y cuotas extraordinarias (`EXTRAORDINARY`), reglas de recargos por mora (% o fijo), días de gracia y descuentos por pronto pago.
   - **Backend NestJS (`apps/api/src/modules/finance/`):** Módulo `FinanceModule` en 3 capas (`FeeConfigurationController`, `FeeConfigurationService`, `FeeConfigurationRepository`) con CRUD completo, validación con `class-validator` y endpoint de simulación de cobro lote por lote (`POST /api/v1/tenants/:slug/finance/fees/:id/simulate`).
   - **Frontend Administrativo (`apps/communities-admin`):** Pestaña "Finanzas & Cuotas" con KPI cards de resumen, buscador predictivo, filtrado por tipo, modal de creación/edición, switches reactivos de activación y modal de simulación de recaudación proyectada.
-- [ ] **Motor de Cobranza Mensual:**
+- [x] **Motor de Cobranza Mensual:**
   - Tarea programada (Cron Job) que corre el día 1 de cada mes (y ejecutable bajo demanda por el administrador) que genera los cargos por propiedad en el schema del tenant según las cuotas activas (`FIXED_RECURRENT`, `VARIABLE_LOT_SIZE`, `EXTRAORDINARY`).
-  - Idempotencia garantizada: Previene duplicación de cargos para el mismo período (mes/año) y concepto.
-- [ ] **Registro de Pagos en Ventanilla (Efectivo) y SPEI Manual (MVP):**
+  - Idempotencia garantizada mediante índice único por propiedad, cuota y periodo, además de `ON CONFLICT DO NOTHING`.
+- [x] **Registro Administrativo de Pagos en Ventanilla (Efectivo) y SPEI Manual (MVP):**
   - **Pago en Efectivo en Administración:** Flujo presencial donde el Residente acude a las oficinas del fraccionamiento. El administrador recibe el dinero, selecciona la vivienda, elige las cuotas ordinarias o extraordinarias a liquidar, registra el pago como `"CASH"` (Efectivo), captura folio/notas opcionales y acredita el pago.
   - **Acreditación Inmediata de Saldo:** Actualización automática del estatus de la vivienda a *Al Corriente* (`is_delinquent = false`) al no tener adeudos vencidos.
   - **Notificación y Alerta al Residente:** Disparo de notificación/alerta en la PWA de Dommia Resident confirmando *"Tu pago de $X ha sido recibido y acreditado por la administración"*, actualizando su historial y recibo digital.
-  - **Comprobantes y Transferencias SPEI:** Carga de comprobante de transferencia bancaria por el residente en la PWA y panel de conciliación manual (Aprobar/Rechazar) para el administrador.
+  - **Comprobantes y Transferencias SPEI:** La PWA permite enviar comprobantes PDF o imagen de hasta 4 MB. Communities muestra alertas de pendientes, permite consultar el comprobante y aprobar/rechazar. Solo la aprobación acredita el saldo.
+- [x] **Campañas de Pago Anual con Descuento:**
+  - Campañas independientes de la cobranza mensual con periodo, meses cubiertos y porcentaje de descuento.
+  - Cotización por vivienda con monto bruto, descuento y total neto.
+  - Envío de comprobante SPEI o registro de pago en efectivo con validación administrativa.
+  - Identificación de residentes comprometidos, pendientes, aprobados y rechazados.
+  - Bolsa aprobada de prepago y descuento otorgado por campaña, sin alterar los cargos mensuales.
   - **Preparación de Arquitectura para Pasarelas (Post-MVP Stripe):** Esquema de base de datos desacoplado con campos preparados (`payment_method`, `gateway_provider`, `gateway_tx_id`, `gateway_status`) para integrar Stripe Connect en la Fase 4 sin migraciones destructivas.
-- [ ] **Estados de Cuenta y Saldos en Tiempo Real:**
+- [x] **Estados de Cuenta y Saldos en Tiempo Real:**
   - Cálculo de saldo consolidado, desglose de adeudos por concepto y saldo a favor por vivienda.
   - Emisión de recibos digitales con folio interno.
   - Clasificación de estado de cuenta: Al corriente vs Moroso (bandera consumida por Dommia Access / Casetas).
+
+### 🔐 UNIDAD PRE-F4: Onboarding y Acceso Seguro de Residentes
+**Objetivo:** Permitir que cada residente tenga una cuenta propia en Dommia Resident antes de utilizar pagos, estados de cuenta, invitaciones y accesos digitales.
+
+* **Estado:** `[x] Completada (2026-09-27)`
+* **Dependencias:** Fase 2, módulo de autenticación y padrón de residentes.
+
+#### Tareas Técnicas:
+- [x] **Invitación por enlace de activación:**
+  - El administrador selecciona un residente registrado y genera un enlace de un solo uso, por correo o WhatsApp cuando `NOTIFICATIONS_PREMIUM` está contratado.
+  - El backend almacena únicamente el hash del token, con expiración de 24 horas.
+  - El enlace permite definir la contraseña inicial y queda invalidado después de utilizarse.
+  - Reenvío y revocación de invitaciones con auditoría.
+- [x] **Alta administrativa con contraseña temporal:**
+  - El administrador puede crear o activar la cuenta del residente.
+  - El sistema genera una contraseña temporal aleatoria que no se almacena en texto plano.
+  - La primera sesión obliga a cambiar la contraseña mediante `must_change_password`.
+- [x] **Autenticación propia de Dommia Resident:**
+  - Login separado del portal administrativo.
+  - Sesión limitada al residente, vivienda y tenant autorizados.
+  - La PWA deja de depender del perfil demo para consultar estados financieros o enviar comprobantes.
+- [x] **Recuperación y seguridad de cuenta:**
+  - Recuperación de contraseña mediante enlace temporal.
+  - Revocación persistente de sesiones y tokens de activación.
+  - Rate limiting para login, activación y recuperación.
+  - Auditoría de invitaciones, cambios de contraseña y accesos.
+
+#### Modelo Mínimo:
+```text
+users
+  id, email, password_hash, role, tenant_id
+  must_change_password, password_changed_at, is_active
+
+resident_invitations
+  id, resident_id, token_hash, expires_at
+  used_at, revoked_at, created_by
+```
+
+#### Criterios de Aceptación de Fase 3:
+- Un administrador puede enviar una invitación a un residente registrado.
+- Un enlace expirado, usado o revocado no permite crear contraseña.
+- Una contraseña temporal obliga al residente a cambiarla antes de acceder a la PWA.
+- El residente solo puede consultar su vivienda y sus datos financieros.
+- El residente puede iniciar sesión sin reutilizar la sesión de Communities.
+- El flujo registra auditoría sin almacenar tokens ni contraseñas en texto plano.
+- La unidad debe estar completada antes de habilitar pagos Stripe o iniciar la Fase 4.
 
 #### Criterios de Aceptación:
 - El primer día del mes se generan automáticamente los cobros a todas las propiedades activas.
@@ -335,19 +398,24 @@ flowchart TD
 ### 💳 FASE 4: Dommia Finance (Fintech Stripe & Conciliación Automatizada)
 **Objetivo:** Eliminar la conciliación manual mediante cobros con tarjeta y transferencias bancarias automatizadas con acreditación inmediata.
 
-* **Estado:** `[ ] Pendiente`
+**Regla de entitlement:** Stripe solo se muestra y procesa cuando el tenant tiene contratado `STRIPE`, `STRIPE_CONNECT` o `FINANCE_STRIPE` en `public.tenants.modules`. SPEI, efectivo y campañas anuales permanecen disponibles sin ese módulo.
+
+* **Estado:** `[~] En curso (2026-09-27)`
 * **Dependencias:** Fase 3
 
 #### Tareas Técnicas:
-- [ ] **Stripe Connect / Cuentas Conectadas:**
-  - Flujo de onboarding bancario para que los fondos se dispersen directamente a la cuenta del fraccionamiento.
-- [ ] **Pasarela de Cobro en Dommia Resident:**
-  - Checkout embebido con Stripe Elements para pago seguro con tarjeta de débito/crédito.
+- [~] **Stripe Connect / Cuentas Conectadas:**
+  - Entitlement estricto por módulos `STRIPE`, `STRIPE_CONNECT` o `FINANCE_STRIPE`.
+  - Onboarding Express real preparado con persistencia de cuenta conectada y `Account Link`.
+- [~] **Pasarela de Cobro en Dommia Resident:**
+  - Checkout Stripe creado y visible únicamente para tenants con entitlement y cargos pendientes.
+  - Retorno seguro con `session_id`, validación server-side de tenant y propiedad, y estados de cancelación/pendiente.
+  - Falta sustituir redirección por Stripe Elements si se requiere checkout embebido.
   - Asignación de referencias bancarias automatizadas (SPEI vía Stripe).
-- [ ] **Webhooks Idempotentes de Stripe:**
-  - Endpoint de procesamiento de webhooks con verificación criptográfica de firma.
-  - Idempotencia con `stripe_event_id` para evitar duplicidad de abonos.
-  - Acreditación automática a la propiedad y actualización de estatus a "Al corriente" en menos de 3 segundos.
+- [~] **Webhooks Idempotentes de Stripe:**
+  - Endpoint con verificación criptográfica de firma.
+  - Idempotencia por `event_id` para evitar duplicidad de abonos.
+  - Acreditación mediante el motor financiero existente; falta validación sandbox end-to-end.
 - [ ] **Cobro de Comisión del SaaS:**
   - Deducción automatizada del porcentaje o tarifa fija por transacción pactada en la suscripción del fraccionamiento.
 
@@ -360,8 +428,10 @@ flowchart TD
 ### 📡 FASE 5: Dommia IoT & Dommia Access (RFID & Operación Offline)
 **Objetivo:** Desarrollar el servicio del Gateway de caseta garantizando apertura física vehicular en milisegundos sin depender de la conexión a internet.
 
-* **Estado:** `[ ] Pendiente`
+* **Estado:** `[ ] Pendiente post-MVP`
 * **Dependencias:** Fase 0, Fase 2
+
+> **Decisión de alcance:** Esta fase no bloquea la Fase 6 y queda fuera del MVP actual. La integración con plumas, relevadores, lectores RFID/Wiegand, Gateway local, MQTT y autorización física offline se retomará después del MVP.
 
 #### Tareas Técnicas:
 - [ ] **Firmware del Gateway Local (`apps/gateway-edge`):**
@@ -386,39 +456,51 @@ flowchart TD
 ---
 
 ### 🎟️ FASE 6: Dommia Access (QR Dinámico TOTP) & Dommia Guard (PWA Caseta)
-**Objetivo:** Desplegar el sistema de invitaciones con QR dinámico anticopia y la consola táctica PWA de vigilancia para guardias de caseta con soporte Offline-First.
+**Objetivo:** Desplegar el sistema de invitaciones con QR dinámico anticopia y la consola táctica Dommia Guard para validar, autorizar y auditar accesos digitales desde una caseta, sin depender de hardware de apertura física.
 
-* **Estado:** `[ ] Pendiente`
-* **Dependencias:** Fase 5
+* **Estado:** `[~] En curso`
+* **Dependencias:** Fases 2 y 3; no depende de Stripe ni de Fase 5
+
+> **Límite MVP:** Dommia Guard valida el pase, muestra el resultado, registra la decisión y puede notificar al anfitrión. La apertura de pluma será manual y externa al sistema. No se implementan en esta fase RFID, Wiegand, MQTT, SQLite de Gateway, lectores USB/Wiegand ni accionamiento automático.
 
 #### Tareas Técnicas:
-- [ ] **Módulo de Invitaciones & QR Dinámico en Dommia Resident:**
-  - Creación de invitaciones para visitas (única vez, eventos familiares o recurrentes con rango de fechas y horas).
-  - Enlace compartible de forma directa vía WhatsApp con tarjeta gráfica e instrucciones de acceso.
-  - Generador de QR dinámico anticopia encriptado (TOTP + AES-256) que rota automáticamente cada 15 segundos con persistencia de semillas en IndexedDB.
-  - Disparo de notificación automática (Push / WhatsApp) al anfitrión en cuanto la visita sea validada en caseta.
-- [ ] **Dommia Guard (PWA Táctica de Vigilancia & Caseta):**
-  - **Arquitectura PWA Offline-First:**
-    - Aplicación web progresiva instalable en tablets (Android/iOS), móviles tácticos de guardias de ronda o PCs de caseta.
-    - Caché local mediante Service Workers e IndexedDB para operar sin interrupciones ante cortes de fibra o datos móviles en caseta.
-    - Sincronización en cola bidireccional de bitácoras de acceso (`access_logs`) hacia PostgreSQL al reanudar la conexión.
+- [~] **Módulo de Invitaciones & QR Dinámico en Dommia Resident:**
+  - [x] API multi-tenant para crear, listar y revocar pases con acceso ligado a la sesión Resident.
+  - [x] QR TOTP de 8 dígitos emitido por servidor con ventana de 15 segundos para credenciales Resident y pases de visita.
+  - [x] Validación autenticada por operador/guardia con registro transaccional y rechazo de replay por paso temporal.
+  - [x] PWA Resident conectada a API; el enlace del pase muestra QR rotativo y no comparte una imagen estática vencible.
+  - [x] Notificación post-validación al anfitrión por WhatsApp Business, con fallback SMTP bajo `NOTIFICATIONS_PREMIUM`; la falla de entrega no revierte ni cambia la autorización.
+  - [x] Creación de pases de visita de un solo uso, temporales y frecuentes con vigencia por días.
+  - [x] Enlace compartible; el QR dinámico se obtiene desde la API al abrir el pase.
+  - [x] Código TOTP HMAC emitido y validado por servidor; el secreto no se expone ni se persiste en IndexedDB del visitante.
+  - [ ] Rangos recurrentes por fechas y horas y notificación Push al anfitrión.
+  - [ ] Prueba E2E de entrega con tenant premium y credenciales de canal configuradas.
+- [~] **Dommia Guard (PWA Táctica de Vigilancia & Caseta):**
+  - [x] Endpoint API de validación QR disponible para roles autenticados `GUARD`, `OPERATOR`, `TENANT_ADMIN` y `SUPER_ADMIN` con aislamiento por tenant.
+  - [x] PWA independiente `apps/guard-pwa` en puerto 3004, con manifiesto instalable y shell básico cacheado.
+  - [x] Login de caseta ligado a tenant; el token usa el rol efectivo `GUARD` y requiere entitlement `ACCESS_QR`.
+  - [x] Communities permite crear/listar guardias con contraseña fuerte y asignación a un tenant.
+  - [x] Escaneo por cámara y alternativa de pegar el contenido del QR; resultado muestra persona, domicilio, anfitrión y motivo.
+  - [x] Validación online y bitácora oficial en PostgreSQL; el shell offline no almacena credenciales, respuestas ni autorizaciones.
+  - [ ] Prueba física de cámara en tablets/móviles Android/iOS y medición de latencia productiva.
   - **UX Táctica & Ergonomía de Caseta:**
     - Modo oscuro nocturno de alto contraste visual para evitar deslumbramiento 24/7 y fatiga visual.
     - Botones táctiles de gran escala (Touch-First) aptos para dedos rápidos o uso de guantes.
     - Latencia de respuesta visual en pantalla inferior a 200 ms.
-  - **Validación Dual de QR & Apertura Inteligente:**
-    - Compatibilidad dual: Escaneo mediante la cámara integrada de la tablet o mediante escáner óptico 2D USB/Wiegand conectado al sistema.
-    - Tarjeta visual de validación instantánea con datos jerarquizados: Nombre de la visita, casa/lote destino, residente anfitrión que autoriza, vigencia y tipo de pase.
+  - **Validación de QR & Confirmación Operativa:**
+    - [x] Escaneo mediante cámara integrada y entrada manual del contenido completo del QR como alternativa.
+    - [x] Tarjeta de validación con nombre, domicilio, anfitrión y resultado; la vigencia se comprueba en API.
     - Semáforo visual y auditivo de gran visibilidad:
-      - **Verde:** Acceso autorizado + Apertura automática de pluma (MQTT / Relevador) + Registro de log.
+      - **Verde:** Acceso autorizado + confirmación manual del guardia + Registro de log.
       - **Rojo:** Acceso denegado con indicación precisa de causa (QR expirado, código ya utilizado, firma inválida).
-    - Botón de apertura manual de emergencia con auditoría estricta.
+    - [x] Excepción manual auditada únicamente ante un QR de visita válido cuya propiedad esté morosa; ticket firmado ligado a sesión/tenant, motivo obligatorio y uso único.
+    - [x] La excepción consume el pase según su modalidad, agrega actor/motivo a `access_logs` y no acciona hardware.
   - **Semáforo Financiero & Control Activo de Morosidad:**
     - Integración directa con **Dommia Finance** para lectura de cuotas vencidas por vivienda.
     - Alerta visual en color Ámbar/Rojo en caseta al escanear pases o vehículos vinculados a propiedades morosas.
     - Protocolo de atención: Mensaje configurable en pantalla para el guardia (*"Propiedad con adeudo: Solicitar al visitante/residente comunicarse con administración"*).
-    - Botón de *"Acceso Manual Supervisado con Justificación"* para contingencias, servicios médicos o mudanzas con registro obligatorio de motivo en bitácora.
-    - Buscador predictivo offline de lotes y estatus financiero.
+    - [x] Excepción manual por morosidad con justificación obligatoria y motivo en bitácora.
+    - [x] Buscador de lotes y estatus financiero; los datos cacheados son solo consulta y no autorizan ni niegan accesos sin conexión.
   - **LPR Asistido & Clasificador Visual de Placas de Vehículos:**
     - Buscador predictivo de matrículas por prefijo o sufijo con respuesta inmediata (< 100 ms).
     - Fichas vehiculares clasificadas por código de color y rol:
@@ -433,12 +515,143 @@ flowchart TD
   - **Bitácora Manual de Peatones y Servicios:**
     - Registro ágil de servicios de paquetería (Amazon, Mercado Libre, Uber Eats, Didi) y peatones sin código QR en menos de 15 segundos.
 
+#### PT / Requisitos de Producto - Dommia Guard (Tablet First)
+
+**Prioridad visual y funcional:** la interfaz principal debe diseñarse para tablet en modo apaisado y vertical, con foco en operación rápida en caseta, lectura de QR, busqueda de residentes y control de incidencias en menos de 10 segundos por acción.
+
+**P1 - Módulos obligatorios para operación real de seguridad**
+
+1. **Validación rápida de acceso QR**
+   - Escaneo por cámara, entrada manual por código o texto pegado.
+   - Resultado visible con semáforo claro: autorizado, denegado o revisión manual.
+   - Mostrar nombre, propiedad, anfitrión, motivo y estatus de morosidad.
+   - Requiere tamaños táctiles grandes para tablet y botones de acción con hit target mínimo de 44x44 px.
+
+2. **Búsqueda de residente / propietario**
+   - Búsqueda por nombre, lote, casa, teléfono o código de propiedad.
+   - Mostrar perfil del residente con estatus, unidad, contacto y accesos autorizados.
+   - Permitir validar a personas sin QR si la administración las haya habilitado.
+
+3. **Validación de placas y vehículos**
+   - Búsqueda predictiva por placa, marca/modelo o propietario.
+   - Clasificación visual: propietario, inquilino, familiar, visita frecuente, no registrado, lista negra.
+   - Alerta de riesgo con color y etiquetado claro en la interfaz.
+
+4. **Recepción de paquetería y servicios**
+   - Registro de entrega de paquetería con empresa, número de guía, destinatario y domicilio.
+   - Captura en menos de 15 segundos con formularios compactos.
+   - Registro de salida o recepción con auditoría por operador.
+
+5. **Incidencias y reporte de seguridad**
+   - Botón de pánico / reporte urgente para fuga, vehículo sospechoso o emergencia.
+   - Formulario rápido con tipo de incidente, descripción y prioridad.
+   - Envío de alerta a administración y registro de evento en bitácora.
+
+6. **Historial operativo de caseta**
+   - Últimos accesos, visitas, vehicles y entregas con filtros por fecha, tipo y propiedad.
+   - Vista de auditoría para revisión del guardia y administración.
+   - Exportación o consulta simple para incidentes o auditorías.
+
+7. **Semáforo financiero / morosidad**
+   - Mostrar un aviso visual cuando la propiedad esté en atraso.
+   - Datos financieros deben ser informativos; nunca autorizan acceso offline ni reemplazan validación en línea.
+   - Mostrar mensaje estandarizado: “Propiedad con adeudo, solicitar comunicación con administración”.
+
+**Avance de implementación P1 (2026-09-27)**
+- [x] Validación QR en línea y excepción manual auditada bajo la política de Fase 6.
+- [~] Búsqueda tenant-scoped por nombre, correo y teléfono; falta búsqueda directa por lote/casa y mostrar pases autorizados asociados.
+- [~] Consulta de vehículos por placa y residente; falta clasificación completa por rol, marca/modelo y listas de bloqueo.
+- [~] Registro y retiro de paquetería con destinatario, domicilio, empresa, guía opcional, guardia y timestamps. Falta medir el objetivo de 15 segundos y agregar notificación al residente.
+- [ ] Captura de incidencias con prioridad, alerta a administración y bitácora.
+- [ ] Historial operativo consolidado con filtros de fecha, tipo y propiedad.
+- [~] Estado de morosidad visible en resultados de búsqueda. La información es consultiva y no sustituye la decisión de autorización QR.
+
+**P2 - Módulos de soporte para operación completa**
+- Registros de visitas sin QR.
+- Avisos operativos del administrador en caseta.
+- Búsqueda avanzada de lotes y mapa de propiedad.
+- Soporte para entregas repetitivas y personal autorizado.
+
+**P3 - Futuros / post-MVP**
+- LPR automático y reconocimiento visual de placas.
+- RFID / Wiegand / lectores físicos.
+- Gateway offline con sincronización posterior.
+- Apertura automática de pluma y actuadores físicos.
+
+**Requisitos UI para tablet**
+- Layout de una sola columna en vertical, con dos columnas donde el espacio lo permita.
+- Botones grandes con contraste alto: fondo oscuro, texto blanco y estados rojo/verde/ámbar claros.
+- Tiempo de respuesta visual objetivo: < 200 ms para transiciones y validaciones rápidas.
+- Modo nocturno por defecto con alto contraste para operación 24/7.
+- Interacciones pensadas para manos y guantes, sin depender de hover.
+
+#### PT / Historias de Usuario - P1 (Guardia de Seguridad)
+
+**Épica 1: Validación rápida de accesos**
+- Como guardia de seguridad, quiero escanear o ingresar un QR y ver el resultado de acceso en menos de 2 segundos, para decidir rápidamente si dejo pasar o no a la persona.
+- Como guardia, quiero ver nombre, propiedad, anfitrión, motivo y estatus financiero de la visita, para actuar con contexto antes de autorizar.
+- Como guardia, quiero distinguir claramente entre acceso autorizado, denegado y revisión manual, para reducir errores operativos.
+
+**Épica 2: Búsqueda de residentes y propietarios**
+- Como guardia, quiero buscar a un residente por nombre, lote, casa o teléfono, para identificar a quien está en la propiedad sin depender de un QR.
+- Como guardia, quiero ver el perfil del residente con dirección, contacto y accesos autorizados, para confirmar identidad rápidamente.
+- Como administrador, quiero que la búsqueda de residentes esté limitada al tenant actual, para mantener el aislamiento multi-tenant de la operación.
+
+**Épica 3: Validación de placas y vehículos**
+- Como guardia, quiero buscar una placa y conocer si pertenece a un propietario, inquilino, familiar o visitante frecuente, para decidir si se permite el ingreso.
+- Como guardia, quiero ver si el vehículo está no registrado o en lista negra, para activar una alerta y tomar precauciones.
+- Como operador, quiero que la clasificación de placas sea visual y rápida, para no bloquear el flujo operativo de la caseta.
+
+**Épica 4: Recepción de paquetería y servicios**
+- Como guardia, quiero registrar una entrega con empresa, guía y destinatario, para dejar evidencia del ingreso de paquetes y servicios.
+- Como guardia, quiero registrar la recepción en menos de 15 segundos, para no generar filas ni retrasos en la operación.
+- Como administrador, quiero conservar la bitácora de paquetería para auditoría y seguimiento posterior.
+
+**Épica 5: Incidencias y reporte de seguridad**
+- Como guardia, quiero reportar una incidencia urgente desde la tablet, para alertar a administración con contexto y prioridad.
+- Como administrador, quiero recibir un registro con tipo, descripción y momento del incidente, para responder con velocidad.
+- Como guardia, quiero tener un botón de pánico visible y accesible, para reaccionar en situaciones de riesgo.
+
+**Épica 6: Historial operativo**
+- Como guardia, quiero consultar accesos recientes por fecha y tipo, para revisar lo ocurrido en la caseta antes de cerrar turno.
+- Como administrador, quiero revisar el historial de visitantes, entregas, placas e incidencias, para auditoría y control operativo.
+- Como guardia, quiero filtrar por propiedad y rango horario, para localizar eventos específicos de forma rápida.
+
+**Épica 7: Semáforo financiero y morosidad**
+- Como guardia, quiero ver si una propiedad tiene adeudo, para comunicar una alerta de forma clara al visitante o residente.
+- Como sistema, quiero que la información financiera sea informativa y no autorice accesos sin conexión, para cumplir la política de seguridad.
+- Como administrador, quiero que el mensaje de morosidad sea estándar y auditable, para mantener consistencia operativa.
+
+**Criterios globales de aceptación para PT**
+- La interfaz está optimizada para tablet y conserva legibilidad y rapidez en modo nocturno.
+- El flujo de validación de acceso requiere como máximo 2 a 3 acciones por parte del guardia.
+- Toda acción del guardia queda registrada con usuario, tenant, timestamp y resultado.
+- La operación del guardia no puede autorizar accesos desde cache offline; solo informa y alerta.
+
 #### Criterios de Aceptación:
-- Dommia Guard se instala como PWA en una tablet económica y opera con fluidez aun sin conexión a internet.
-- Una captura de pantalla de un código QR enviada por chat deja de funcionar pasados los 15 segundos y el escáner la rechaza en Dommia Guard.
-- La pantalla de Dommia Guard refleja la lectura y el acceso autorizado en tiempo real (< 200 ms) y notifica al residente anfitrión.
-- El buscador vehicular clasifica visualmente la placa en menos de 100 ms indicando si es propietario, inquilino o desconocido.
-- Una vivienda morosa con bloqueo activo detiene la apertura automática y exige justificación al guardia para proceder.
+- [x] Prueba E2E local: primera validación de QR Resident y visitante autorizada; reintento dentro de la misma ventana rechazado como `QR_ALREADY_USED`.
+- [x] Login E2E de cuenta `GUARD` asignada a Bosques; el JWT contiene rol `GUARD` y tenant `bosques`.
+- [x] Prueba visual E2E desde Dommia Guard: QR inválido denegado y rol `GUARD` sin acceso al endpoint admin de cuentas.
+- [x] En emulación móvil sin conexión, Guard bloquea cámara y validación manual y muestra que la autorización requiere conexión.
+- [x] En tenant sin `NOTIFICATIONS_PREMIUM`, una visita autorizada mantiene su resultado y devuelve `NOT_CONFIGURED`; la respuesta no incluye correo ni teléfono del anfitrión.
+- [x] Para un QR válido de visita con propiedad morosa, Guard recibe ticket manual de 5 minutos; motivo corto se rechaza, motivo válido autoriza y escribe `MANUAL_GUARD` con usuario/motivo.
+- [x] El ticket de excepción no se puede reutilizar; QR inválido, vencido, revocado o de un tenant/sesión distintos no puede generar una autorización manual.
+- [x] El buscador de lotes y el estatus financiero muestran datos de consulta cacheados; en modo offline estos datos no autorizan accesos ni sustituyen la validación en línea.
+- [ ] Prueba física de lectura QR válida en cámaras Android/iOS y medición de latencia en red productiva.
+- [ ] Entrega E2E por WhatsApp Business y fallback SMTP con tenant premium configurado.
+- Dommia Guard se instala como PWA; durante una interrupción muestra el shell/pantalla offline e informa que no puede validar accesos.
+- Una captura de pantalla de un código QR enviada por chat deja de funcionar pasados los 15 segundos y el servidor rechaza códigos vencidos o repetidos.
+- La pantalla de Dommia Guard muestra la lectura y resultado de API; la meta de latencia y notificación al anfitrión requiere medición y prueba pendientes.
+- [ ] El buscador vehicular clasifica visualmente la placa en menos de 100 ms indicando si es propietario, inquilino o desconocido.
+- Una vivienda morosa no autoriza automáticamente; un guardia puede registrar una excepción para un pase de visita válido con motivo auditable. Un QR inválido o vencido no admite excepción.
+- Ningún flujo de Fase 6 requiere pluma, lector RFID, Gateway, MQTT ni accionamiento físico para validar y auditar un acceso.
+
+#### Pendientes explícitos para post-MVP
+- [ ] Integración con lectores RFID/UHF y protocolos Wiegand.
+- [ ] Gateway local con SQLite, buffer de eventos y operación offline con autoridad de acceso.
+- [ ] MQTT sobre TLS para sincronización Cloud/Edge y telemetría.
+- [ ] Relevador/contacto seco y apertura automática de plumas o portones.
+- [ ] Certificación de hardware, pruebas de latencia, fail-safe/fail-secure y protocolos de contingencia física.
 
 ---
 
@@ -446,7 +659,7 @@ flowchart TD
 **Objetivo:** Consolidar la seguridad, telemetría, políticas de respaldo y preparación para el lanzamiento a producción a gran escala.
 
 * **Estado:** `[ ] Pendiente`
-* **Dependencias:** Fases 1 a 6
+* **Dependencias:** Fases 1 a 4 y 6; Fase 5 queda fuera del MVP
 
 #### Tareas Técnicas:
 - [ ] **Políticas y Scripts de Backup y Recuperación:**
@@ -475,11 +688,11 @@ flowchart TD
 | **0** | Cimientos, Monorepo & UI Tokens | Sprint 1-2 | 🟢 Completada | Monorepo pnpm, Docker (Postgres/EMQX), @dommia/ui, API NestJS multi-tenant y Dommia CRM operativos |
 | **1** | Landing Comercial & Dommia CRM | Sprint 3-4 | 🟢 Completada | Landing page oficial en portal-web (3000) y CRM ejecutivo desacoplado en 3 capas (3001) |
 | **2** | Dommia Communities & Resident (PWA) | Sprint 5-6 | 🟢 Completada | Padrón multi-tenant (3002), PWA offline independiente (3003) y Módulo de Avisos operativos |
-| **3** | Dommia Finance (Cuotas & Conciliación) | Sprint 7-8 | 🟡 En curso | Motor de Cobranza Mensual (Cron del día 1 de mes) |
-| **4** | Dommia Finance (Stripe & SPEI) | Sprint 9-10 | ⚪ En espera | Stripe Connect, webhooks idempotentes y dispersión |
-| **5** | Dommia IoT & Dommia Access (RFID) | Sprint 11-13 | ⚪ En espera | Firmware Edge SQLite, adaptador Wiegand y MQTT TLS |
-| **6** | Dommia Access (QR TOTP) & Dommia Guard (PWA) | Sprint 14-15 | ⚪ En espera | PWA táctica de caseta, validación QR anticopia, semáforo de morosidad y clasificador LPR asistido |
-| **7** | Dommia Analytics, Hardening & Go-Live | Sprint 16-17 | ⚪ En espera | Automatización de backups (RPO/RTO) y MFA obligatorio |
+| **3** | Dommia Finance (Cuotas & Conciliación) | Sprint 7-8 | 🟢 Completada | Stripe Connect y webhooks idempotentes |
+| **4** | Dommia Finance (Stripe & SPEI) | Sprint 9-10 | 🟡 En curso | Sandbox E2E y comisión SaaS |
+| **5** | Dommia IoT & Dommia Access (RFID) | Post-MVP | ⚪ Pospuesta | Gateway Edge, RFID/Wiegand, MQTT TLS y apertura física; no bloquea el MVP |
+| **6** | Dommia Access (QR TOTP) & Dommia Guard (PWA) | En curso | 🟡 En curso | Probar cámara física y entrega premium; decidir si se requiere aprobación independiente de supervisor |
+| **7** | Dommia Analytics, Hardening & Go-Live | Posterior a Fase 6 | ⚪ En espera | Automatización de backups (RPO/RTO) y MFA obligatorio |
 
 ---
 

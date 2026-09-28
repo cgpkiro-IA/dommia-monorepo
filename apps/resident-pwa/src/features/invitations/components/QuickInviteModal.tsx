@@ -6,6 +6,7 @@ import { PassType } from '../../../types';
 
 interface QuickInviteModalProps {
   isOpen: boolean;
+  errorMessage?: string | null;
   onClose: () => void;
   onCreatePass: (data: {
     visitorName: string;
@@ -17,6 +18,7 @@ interface QuickInviteModalProps {
 
 export const QuickInviteModal: React.FC<QuickInviteModalProps> = ({
   isOpen,
+  errorMessage,
   onClose,
   onCreatePass,
 }) => {
@@ -61,11 +63,12 @@ export const QuickInviteModal: React.FC<QuickInviteModalProps> = ({
             <h3 className="text-lg font-bold text-white font-heading">
               Generar Pase de Visita
             </h3>
-            <p className="text-xs text-slate-400">Acceso QR con apertura de pluma</p>
+            <p className="text-xs text-slate-400">Pase digital con código QR temporal</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {errorMessage && <p role="alert" className="rounded-lg border border-rose-700 bg-rose-950 px-3 py-2 text-xs text-rose-200">{errorMessage}</p>}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
               Nombre del Visitante / Proveedor *

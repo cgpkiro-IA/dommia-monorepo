@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsEmail, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsEmail, IsBoolean, IsArray, IsUUID, IsIn, ValidateIf } from 'class-validator';
 
 export class CreateResidentDto {
   @IsString()
@@ -14,8 +14,8 @@ export class CreateResidentDto {
   lastName: string;
 
   @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @IsString()
   @IsOptional()
@@ -70,4 +70,28 @@ export class UpdateResidentDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+}
+
+export class InviteResidentsDto {
+  @ValidateIf((dto) => dto.residentIds !== 'ALL')
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  residentIds?: string[] | 'ALL';
+
+  @IsBoolean()
+  @IsOptional()
+  all?: boolean;
+
+  @IsUUID('4')
+  @IsOptional()
+  createdBy?: string;
+
+  @IsIn(['AUTO', 'EMAIL', 'PHONE'])
+  @IsOptional()
+  contactMethod?: 'AUTO' | 'EMAIL' | 'PHONE';
+
+  @IsIn(['NONE', 'EMAIL', 'WHATSAPP'])
+  @IsOptional()
+  delivery?: 'NONE' | 'EMAIL' | 'WHATSAPP';
 }

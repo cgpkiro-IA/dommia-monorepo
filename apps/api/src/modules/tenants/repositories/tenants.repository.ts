@@ -47,6 +47,18 @@ export class TenantsRepository {
     return res.rows[0] || null;
   }
 
+  async findByExactSlug(slug: string) {
+    const clean = slug?.trim().toLowerCase();
+    if (!clean) return null;
+    const res = await this.db.query(
+      `SELECT id, slug, name, subdomain, tier, max_properties, is_active, modules,
+              has_custom_domain, custom_domain, access_url, contact_email, created_at
+       FROM public.tenants WHERE LOWER(slug) = $1 LIMIT 1`,
+      [clean],
+    );
+    return res.rows[0] || null;
+  }
+
   async existsBySlug(slug: string): Promise<boolean> {
     const clean = slug.toLowerCase().trim();
     const withUnderscores = clean.replace(/-/g, '_');

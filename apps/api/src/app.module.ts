@@ -10,6 +10,10 @@ import { CrmModule } from './modules/crm/crm.module';
 import { HealthModule } from './modules/health/health.module';
 import { NoticesModule } from './modules/notices/notices.module';
 import { FinanceModule } from './modules/finance/finance.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { StripeModule } from './modules/stripe/stripe.module';
+import { AccessModule } from './modules/access/access.module';
+import { DeliveriesModule } from './modules/deliveries/deliveries.module';
 
 @Module({
   imports: [
@@ -27,6 +31,10 @@ import { FinanceModule } from './modules/finance/finance.module';
     HealthModule,
     NoticesModule,
     FinanceModule,
+    NotificationsModule,
+    StripeModule,
+    AccessModule,
+    DeliveriesModule,
   ],
 })
 export class AppModule {}

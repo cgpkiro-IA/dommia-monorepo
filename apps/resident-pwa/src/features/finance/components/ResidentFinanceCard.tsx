@@ -10,12 +10,15 @@ import {
 } from 'lucide-react';
 import { ResidentProfile, ResidentFinancialStatus, ResidentPayment } from '../../../types';
 import { ReceiptDetailsModal } from './ReceiptDetailsModal';
+import { CashPaymentInfoModal } from './CashPaymentInfoModal';
 
 interface ResidentFinanceCardProps {
   profile: ResidentProfile;
   financialStatus: ResidentFinancialStatus | null;
   isLoading: boolean;
   onOpenSpeiModal: () => void;
+  stripeEnabled?: boolean;
+  onOpenStripe?: () => void;
   onRefresh: () => void;
 }
 
@@ -24,12 +27,16 @@ export const ResidentFinanceCard: React.FC<ResidentFinanceCardProps> = ({
   financialStatus,
   isLoading,
   onOpenSpeiModal,
+  stripeEnabled = false,
+  onOpenStripe,
   onRefresh,
 }) => {
   const [selectedReceipt, setSelectedReceipt] = useState<ResidentPayment | null>(null);
+  const [isCashInfoOpen, setIsCashInfoOpen] = useState(false);
 
   const balanceDue = financialStatus ? Number(financialStatus.totalBalanceDue) : 0;
-  const isUpToDate = balanceDue <= 0;
+  const creditBalance = financialStatus ? Number(financialStatus.creditBalance || 0) : 0;
+  const isUpToDate = balanceDue <= 0 && creditBalance <= 0;
   const charges = financialStatus?.charges || [];
   const payments = financialStatus?.recentPayments || [];
 
@@ -85,15 +92,17 @@ export const ResidentFinanceCard: React.FC<ResidentFinanceCardProps> = ({
           <div className="flex items-baseline gap-2 mt-0.5">
             <p
               className={`text-3xl font-black font-heading ${
-                isUpToDate ? 'text-emerald-400' : 'text-rose-400'
+                creditBalance > 0 ? 'text-blue-400' : isUpToDate ? 'text-emerald-400' : 'text-rose-400'
               }`}
             >
-              ${balanceDue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              ${(creditBalance > 0 ? creditBalance : balanceDue).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
             </p>
             <span className="text-xs text-slate-400 font-normal">MXN</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-1">
-            {isUpToDate
+            {creditBalance > 0
+              ? 'Saldo a favor disponible para próximas cuotas.'
+              : isUpToDate
               ? '✓ No tienes cuotas pendientes ni cargos vencidos.'
               : `Tienes ${financialStatus?.pendingChargesCount || 1} concepto(s) pendientes de liquidar.`}
           </p>
@@ -124,7 +133,7 @@ export const ResidentFinanceCard: React.FC<ResidentFinanceCardProps> = ({
         )}
 
         {/* Primary Payment Action: SPEI and Ventanilla Cash */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className={`grid gap-2 ${stripeEnabled ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <button
             type="button"
             onClick={onOpenSpeiModal}
@@ -134,13 +143,18 @@ export const ResidentFinanceCard: React.FC<ResidentFinanceCardProps> = ({
             <span className="truncate">Pagar vía SPEI</span>
           </button>
 
+          {stripeEnabled && <button
+            type="button"
+            onClick={onOpenStripe}
+            className="py-3 px-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-all flex items-center justify-center gap-1 shadow-md shadow-indigo-900/40 cursor-pointer"
+          >
+            <CreditCard className="w-4 h-4 shrink-0" />
+            <span className="truncate">Pagar con tarjeta</span>
+          </button>}
+
           <button
             type="button"
-            onClick={() =>
-              alert(
-                'Pago en Ventanilla (Efectivo):\n\nAcude a las oficinas de administración del fraccionamiento en horario de 9:00 a 18:00 hrs.\n\nEl administrador registrará tu pago en efectivo y recibirás una alerta inmediata en esta PWA confirmando tu recibo digital y estado Al Corriente.'
-              )
-            }
+            onClick={() => setIsCashInfoOpen(true)}
             className="py-3 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -210,6 +224,7 @@ export const ResidentFinanceCard: React.FC<ResidentFinanceCardProps> = ({
         receipt={selectedReceipt}
         onClose={() => setSelectedReceipt(null)}
       />
+      <CashPaymentInfoModal isOpen={isCashInfoOpen} onClose={() => setIsCashInfoOpen(false)} />
     </div>
   );
 };

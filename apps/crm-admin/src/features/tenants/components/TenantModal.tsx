@@ -164,6 +164,7 @@ export function TenantModal({
                 { key: 'ACCESS_QR', label: 'Dommia Access (QR TOTP)' },
                 { key: 'ACCESS_RFID', label: 'Dommia Access (RFID UHF)' },
                 { key: 'RESIDENT_APP', label: 'Dommia Resident (PWA)' },
+                { key: 'NOTIFICATIONS_PREMIUM', label: 'Notificaciones Premium (SMTP / WhatsApp)' },
               ].map((mod) => (
                 <label key={mod.key} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200/80 cursor-pointer">
                   <input

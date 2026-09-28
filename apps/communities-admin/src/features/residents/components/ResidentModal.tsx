@@ -118,10 +118,9 @@ export function ResidentModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Correo Electrónico (Login App) *</label>
+              <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Correo Electrónico (Login App)</label>
               <input
                 type="email"
-                required
                 value={form.email}
                 onChange={(e) => onChange('email', e.target.value)}
                 placeholder="carlos@correo.com"
@@ -139,6 +138,7 @@ export function ResidentModal({
               />
             </div>
           </div>
+          <p className="text-[11px] text-slate-500">Captura correo o celular para habilitar el acceso. Si capturas ambos, el correo se usará por defecto y el administrador podrá cambiarlo a celular al generar la invitación.</p>
 
           <div>
             <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Rol / Clasificación del Habitante *</label>

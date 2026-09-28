@@ -1,10 +1,15 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { Resident, Property } from '@/types';
 
-export function useResidents() {
+export type InviteContactMethod = 'AUTO' | 'EMAIL' | 'PHONE';
+export type InviteDelivery = 'NONE' | 'EMAIL' | 'WHATSAPP';
+
+export function useResidents(authToken?: string) {
   const [residents, setResidents] = useState<Resident[]>([]);
+  const [selectedResidentIds, setSelectedResidentIds] = useState<string[]>([]);
+  const [invitationResults, setInvitationResults] = useState<any[]>([]);
   const [loadingResidents, setLoadingResidents] = useState(false);
 
   // Filters
@@ -31,13 +36,19 @@ export function useResidents() {
   });
   const [actionLoading, setActionLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const loadRequestRef = useRef(0);
+  const authHeaders = authToken ? { Authorization: `Bearer ${authToken}` } : {};
 
   const loadResidents = async (slug: string) => {
+    const requestId = ++loadRequestRef.current;
+    setResidents([]);
+    setSelectedResidentIds([]);
+    setInvitationResults([]);
     setLoadingResidents(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/residents`);
+      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/residents`, { headers: authHeaders });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && requestId === loadRequestRef.current) {
         setResidents(data.data || []);
         return data.data;
       }
@@ -46,6 +57,14 @@ export function useResidents() {
     } finally {
       setLoadingResidents(false);
     }
+  };
+
+  const resetResidents = () => {
+    loadRequestRef.current += 1;
+    setResidents([]);
+    setSelectedResidentIds([]);
+    setInvitationResults([]);
+    setLoadingResidents(false);
   };
 
   const openAddModal = (propertyId?: string, properties?: Property[]) => {
@@ -89,7 +108,7 @@ export function useResidents() {
     try {
       const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/residents`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(residentForm),
       });
 
@@ -117,7 +136,7 @@ export function useResidents() {
     try {
       const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/residents/${editingResident.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           propertyId: residentForm.propertyId,
           firstName: residentForm.firstName,
@@ -158,7 +177,7 @@ export function useResidents() {
 
     try {
       const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/residents/${id}`, {
-        method: 'DELETE',
+        method: 'DELETE', headers: authHeaders,
       });
       const result = await res.json();
       if (res.ok && result.success) {
@@ -168,6 +187,29 @@ export function useResidents() {
     } catch (err) {
       console.error('Error deleting resident:', err);
     }
+  };
+
+  const handleInviteResidents = async (slug: string, ids: string[] | 'ALL', onSuccess: (msg: string) => void, contactMethod: InviteContactMethod = 'AUTO', delivery: InviteDelivery = 'NONE') => {
+    setActionLoading(true);
+    try {
+      const selectedIds = ids === 'ALL' ? [] : ids.filter((id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id));
+      if (ids !== 'ALL' && selectedIds.length !== ids.length) {
+        throw new Error('La selección contiene un residente inválido. Actualiza el padrón e inténtalo de nuevo.');
+      }
+      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/residents/invite`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify(ids === 'ALL' ? { all: true, contactMethod, delivery } : { residentIds: selectedIds, contactMethod, delivery }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error(result.message || 'No se pudieron generar las invitaciones.');
+      setInvitationResults(result.data || []);
+      setSelectedResidentIds([]);
+      onSuccess(`${result.data.length} invitación(es) generada(s). Comparte los enlaces antes de 24 horas.`);
+      return result.data;
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'No se pudieron generar las invitaciones.');
+      return [];
+    } finally { setActionLoading(false); }
   };
 
   const filteredResidents = useMemo(() => {
@@ -196,6 +238,10 @@ export function useResidents() {
 
   return {
     residents,
+    selectedResidentIds,
+    setSelectedResidentIds,
+    invitationResults,
+    setInvitationResults,
     setResidents,
     loadingResidents,
     residentSearchQuery,
@@ -221,5 +267,7 @@ export function useResidents() {
     handleAddResident,
     handleUpdateResident,
     handleDeleteResident,
+    handleInviteResidents,
+    resetResidents,
   };
 }

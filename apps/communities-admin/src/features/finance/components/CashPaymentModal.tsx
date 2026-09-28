@@ -15,10 +15,11 @@ interface CashPaymentModalProps {
   charges: FinancialCharge[];
   loading: boolean;
   error: string | null;
+  stripeEnabled?: boolean;
 }
 
 export function CashPaymentModal({
-  isOpen, onClose, form, onChange, onSubmit, properties, charges, loading, error,
+  isOpen, onClose, form, onChange, onSubmit, properties, charges, loading, error, stripeEnabled = false,
 }: CashPaymentModalProps) {
   if (!isOpen) return null;
 

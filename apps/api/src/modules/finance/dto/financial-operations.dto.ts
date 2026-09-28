@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsBoolean,
+  MaxLength,
   Min,
   Max,
   IsIn,
@@ -92,6 +93,112 @@ export class CreatePaymentDto {
   @IsString()
   @IsOptional()
   receipt_url?: string;
+}
+
+export class SubmitSpeiPaymentDto {
+  @IsString()
+  @IsNotEmpty()
+  propertyId: string;
+
+  @IsString()
+  @IsOptional()
+  chargeId?: string;
+
+  @IsNumber()
+  @Min(0.01, { message: 'El monto transferido debe ser mayor a 0.' })
+  amount: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  reference: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(5_000_000)
+  receiptUrl: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(120)
+  payerName?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  notes?: string;
+}
+
+export class ReviewPaymentDto {
+  @IsString()
+  @IsIn(['APPROVED', 'REJECTED'])
+  status: 'APPROVED' | 'REJECTED';
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  reviewedByName: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  notes?: string;
+}
+
+export class CreateAnnualCampaignDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(150)
+  name: string;
+
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  discountPercentage: number;
+
+  @IsNumber()
+  @Min(1)
+  @Max(12)
+  monthsCovered: number = 12;
+
+  @IsString()
+  @IsNotEmpty()
+  periodStart: string;
+
+  @IsString()
+  @IsNotEmpty()
+  periodEnd: string;
+}
+
+export class AnnualCampaignQuoteDto {
+  @IsString()
+  @IsNotEmpty()
+  propertyId: string;
+}
+
+export class SubmitAnnualPaymentDto {
+  @IsString()
+  @IsNotEmpty()
+  propertyId: string;
+
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  reference: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(5_000_000)
+  receiptUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(120)
+  payerName?: string;
 }
 
 export class QueryChargesDto {

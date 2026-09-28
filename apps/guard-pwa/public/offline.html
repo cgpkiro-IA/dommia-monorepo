@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0B1120">
+    <title>Sin conexion | DOMMIA Guard</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { display: grid; min-height: 100vh; margin: 0; place-items: center; padding: 24px; background: #0B1120; color: #F8FAFC; font-family: Inter, system-ui, -apple-system, sans-serif; }
+      main { width: min(100%, 440px); padding: 28px; border: 1px solid #334155; border-radius: 10px; background: #0F172A; }
+      .brand { color: #60A5FA; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
+      .signal { display: grid; width: 44px; height: 44px; margin: 30px 0 20px; place-items: center; border: 1px solid #F59E0B; border-radius: 50%; color: #F59E0B; font-size: 22px; font-weight: 700; }
+      h1 { margin: 0 0 10px; font-size: 24px; }
+      p { margin: 0; color: #bdc9d7; font-size: 14px; line-height: 1.65; }
+      strong { color: #ffda91; }
+      button { min-height: 42px; margin-top: 24px; padding: 0 16px; border: 1px solid #2563EB; border-radius: 8px; background: #2563EB; color: white; font: inherit; font-size: 12px; font-weight: 700; }
+      button:focus-visible { outline: 3px solid #60A5FA; outline-offset: 3px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">DOMMIA · CONTROL DE ACCESO</div>
+      <div class="signal" aria-hidden="true">!</div>
+      <h1>Sin conexion</h1>
+      <p><strong>La autorización QR requiere una conexión activa.</strong> No es posible validar ni autorizar un acceso sin comunicación con el servidor.</p>
+      <button type="button" onclick="location.reload()">Reintentar conexión</button>
+    </main>
+  </body>
+</html>

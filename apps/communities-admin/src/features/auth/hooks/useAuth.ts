@@ -58,9 +58,27 @@ export function useAuth() {
     }
   };
 
-  const handleSelectTenant = (t: TenantMetadata) => {
-    setActiveTenant(t);
-    setShowWorkspacePicker(false);
+  const handleSelectTenant = async (t: TenantMetadata) => {
+    setLoginLoading(true);
+    setLoginError(null);
+    try {
+      const res = await fetch('http://localhost:4000/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginForm.email, password: loginForm.password, tenantSlug: t.slug }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success || !result.data?.token) {
+        throw new Error(result.message || 'No se pudo abrir el fraccionamiento seleccionado.');
+      }
+      setUserSession(result.data as UserSession);
+      setActiveTenant(result.data.activeTenant || t);
+      setShowWorkspacePicker(false);
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : 'No se pudo abrir el fraccionamiento seleccionado.');
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
   const handleLogout = () => {

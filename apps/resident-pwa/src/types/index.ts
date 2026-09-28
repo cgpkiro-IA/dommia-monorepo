@@ -1,6 +1,7 @@
 export type ResidentRole = 'OWNER' | 'TENANT' | 'FAMILY_MEMBER';
 
 export type PaymentStatus = 'UP_TO_DATE' | 'OVERDUE';
+export type AccountStatus = 'UP_TO_DATE' | 'OVERDUE' | 'CREDIT_BALANCE';
 
 export interface ResidentProfile {
   id: string;
@@ -14,9 +15,9 @@ export interface ResidentProfile {
   role: ResidentRole;
   isPrimary: boolean;
   paymentStatus: PaymentStatus;
-  totpSecret: string; // Secret key for TOTP offline QR generation
   avatarUrl?: string;
   updatedAt: string;
+  modules?: string[] | Record<string, boolean>;
 }
 
 export interface ResidentCharge {
@@ -32,9 +33,12 @@ export interface ResidentCharge {
 
 export interface ResidentPayment {
   id: string;
+  property_id?: string;
+  charge_id?: string | null;
   amount: string | number;
   payment_method: string;
   reference: string;
+  receipt_url?: string | null;
   paid_at: string;
   status: string;
   received_by_name?: string;
@@ -45,6 +49,10 @@ export interface ResidentPayment {
 export interface ResidentFinancialStatus {
   propertyId: string;
   totalBalanceDue: number;
+  totalCharged?: number;
+  totalPaid?: number;
+  creditBalance?: number;
+  accountStatus?: AccountStatus;
   hasPendingCharges: boolean;
   pendingChargesCount: number;
   charges: ResidentCharge[];

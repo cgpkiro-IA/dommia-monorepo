@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Landmark, Copy, Check, X, ShieldAlert, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Landmark, Copy, Check, X, ShieldAlert, Upload, FileText, Loader2 } from 'lucide-react';
 import { ResidentProfile } from '../../../types';
 
 interface SpeiDetailsModalProps {
   isOpen: boolean;
   profile: ResidentProfile;
   amountDue: number;
+  onSubmit: (submission: { amount: number; reference: string; receiptUrl: string }) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -15,9 +16,28 @@ export const SpeiDetailsModal: React.FC<SpeiDetailsModalProps> = ({
   isOpen,
   profile,
   amountDue,
+  onSubmit,
   onClose,
 }) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [amount, setAmount] = useState(amountDue);
+  const [reference, setReference] = useState('');
+  const [receiptData, setReceiptData] = useState<string | null>(null);
+  const [receiptName, setReceiptName] = useState('');
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setAmount(amountDue);
+      setReference('');
+      setReceiptData(null);
+      setReceiptName('');
+      setFileError(null);
+      setSubmitError(null);
+    }
+  }, [amountDue, isOpen]);
 
   if (!isOpen) return null;
 
@@ -25,12 +45,57 @@ export const SpeiDetailsModal: React.FC<SpeiDetailsModalProps> = ({
   const cleanClabe = '012180001234567895';
   const bank = 'BBVA México';
   const beneficiary = `${profile.communityName} A.C.`;
-  const reference = `MANT-${profile.propertyAddress.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase()}`;
+  const transferReference = `MANT-${profile.propertyAddress.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase()}`;
 
   const handleCopy = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(fieldName);
     setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const handleFileChange = (file?: File) => {
+    setFileError(null);
+    setReceiptData(null);
+    if (!file) return;
+    if (!['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setFileError('Adjunta un PDF o una imagen JPG, PNG o WEBP.');
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setFileError('El comprobante debe pesar máximo 4 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setReceiptData(typeof reader.result === 'string' ? reader.result : null);
+      setReceiptName(file.name);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async () => {
+    setSubmitError(null);
+    if (!amount || amount <= 0) {
+      setSubmitError('Indica el monto transferido.');
+      return;
+    }
+    if (!reference.trim()) {
+      setSubmitError('Escribe la referencia SPEI.');
+      return;
+    }
+    if (!receiptData) {
+      setSubmitError('Adjunta el comprobante de transferencia.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const submitted = await onSubmit({ amount, reference: reference.trim(), receiptUrl: receiptData });
+      if (submitted) onClose();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'No se pudo enviar el comprobante.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -110,10 +175,10 @@ export const SpeiDetailsModal: React.FC<SpeiDetailsModalProps> = ({
           <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-slate-400 font-semibold uppercase">Concepto de Transferencia (Obligatorio)</p>
-              <p className="font-mono text-xs text-amber-300 font-bold mt-0.5">{reference}</p>
+              <p className="font-mono text-xs text-amber-300 font-bold mt-0.5">{transferReference}</p>
             </div>
             <button
-              onClick={() => handleCopy(reference, 'reference')}
+              onClick={() => handleCopy(transferReference, 'reference')}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
               title="Copiar Concepto"
             >
@@ -128,6 +193,51 @@ export const SpeiDetailsModal: React.FC<SpeiDetailsModalProps> = ({
           <p>
             También puedes pagar en <strong>Efectivo</strong> acudiendo a las oficinas de Administración del fraccionamiento. La acreditación es inmediata.
           </p>
+        </div>
+
+        <div className="rounded-2xl border border-amber-800/70 bg-amber-950/20 p-4 space-y-3">
+          <div>
+            <p className="text-[10px] uppercase font-bold tracking-wider text-amber-300">Enviar comprobante</p>
+            <p className="text-[11px] text-slate-300 mt-1">El pago quedará pendiente hasta que administración valide la transferencia.</p>
+          </div>
+          <label className="block text-[11px] font-semibold text-slate-300">
+            Monto transferido
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={amount || ''}
+              onChange={(event) => setAmount(Number(event.target.value))}
+              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-amber-400"
+            />
+          </label>
+          <label className="block text-[11px] font-semibold text-slate-300">
+            Referencia SPEI
+            <input
+              type="text"
+              value={reference}
+              onChange={(event) => setReference(event.target.value)}
+              placeholder={reference || 'Referencia de la transferencia'}
+              maxLength={128}
+              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-amber-400"
+            />
+          </label>
+          <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-600 bg-slate-950 px-3 py-3 text-xs font-bold text-slate-200 hover:border-amber-400">
+            <Upload className="h-4 w-4 text-amber-300" />
+            <span>{receiptName || 'Adjuntar PDF o imagen'}</span>
+            <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => handleFileChange(event.target.files?.[0])} />
+          </label>
+          {receiptName && <p className="flex items-center gap-1 text-[10px] text-emerald-300"><FileText className="h-3 w-3" /> Comprobante listo para enviar.</p>}
+          {(fileError || submitError) && <p className="text-[11px] font-semibold text-rose-300">{fileError || submitError}</p>}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 py-3 text-xs font-black text-slate-950 transition-colors hover:bg-amber-300 disabled:cursor-wait disabled:opacity-60"
+          >
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {isSubmitting ? 'Enviando...' : 'Enviar a administración'}
+          </button>
         </div>
 
         {/* Close Button */}

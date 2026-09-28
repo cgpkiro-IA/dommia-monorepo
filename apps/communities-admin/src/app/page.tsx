@@ -25,6 +25,8 @@ import { NoticeModal } from '@/features/notices/components/NoticeModal';
 
 import { useFees } from '@/features/finance/hooks/useFees';
 import { ChargesAndPaymentsView } from '@/features/finance/components/ChargesAndPaymentsView';
+import { NotificationsSettings } from '@/features/notifications/components/NotificationsSettings';
+import { GuardUsersPanel } from '@/features/guards/components/GuardUsersPanel';
 
 import { TopNavbar } from '@/features/dashboard/components/TopNavbar';
 import { CapacityHeroBanner } from '@/features/dashboard/components/CapacityHeroBanner';
@@ -36,7 +38,7 @@ import { NotificationToast } from '@/types';
 export default function CommunitiesAdminPage() {
   const auth = useAuth();
   const properties = useProperties();
-  const residents = useResidents();
+  const residents = useResidents(auth.userSession?.token);
   const vehicles = useVehicles();
   const notices = useNotices();
   const fees = useFees();
@@ -52,13 +54,23 @@ export default function CommunitiesAdminPage() {
   // Sync data whenever activeTenant changes
   useEffect(() => {
     if (auth.activeTenant?.slug) {
+      residents.resetResidents();
       properties.loadProperties(auth.activeTenant.slug);
       residents.loadResidents(auth.activeTenant.slug);
       vehicles.loadVehicles(auth.activeTenant.slug);
       notices.loadNotices(auth.activeTenant.slug);
       fees.loadFees(auth.activeTenant.slug);
+    } else {
+      residents.resetResidents();
     }
-  }, [auth.activeTenant?.slug]);
+  }, [auth.activeTenant?.slug, auth.userSession?.token]);
+
+  const notificationsPremium = Array.isArray(auth.activeTenant?.modules)
+    ? auth.activeTenant.modules.includes('NOTIFICATIONS_PREMIUM')
+    : Boolean(auth.activeTenant?.modules && auth.activeTenant.modules.NOTIFICATIONS_PREMIUM);
+  const accessQrEnabled = Array.isArray(auth.activeTenant?.modules)
+    ? auth.activeTenant.modules.includes('ACCESS_QR')
+    : Boolean(auth.activeTenant?.modules && auth.activeTenant.modules.ACCESS_QR);
 
   // Auth gate 1: Show multi-tenant picker if logged in with multiple workspaces
   if (auth.showWorkspacePicker || (!auth.activeTenant && (auth.userSession?.tenants?.length ?? 0) > 1)) {
@@ -126,6 +138,8 @@ export default function CommunitiesAdminPage() {
           vehiclesCount={vehicles.vehicles.length}
           noticesCount={notices.notices.length}
           feesCount={fees.fees.length}
+          notificationsEnabled={notificationsPremium}
+          accessQrEnabled={accessQrEnabled}
           onTabChange={setActiveTab}
         />
 
@@ -195,6 +209,14 @@ export default function CommunitiesAdminPage() {
             onAddVehicleToResident={(propId, resId) => {
               vehicles.openAddModal(propId, resId, properties.properties);
             }}
+            selectedResidentIds={residents.selectedResidentIds}
+            notificationsPremium={notificationsPremium}
+            onSelectionChange={residents.setSelectedResidentIds}
+            onInvite={(ids, contactMethod, delivery) => {
+              if (auth.activeTenant?.slug) residents.handleInviteResidents(auth.activeTenant.slug, ids, showToast, contactMethod, delivery);
+            }}
+            invitationResults={residents.invitationResults}
+            error={residents.formError}
           />
         )}
 
@@ -242,7 +264,19 @@ export default function CommunitiesAdminPage() {
             tenantSlug={auth.activeTenant.slug}
             properties={properties.properties}
             showToast={showToast}
+            authToken={auth.userSession.token}
+            stripeEnabled={Array.isArray(auth.activeTenant.modules)
+              ? auth.activeTenant.modules.some((module) => ['STRIPE', 'STRIPE_CONNECT', 'FINANCE_STRIPE'].includes(module))
+              : Boolean(auth.activeTenant.modules && Object.entries(auth.activeTenant.modules).some(([key, enabled]) => enabled && ['STRIPE', 'STRIPE_CONNECT', 'FINANCE_STRIPE'].includes(key)))}
           />
+        )}
+
+        {activeTab === 'NOTIFICATIONS' && notificationsPremium && auth.activeTenant?.slug && (
+          <NotificationsSettings tenantSlug={auth.activeTenant.slug} authToken={auth.userSession.token} showToast={showToast} />
+        )}
+
+        {activeTab === 'GUARDS' && accessQrEnabled && auth.activeTenant?.slug && (
+          <GuardUsersPanel tenantSlug={auth.activeTenant.slug} authToken={auth.userSession.token} />
         )}
       </main>
 

@@ -76,6 +76,25 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async withTenantTransaction<T>(tenantSlug: string, callback: (client: PoolClient) => Promise<T>): Promise<T> {
+    let cleanSlug = tenantSlug.toLowerCase().replace(/-/g, '_').replace(/[^a-z0-9_]/g, '_');
+    if (cleanSlug === 'las_palmas' || cleanSlug === 'laspalmas') cleanSlug = 'demo';
+    const client = await this.pool.connect();
+    try {
+      await client.query(`SET search_path = "tenant_${cleanSlug}", public;`);
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      await client.query('SET search_path = public;');
+      client.release();
+    }
+  }
+
   /**
    * Provision a brand new tenant with its dedicated schema and tables
    */

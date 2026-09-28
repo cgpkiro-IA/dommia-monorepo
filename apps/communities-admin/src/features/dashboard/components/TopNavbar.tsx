@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Building2, Layers, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { Building2, Layers, LogOut, Copy, Check } from 'lucide-react';
 import { TenantMetadata, UserSession } from '@/types';
 
 interface TopNavbarProps {
@@ -17,6 +17,19 @@ export function TopNavbar({
   onSwitchWorkspace,
   onLogout,
 }: TopNavbarProps) {
+  const [tenantCopied, setTenantCopied] = useState(false);
+
+  const copyTenantId = async () => {
+    if (!activeTenant?.slug) return;
+    try {
+      await navigator.clipboard.writeText(activeTenant.slug);
+      setTenantCopied(true);
+      window.setTimeout(() => setTenantCopied(false), 1800);
+    } catch {
+      setTenantCopied(false);
+    }
+  };
+
   return (
     <header className="bg-[#0F172A] border-b border-slate-800 sticky top-0 z-30 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -43,6 +56,10 @@ export function TopNavbar({
               <span className="text-white font-bold text-sm">
                 {activeTenant?.name || 'Fraccionamiento'}
               </span>
+              {activeTenant?.slug && <button type="button" onClick={() => void copyTenantId()} title="Copiar IDTENANT para acceso Resident y Guard" aria-label={tenantCopied ? `IDTENANT ${activeTenant.slug} copiado` : `Copiar IDTENANT ${activeTenant.slug}`} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2 font-mono text-[10px] font-semibold text-sky-200 hover:border-blue-500/70 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400">
+                {tenantCopied ? <Check className="h-3 w-3 text-emerald-300" /> : <Copy className="h-3 w-3" />}
+                <span>IDTENANT: {activeTenant.slug}</span>
+              </button>}
               <span className="px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-800 font-mono font-semibold text-[10px]">
                 Plan {activeTenant?.tier || 'STANDARD'}
               </span>

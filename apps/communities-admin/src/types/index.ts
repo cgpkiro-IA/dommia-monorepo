@@ -62,6 +62,7 @@ export interface TenantMetadata {
   accessUrl: string;
   hasCustomDomain: boolean;
   customDomain: string | null;
+  modules?: string[] | Record<string, boolean>;
   role?: string;
 }
 
@@ -263,6 +264,28 @@ export interface PaymentFormData {
   receivedByName: string;
   payerName: string;
   notes: string;
+}
+
+export interface AnnualCampaign {
+  id: string;
+  name: string;
+  discount_percentage: string | number;
+  months_covered: number;
+  period_start: string;
+  period_end: string;
+  status: 'DRAFT' | 'ACTIVE' | 'EXPIRED';
+  commitments_count?: number;
+  approved_count?: number;
+  approved_amount?: string | number;
+  approved_discount?: string | number;
+}
+
+export interface AnnualCampaignFormData {
+  name: string;
+  discountPercentage: number;
+  monthsCovered: number;
+  periodStart: string;
+  periodEnd: string;
 }
 
 

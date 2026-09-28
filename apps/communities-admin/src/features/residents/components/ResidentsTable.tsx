@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Resident } from '@/types';
 import { ResidentTableRow } from './ResidentTableRow';
+import type { InviteContactMethod, InviteDelivery } from '../hooks/useResidents';
 
 interface ResidentsTableProps {
   residents: Resident[];
@@ -26,6 +27,12 @@ interface ResidentsTableProps {
   onOpenEdit: (r: Resident) => void;
   onDelete: (id: string, name: string) => void;
   onAddVehicleToResident: (propertyId: string, residentId: string) => void;
+  selectedResidentIds: string[];
+  onSelectionChange: (ids: string[]) => void;
+  onInvite: (ids: string[] | 'ALL', contactMethod: InviteContactMethod, delivery: InviteDelivery) => void;
+  notificationsPremium: boolean;
+  invitationResults: any[];
+  error?: string | null;
 }
 
 export function ResidentsTable({
@@ -43,10 +50,21 @@ export function ResidentsTable({
   onOpenEdit,
   onDelete,
   onAddVehicleToResident,
+  selectedResidentIds,
+  onSelectionChange,
+  onInvite,
+  invitationResults,
+  notificationsPremium,
+  error,
 }: ResidentsTableProps) {
+  const residentAppUrl = (process.env.NEXT_PUBLIC_RESIDENT_APP_URL || 'http://localhost:3003').replace(/\/$/, '');
+  const getActivationUrl = (token: string, tenantSlug?: string) => `${residentAppUrl}/activate-resident?token=${encodeURIComponent(token)}${tenantSlug ? `&tenant=${encodeURIComponent(tenantSlug)}` : ''}`;
+  const [inviteContactMethod, setInviteContactMethod] = React.useState<InviteContactMethod>('AUTO');
+  const [inviteDelivery, setInviteDelivery] = React.useState<InviteDelivery>('NONE');
   const ownersCount = allResidents.filter((r) => r.role === 'OWNER').length;
   const tenantsCount = allResidents.filter((r) => r.role === 'TENANT').length;
   const familyCount = allResidents.filter((r) => r.role === 'FAMILY_MEMBER').length;
+  const allVisibleSelected = residents.length > 0 && residents.every((r) => selectedResidentIds.includes(r.id));
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in">
@@ -76,6 +94,8 @@ export function ResidentsTable({
         </div>
 
         <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700">Acceso por<select value={inviteContactMethod} onChange={(event) => setInviteContactMethod(event.target.value as InviteContactMethod)} className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-[11px] text-slate-800"><option value="AUTO">Automático</option><option value="EMAIL">Correo</option><option value="PHONE">Celular</option></select></label>
+          {notificationsPremium && <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700">Enviar por<select value={inviteDelivery} onChange={(event) => setInviteDelivery(event.target.value as InviteDelivery)} className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-[11px] text-slate-800"><option value="NONE">Solo enlace</option><option value="EMAIL">Correo</option><option value="WHATSAPP">WhatsApp</option></select></label>}
           <button
             type="button"
             onClick={onRefresh}
@@ -94,8 +114,33 @@ export function ResidentsTable({
             <UserPlus className="w-4 h-4" />
             <span>Registrar Residente</span>
           </button>
+          <button
+            type="button"
+            onClick={() => onInvite('ALL', inviteContactMethod, inviteDelivery)}
+            className="rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-[11px] font-black text-indigo-700 hover:bg-indigo-50"
+          >
+            Invitar a todos
+          </button>
         </div>
       </div>
+
+      {selectedResidentIds.length > 0 && (
+        <div className="flex items-center justify-between border-t border-indigo-100 bg-indigo-50 px-6 py-3">
+          <div className="flex items-center gap-3"><span className="text-xs font-bold text-indigo-900">{selectedResidentIds.length} residente(s) seleccionado(s)</span><label className="flex items-center gap-2 text-[11px] font-bold text-indigo-900">Acceso por<select value={inviteContactMethod} onChange={(event) => setInviteContactMethod(event.target.value as InviteContactMethod)} className="rounded-lg border border-indigo-200 bg-white px-2 py-1.5 text-[11px] text-indigo-900"><option value="AUTO">Automático</option><option value="EMAIL">Correo</option><option value="PHONE">Celular</option></select></label>{notificationsPremium && <label className="flex items-center gap-2 text-[11px] font-bold text-indigo-900">Enviar por<select value={inviteDelivery} onChange={(event) => setInviteDelivery(event.target.value as InviteDelivery)} className="rounded-lg border border-indigo-200 bg-white px-2 py-1.5 text-[11px] text-indigo-900"><option value="NONE">Solo enlace</option><option value="EMAIL">Correo</option><option value="WHATSAPP">WhatsApp</option></select></label>}</div>
+          <button type="button" onClick={() => onInvite(selectedResidentIds, inviteContactMethod, inviteDelivery)} className="rounded-lg bg-indigo-600 px-3 py-2 text-[11px] font-black text-white">
+            Generar invitaciones
+          </button>
+        </div>
+      )}
+
+      {error && <div role="alert" className="border-t border-rose-200 bg-rose-50 px-6 py-3 text-xs font-semibold text-rose-800">{error}</div>}
+
+      {invitationResults.length > 0 && (
+        <div className="space-y-2 border-t border-emerald-100 bg-emerald-50 px-6 py-4">
+          <div className="flex items-center justify-between"><p className="text-xs font-black text-emerald-900">Enlaces de activación generados</p><button type="button" onClick={() => navigator.clipboard.writeText(invitationResults.map((item) => `${item.residentName}: ${getActivationUrl(item.activationToken, item.tenantSlug)}`).join('\n'))} className="rounded-lg border border-emerald-200 bg-white px-2 py-1 text-[10px] font-bold text-emerald-700">Copiar todos</button></div>
+          {invitationResults.map((item) => <div key={item.residentId} className="flex flex-col gap-1 rounded-lg border border-emerald-100 bg-white p-2 text-[11px] sm:flex-row sm:items-center sm:justify-between"><span className="font-bold text-slate-800">{item.residentName} · {item.contactMethod === 'PHONE' ? `Celular: ${item.loginIdentifier}` : `Correo: ${item.loginIdentifier}`}</span><button type="button" onClick={() => navigator.clipboard.writeText(getActivationUrl(item.activationToken, item.tenantSlug))} className="text-left font-mono text-emerald-700 hover:underline">Copiar enlace</button></div>)}
+        </div>
+      )}
 
       {/* Filters Bar */}
       <div className="p-4 bg-slate-50/70 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
@@ -163,6 +208,7 @@ export function ResidentsTable({
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold">
             <tr>
+              <th className="py-3 px-5"><input type="checkbox" checked={allVisibleSelected} onChange={(event) => onSelectionChange(event.target.checked ? residents.map((r) => r.id) : [])} aria-label="Seleccionar residentes visibles" /></th>
               <th className="py-3 px-5">Residente</th>
               <th className="py-3 px-5">Vivienda Asignada</th>
               <th className="py-3 px-5">Clasificación / Rol</th>
@@ -174,7 +220,7 @@ export function ResidentsTable({
           <tbody className="divide-y divide-slate-100">
             {residents.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-slate-400">
+                <td colSpan={7} className="py-12 text-center text-slate-400">
                   <Users className="w-10 h-10 mx-auto text-slate-300 mb-2" />
                   <p className="font-semibold text-slate-600">No se encontraron residentes</p>
                   <p className="text-[11px] text-slate-400 mt-1">
@@ -187,6 +233,8 @@ export function ResidentsTable({
                 <ResidentTableRow
                   key={r.id}
                   resident={r}
+                  selected={selectedResidentIds.includes(r.id)}
+                  onSelect={(selected) => onSelectionChange(selected ? [...new Set([...selectedResidentIds, r.id])] : selectedResidentIds.filter((id) => id !== r.id))}
                   onOpenEdit={onOpenEdit}
                   onDelete={onDelete}
                   onAddVehicleToResident={onAddVehicleToResident}

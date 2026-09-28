@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, Check, ExternalLink, X } from 'lucide-react';
 import { FinancialPayment, PaymentMethod } from '@/types';
 
 interface PaymentsHistoryTableProps {
@@ -10,6 +10,7 @@ interface PaymentsHistoryTableProps {
   onSearchChange: (value: string) => void;
   filterMethod: PaymentMethod | 'ALL';
   onMethodChange: (method: PaymentMethod | 'ALL') => void;
+  onReview: (paymentId: string, status: 'APPROVED' | 'REJECTED') => void;
 }
 
 export function PaymentsHistoryTable({
@@ -18,6 +19,7 @@ export function PaymentsHistoryTable({
   onSearchChange,
   filterMethod,
   onMethodChange,
+  onReview,
 }: PaymentsHistoryTableProps) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
@@ -64,6 +66,7 @@ export function PaymentsHistoryTable({
               <th className="py-3 px-4">Monto Acreditado</th>
               <th className="py-3 px-4">Fecha & Hora</th>
               <th className="py-3 px-4">Recibido por</th>
+              <th className="py-3 px-4">Validación</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -71,7 +74,9 @@ export function PaymentsHistoryTable({
               <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
                 <td className="py-3 px-4">
                   <span className="font-mono font-bold text-blue-600 block">{p.reference}</span>
-                  <span className="text-[10px] text-emerald-600 font-semibold">✓ Acreditado</span>
+                  <span className={`text-[10px] font-semibold ${p.status === 'PENDING_APPROVAL' ? 'text-amber-600' : p.status === 'REJECTED' ? 'text-rose-600' : 'text-emerald-600'}`}>
+                    {p.status === 'PENDING_APPROVAL' ? 'Pendiente de validación' : p.status === 'REJECTED' ? 'Rechazado' : '✓ Acreditado'}
+                  </span>
                 </td>
                 <td className="py-3 px-4">
                   <span className="font-bold text-slate-900 block">
@@ -106,13 +111,44 @@ export function PaymentsHistoryTable({
                   {new Date(p.paid_at).toLocaleString('es-MX')}
                 </td>
                 <td className="py-3 px-4 text-slate-600 text-[11px]">
-                  {p.received_by_name}
+                  {p.received_by_name || 'Pendiente'}
+                </td>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-1.5">
+                    {p.receipt_url && (
+                      <button
+                        type="button"
+                        onClick={() => window.open(p.receipt_url || '', '_blank', 'noopener,noreferrer')}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-50"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Ver
+                      </button>
+                    )}
+                    {p.status === 'PENDING_APPROVAL' && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => onReview(p.id, 'APPROVED')}
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-emerald-700"
+                        >
+                          <Check className="h-3 w-3" /> Aprobar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onReview(p.id, 'REJECTED')}
+                          className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-50"
+                        >
+                          <X className="h-3 w-3" /> Rechazar
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
             {payments.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-slate-400">
+                <td colSpan={8} className="py-8 text-center text-slate-400">
                   No se han registrado pagos en ventanilla aún.
                 </td>
               </tr>

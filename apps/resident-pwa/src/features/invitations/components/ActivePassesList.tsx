@@ -10,6 +10,8 @@ interface ActivePassesListProps {
   onSharePass: (pass: VisitorPass) => void;
   onRevokePass: (id: string) => void;
   shareMessage: string | null;
+  errorMessage?: string | null;
+  isLoading?: boolean;
 }
 
 export const ActivePassesList: React.FC<ActivePassesListProps> = ({
@@ -18,6 +20,8 @@ export const ActivePassesList: React.FC<ActivePassesListProps> = ({
   onSharePass,
   onRevokePass,
   shareMessage,
+  errorMessage,
+  isLoading,
 }) => {
   return (
     <div className="mx-4 mb-6">
@@ -27,7 +31,7 @@ export const ActivePassesList: React.FC<ActivePassesListProps> = ({
             Pases de Visitas Vigentes
           </h3>
           <p className="text-[11px] text-slate-400">
-            {passes.length} autorización(es) activa(s)
+            {passes.filter((pass) => pass.status === 'ACTIVE').length} autorización(es) activa(s)
           </p>
         </div>
 
@@ -48,12 +52,16 @@ export const ActivePassesList: React.FC<ActivePassesListProps> = ({
         </div>
       )}
 
-      {passes.length === 0 ? (
+      {errorMessage && <div role="alert" className="mb-3 rounded-xl border border-rose-700 bg-rose-950 px-3 py-2 text-xs text-rose-200">{errorMessage}</div>}
+
+      {isLoading ? (
+        <p className="p-6 text-center text-xs text-slate-400">Cargando pases...</p>
+      ) : passes.length === 0 ? (
         <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 text-center text-slate-400">
           <QrCode className="w-8 h-8 text-slate-600 mx-auto mb-2" />
           <p className="text-xs font-semibold">No tienes pases de visita activos</p>
           <p className="text-[11px] text-slate-500 mt-1">
-            Genera un código QR para tus visitas familiares, amigos o proveedores.
+            Genera un enlace para que cada visita muestre un QR temporal desde su dispositivo.
           </p>
         </div>
       ) : (
@@ -66,7 +74,7 @@ export const ActivePassesList: React.FC<ActivePassesListProps> = ({
               <div 
                 className="min-w-0 flex-1 cursor-pointer"
                 onClick={() => onSharePass(pass)}
-                title="Ver y compartir tarjeta QR"
+                title="Ver y compartir enlace del pase"
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-bold text-sm truncate">{pass.visitorName}</span>

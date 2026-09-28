@@ -8,6 +8,8 @@ import { FeeConfigurationRepository } from './repositories/fee-configuration.rep
 import { BillingEngineController } from './controllers/billing-engine.controller';
 import { BillingEngineService } from './services/billing-engine.service';
 import { BillingEngineRepository } from './repositories/billing-engine.repository';
+import { FinanceSchedulerService } from './services/finance-scheduler.service';
+import { FinanceAdminGuard } from '../auth/guards/finance-admin.guard';
 
 @Module({
   imports: [DatabaseModule, TenantsModule, NoticesModule],
@@ -17,6 +19,8 @@ import { BillingEngineRepository } from './repositories/billing-engine.repositor
     FeeConfigurationRepository,
     BillingEngineService,
     BillingEngineRepository,
+    FinanceSchedulerService,
+    FinanceAdminGuard,
   ],
   exports: [
     FeeConfigurationService,

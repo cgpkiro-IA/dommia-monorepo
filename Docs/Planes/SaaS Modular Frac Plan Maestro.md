@@ -72,6 +72,11 @@ El SaaS no se adaptará al hardware antiguo de los fraccionamientos; se establec
     *   **Lógica de QR Dinámico (TOTP):** La PWA/App del residente generará códigos QR encriptados mediante AES-256 que cambiarán automáticamente cada 15 segundos basándose en algoritmos de tiempo (como Google Authenticator). Esto anula por completo la posibilidad de usar capturas de pantalla viejas compartidas por mensajería.
     *   **Módulo del Guardia de Caseta:** Interfaz web responsiva ultraligera para la tablet o computadora de caseta que muestra alertas visuales inmediatas cuando el escáner físico de QR procesa y valida un acceso de forma exitosa.
 
+### Adenda de Prioridad Vigente (2026-09-27)
+La ejecución actual prioriza Fase 6 digital-first: Dommia Access valida QR TOTP en línea y Dommia Guard opera como PWA tablet-first. RFID, Wiegand, Gateway, MQTT y apertura automática quedan post-MVP; esta prioridad sustituye para el MVP cualquier flujo de apertura física descrito en este documento.
+
+P1 de Dommia Guard se entrega por incrementos: validación QR, búsqueda tenant-scoped de residentes y placas, registro y retiro auditado de paquetería, incidencias de seguridad e historial operativo. La búsqueda y paquetería tienen una primera implementación funcional; incidencias e historial siguen pendientes. El plan detallado y sus criterios de aceptación se mantienen en `Plan de Desarrollo Maestro por Fases.md`.
+
 ---
 
 ## 🔒 4. Flujos Clave Detallados (Para Implementación de Código)

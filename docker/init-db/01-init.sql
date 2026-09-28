@@ -192,14 +192,26 @@ BEGIN
         'property_id UUID NOT NULL REFERENCES ' || quote_ident(v_schema_name) || '.properties(id) ON DELETE CASCADE, ' ||
         'first_name VARCHAR(100) NOT NULL, ' ||
         'last_name VARCHAR(100) NOT NULL, ' ||
-        'email VARCHAR(150) UNIQUE NOT NULL, ' ||
+        'email VARCHAR(150) UNIQUE, ' ||
         'phone VARCHAR(50), ' ||
         'role VARCHAR(32) NOT NULL DEFAULT ''OWNER'', ' || -- OWNER, TENANT, FAMILY_MEMBER
+        'access_totp_secret VARCHAR(64) NOT NULL DEFAULT encode(gen_random_bytes(20), ''hex''), ' ||
+        'last_access_used_step BIGINT, ' ||
         'is_primary BOOLEAN NOT NULL DEFAULT true, ' ||
         'password_hash VARCHAR(255), ' ||
+        'must_change_password BOOLEAN NOT NULL DEFAULT true, ' ||
         'is_active BOOLEAN NOT NULL DEFAULT true, ' ||
         'created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), ' ||
         'updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()' ||
+    ')';
+
+    EXECUTE 'CREATE TABLE IF NOT EXISTS ' || quote_ident(v_schema_name) || '.resident_invitations (' ||
+        'id UUID PRIMARY KEY DEFAULT gen_random_uuid(), ' ||
+        'resident_id UUID NOT NULL REFERENCES ' || quote_ident(v_schema_name) || '.residents(id) ON DELETE CASCADE, ' ||
+        'token_hash VARCHAR(128) UNIQUE NOT NULL, ' ||
+        'expires_at TIMESTAMPTZ NOT NULL, ' ||
+        'used_at TIMESTAMPTZ, revoked_at TIMESTAMPTZ, created_by UUID, ' ||
+        'created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()' ||
     ')';
 
     -- 5. Vehicles table
@@ -236,6 +248,8 @@ BEGIN
         'valid_from TIMESTAMPTZ NOT NULL, ' ||
         'valid_until TIMESTAMPTZ NOT NULL, ' ||
         'totp_secret VARCHAR(64) NOT NULL DEFAULT encode(gen_random_bytes(20), ''hex''), ' ||
+        'notes TEXT, ' ||
+        'last_used_step BIGINT, ' ||
         'is_active BOOLEAN NOT NULL DEFAULT true, ' ||
         'used_at TIMESTAMPTZ, ' ||
         'created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()' ||
@@ -249,6 +263,8 @@ BEGIN
         'property_id UUID REFERENCES ' || quote_ident(v_schema_name) || '.properties(id) ON DELETE SET NULL, ' ||
         'is_granted BOOLEAN NOT NULL, ' ||
         'rejection_reason VARCHAR(100), ' ||
+        'manual_reason TEXT, ' ||
+        'guard_user_id UUID, ' ||
         'gateway_uuid VARCHAR(64), ' ||
         'timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()' ||
     ')';
@@ -290,6 +306,8 @@ BEGIN
         'created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), ' ||
         'updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()' ||
     ')';
+
+    EXECUTE 'CREATE UNIQUE INDEX IF NOT EXISTS financial_charges_period_unique ON ' || quote_ident(v_schema_name) || '.financial_charges (property_id, fee_config_id, period_year, period_month) WHERE fee_config_id IS NOT NULL AND period_year IS NOT NULL AND period_month IS NOT NULL';
 
     -- 10. Financial Payments
     EXECUTE 'CREATE TABLE IF NOT EXISTS ' || quote_ident(v_schema_name) || '.financial_payments (' ||

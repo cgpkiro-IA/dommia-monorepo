@@ -75,7 +75,7 @@ export class ResidentsRepository {
       propertyId: string;
       firstName: string;
       lastName: string;
-      email: string;
+      email: string | null;
       phone: string | null;
       role: string;
       isPrimary: boolean;
@@ -110,7 +110,7 @@ export class ResidentsRepository {
       propertyId: string;
       firstName: string;
       lastName: string;
-      email: string;
+      email: string | null;
       phone: string | null;
       role: string;
       isPrimary: boolean;

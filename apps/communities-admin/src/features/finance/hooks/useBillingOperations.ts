@@ -21,7 +21,8 @@ const INITIAL_PAYMENT_FORM: PaymentFormData = {
   notes: '',
 };
 
-export function useBillingOperations() {
+export function useBillingOperations(authToken?: string) {
+  const authHeaders = authToken ? { Authorization: `Bearer ${authToken}` } : {};
   const [charges, setCharges] = useState<FinancialCharge[]>([]);
   const [payments, setPayments] = useState<FinancialPayment[]>([]);
   const [summary, setSummary] = useState<FinancialSummaryData | null>(null);
@@ -116,7 +117,7 @@ export function useBillingOperations() {
     try {
       const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/billing/generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(cutoffForm),
       });
 
@@ -162,7 +163,7 @@ export function useBillingOperations() {
     try {
       const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/payments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           propertyId: paymentForm.propertyId,
           chargeId: paymentForm.chargeId || undefined,
@@ -191,6 +192,37 @@ export function useBillingOperations() {
     } catch {
       setFormError('Error de red al intentar registrar el pago.');
       showToast('Error de red', 'error');
+      return false;
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const reviewPayment = async (
+    slug: string,
+    paymentId: string,
+    status: 'APPROVED' | 'REJECTED',
+    showToast: (msg: string, type?: 'success' | 'error') => void,
+  ) => {
+    setActionLoading(true);
+    try {
+      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/payments/${paymentId}/review`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({
+          status,
+          reviewedByName: 'Administración',
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(Array.isArray(json.message) ? json.message.join('. ') : json.message || 'No se pudo revisar el comprobante.');
+      }
+      showToast(json.message, status === 'APPROVED' ? 'success' : 'error');
+      await refreshAll(slug);
+      return true;
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'No se pudo revisar el comprobante.', 'error');
       return false;
     } finally {
       setActionLoading(false);
@@ -228,5 +260,6 @@ export function useBillingOperations() {
     openCashPaymentModal,
     handleGenerateCutoff,
     handleRecordPayment,
+    reviewPayment,
   };
 }

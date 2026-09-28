@@ -9,11 +9,18 @@ interface UseResidentFinanceOptions {
   onStatusChange?: (newStatus: 'UP_TO_DATE' | 'OVERDUE') => void;
 }
 
+interface SpeiSubmission {
+  amount: number;
+  reference: string;
+  receiptUrl: string;
+}
+
 export function useResidentFinance({ profile, onStatusChange }: UseResidentFinanceOptions) {
   const [financialStatus, setFinancialStatus] = useState<ResidentFinancialStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [latestPaymentAlert, setLatestPaymentAlert] = useState<ResidentPayment | null>(null);
+  const [stripeEnabled, setStripeEnabled] = useState(false);
 
   const onStatusChangeRef = useRef(onStatusChange);
   useEffect(() => {
@@ -55,6 +62,14 @@ export function useResidentFinance({ profile, onStatusChange }: UseResidentFinan
     const slug = current.communitySlug || 'valle_real';
 
     try {
+      const tenantRes = await fetch(`http://localhost:4000/api/v1/tenants/${slug}`);
+      if (tenantRes.ok) {
+        const tenantJson = await tenantRes.json();
+        const modules = tenantJson.data?.modules;
+        setStripeEnabled(Array.isArray(modules)
+          ? modules.some((module: string) => ['STRIPE', 'STRIPE_CONNECT', 'FINANCE_STRIPE'].includes(module))
+          : Boolean(modules && Object.entries(modules).some(([key, enabled]) => enabled && ['STRIPE', 'STRIPE_CONNECT', 'FINANCE_STRIPE'].includes(key))));
+      }
       const url = `http://localhost:4000/api/v1/tenants/${slug}/finance/properties/${propertyId}/status`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -87,6 +102,31 @@ export function useResidentFinance({ profile, onStatusChange }: UseResidentFinan
     }
   }, [getSeenPaymentIds]);
 
+  const submitSpeiPayment = useCallback(async (submission: SpeiSubmission) => {
+    const current = profileRef.current;
+    const propertyId = current.propertyId;
+    const slug = current.communitySlug;
+    if (!propertyId || !slug) return false;
+
+    const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/payments/spei-submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        propertyId,
+        amount: submission.amount,
+        reference: submission.reference,
+        receiptUrl: submission.receiptUrl,
+        payerName: current.name,
+      }),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(Array.isArray(json.message) ? json.message.join('. ') : json.message || 'No se pudo enviar el comprobante.');
+    }
+    await fetchStatus();
+    return true;
+  }, [fetchStatus]);
+
   useEffect(() => {
     setIsLoading(true);
     fetchStatus();
@@ -103,7 +143,9 @@ export function useResidentFinance({ profile, onStatusChange }: UseResidentFinan
     isLoading,
     error,
     refreshFinancialStatus: fetchStatus,
+    submitSpeiPayment,
     latestPaymentAlert,
+    stripeEnabled,
     dismissPaymentAlert: () => {
       if (latestPaymentAlert) {
         markPaymentAsSeen(latestPaymentAlert.id);

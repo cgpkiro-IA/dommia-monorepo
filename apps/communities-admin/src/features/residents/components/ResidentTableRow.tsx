@@ -9,6 +9,8 @@ interface ResidentTableRowProps {
   onOpenEdit: (r: Resident) => void;
   onDelete: (id: string, name: string) => void;
   onAddVehicleToResident: (propertyId: string, residentId: string) => void;
+  selected: boolean;
+  onSelect: (selected: boolean) => void;
 }
 
 export function ResidentTableRow({
@@ -16,9 +18,12 @@ export function ResidentTableRow({
   onOpenEdit,
   onDelete,
   onAddVehicleToResident,
+  selected,
+  onSelect,
 }: ResidentTableRowProps) {
   return (
     <tr className="hover:bg-slate-50/80 transition-colors">
+      <td className="py-3.5 px-5"><input type="checkbox" checked={selected} onChange={(event) => onSelect(event.target.checked)} aria-label={`Seleccionar a ${r.first_name} ${r.last_name}`} /></td>
       <td className="py-3.5 px-5">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-slate-800 to-indigo-900 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-sm">

@@ -1,0 +1,5 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+allowBuilds:
+  tesseract.js: set this to true or false

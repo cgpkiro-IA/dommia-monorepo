@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dommia_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dommia_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dommia_secret_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-dommia_master}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init-db:/docker-entrypoint-initdb.d:ro
+      - ./docker/migrations:/docker-entrypoint-migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dommia_admin} -d ${POSTGRES_DB:-dommia_master}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  emqx:
+    image: emqx/emqx:5.8.5
+    container_name: dommia_emqx
+    restart: always
+    environment:
+      EMQX_NAME: dommia_broker
+      EMQX_NODE_NAME: emqx@127.0.0.1
+      EMQX_DASHBOARD__DEFAULT_USERNAME: ${EMQX_USER:-dommia_admin}
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_PASSWORD:-dommia_mqtt_pass_2026}
+    ports:
+      - "1883:1883"    # MQTT TCP
+      - "8883:8883"    # MQTT SSL/TLS
+      - "8083:8083"    # MQTT WebSocket
+      - "8084:8084"    # MQTT WSS
+      - "18083:18083"  # EMQX Dashboard Web UI
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    healthcheck:
+      test: ["CMD", "/opt/emqx/bin/emqx", "ctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+    driver: local
+  emqx_data:
+    driver: local
+  emqx_log:
+    driver: local

@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output and local caches
+dist/
+.next/
+.next-dev/
+.turbo/
+.swc/
+build/
+*.tsbuildinfo
+*.sourcemap
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Tests and coverage
+coverage/
+*.snap
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS and IDE files
+.DS_Store
+.vscode/
+.idea/
+.agents/
+Skills/
+
+# Packages and generated binaries
+*.tgz
+apps/guard-pwa/eng.traineddata

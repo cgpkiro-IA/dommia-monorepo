@@ -4,6 +4,8 @@ import { useState, useMemo } from 'react';
 import { Building2, Layers, Cpu, Shield } from 'lucide-react';
 import { TierInfo } from '../../../types';
 
+import { trackEvent } from '../../../lib/analytics';
+
 interface UseCalculatorProps {
   initialHouses?: number;
   onSelectTier?: (tierName: string, houses: number, estimatedPrice: string) => void;
@@ -111,6 +113,12 @@ export function useCalculator({ initialHouses = 85, onSelectTier }: UseCalculato
     const priceStr = tierInfo.isCustom
       ? 'A la medida'
       : `$${tierInfo.priceMonthly.toLocaleString('es-MX')} MXN/mes`;
+
+    trackEvent('select_tier', {
+      tier_name: tierInfo.name,
+      houses_count: houses,
+      estimated_price: priceStr,
+    });
 
     if (onSelectTier) {
       onSelectTier(tierInfo.name, houses, priceStr);

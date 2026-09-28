@@ -4,6 +4,10 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'DOMMIA CRM - El Sistema Operativo de tu Comunidad',
   description: 'Panel de control y backoffice comercial del operador SaaS DOMMIA.',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({

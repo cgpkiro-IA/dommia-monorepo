@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: 'DOMMIA Resident | Tu Comunidad Conectada',
   description: 'PWA Offline-First para residentes y colonos de fraccionamientos operados por DOMMIA.',
   manifest: '/manifest.json',
+  robots: {
+    index: false,
+    follow: false,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

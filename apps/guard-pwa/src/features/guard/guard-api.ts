@@ -1,5 +1,6 @@
 import type { GuardSession } from './types';
 import { hasAccessModule } from './guard-utils';
+import { parseClientError } from '@dommia/ui';
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 export const GUARD_SESSION_KEY = 'dommia_guard_session';
@@ -10,7 +11,8 @@ export async function guardApiRequest<T>(path: string, token: string, init: Requ
   const response = await fetch(`${API_BASE}${path}`, { ...init, headers, cache: init.cache || 'no-store' });
   const body = await response.json().catch(() => null);
   if (!response.ok || !body?.success) {
-    throw new Error(body?.message || 'No se pudo completar la operación.');
+    const errorState = parseClientError(body || { status: response.status }, 'No se pudo completar la operación en caseta.');
+    throw new Error(errorState.description);
   }
   return body.data as T;
 }

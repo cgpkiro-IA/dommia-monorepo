@@ -15,6 +15,11 @@ export class GuardOperationsService {
     return this.repository.createIncident(slug, actorId, dto);
   }
 
+  async createPanicAlert(slug: string, actorId: string, dto: { panicType: string; description?: string; propertyAddress?: string; vehiclePlates?: string }) {
+    await this.accessService.assertAccessEnabled(slug);
+    return this.repository.createPanicAlert(slug, actorId, dto);
+  }
+
   async listIncidents(slug: string, status?: string) {
     await this.accessService.assertAccessEnabled(slug);
     const normalized = status?.toUpperCase();

@@ -7,6 +7,7 @@ import { useGuardDeliveries } from '../hooks/useGuardDeliveries';
 import { useGuardLookup } from '../hooks/useGuardLookup';
 import { useGuardOperations } from '../hooks/useGuardOperations';
 import { useGuardServices } from '../hooks/useGuardServices';
+import { useGuardConsigns } from '../hooks/useGuardConsigns';
 import { GuardAccessResult } from './GuardAccessResult';
 import { GuardDeliveryPanel } from './GuardDeliveryPanel';
 import { GuardHistoryPanel } from './GuardHistoryPanel';
@@ -14,6 +15,8 @@ import { GuardIncidentPanel } from './GuardIncidentPanel';
 import { GuardLookupPanel } from './GuardLookupPanel';
 import { GuardQrScannerPanel } from './GuardQrScannerPanel';
 import { GuardServicePanel } from './GuardServicePanel';
+import { GuardConsignsPanel } from './GuardConsignsPanel';
+import { PanicButtonModal } from './PanicButtonModal';
 import { GuardWorkspaceHeader, type GuardModule } from './GuardWorkspaceHeader';
 import { ManualVisitPanel } from './ManualVisitPanel';
 import { Bike, Camera } from 'lucide-react';
@@ -28,12 +31,14 @@ export function GuardWorkspace({ session, isOnline, onLogout }: GuardWorkspacePr
   const [activeModule, setActiveModule] = useState<GuardModule>('VISITS');
   const [visitsMode, setVisitsMode] = useState<'STANDARD' | 'SERVICES'>('STANDARD');
   const [tenantCopied, setTenantCopied] = useState(false);
+  const [isPanicModalOpen, setIsPanicModalOpen] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const access = useGuardAccess(session, isOnline);
   const lookup = useGuardLookup(session, isOnline);
   const deliveries = useGuardDeliveries(session, isOnline);
   const operations = useGuardOperations(session, isOnline);
   const services = useGuardServices(session, isOnline);
+  const consigns = useGuardConsigns(session, isOnline);
 
   useEffect(() => {
     if (access.result) {
@@ -71,10 +76,13 @@ export function GuardWorkspace({ session, isOnline, onLogout }: GuardWorkspacePr
         session={session}
         tenantCopied={tenantCopied}
         activeModule={activeModule}
-        activeServicesCount={services.activeServices.length}
+        activeConsignsCount={consigns.activeConsignsCount}
+        unreadConsignsCount={consigns.unreadConsignsCount}
+        openIncidentsCount={operations.openIncidentsCount}
         onCopyTenantId={() => void handleCopyTenantId()}
         onLogout={handleLogout}
         onModuleChange={handleModuleChange}
+        onOpenPanic={() => setIsPanicModalOpen(true)}
       />
 
       {activeModule === 'VISITS' && (
@@ -234,42 +242,6 @@ export function GuardWorkspace({ session, isOnline, onLogout }: GuardWorkspacePr
         </div>
       )}
 
-      {activeModule === 'SERVICES' && (
-        <GuardServicePanel
-          isOnline={isOnline}
-          serviceType={services.serviceType}
-          onServiceTypeChange={services.setServiceType}
-          customServiceName={services.customServiceName}
-          onCustomServiceNameChange={services.setCustomServiceName}
-          supplierName={services.supplierName}
-          onSupplierNameChange={services.setSupplierName}
-          vehiclePlates={services.vehiclePlates}
-          onVehiclePlatesChange={services.setVehiclePlates}
-          destinationType={services.destinationType}
-          onDestinationTypeChange={services.setDestinationType}
-          destinations={services.destinations}
-          onAddDestination={services.addDestination}
-          onRemoveDestination={services.removeDestination}
-          notes={services.notes}
-          onNotesChange={services.setNotes}
-          searchQuery={services.searchQuery}
-          onSearchQueryChange={services.setSearchQuery}
-          searchResults={services.searchResults}
-          searchBusy={services.searchBusy}
-          activeServices={services.activeServices}
-          loadingServices={services.loadingServices}
-          selectedActiveServiceId={services.selectedActiveServiceId}
-          onSelectActiveService={services.setSelectedActiveServiceId}
-          submitting={services.submitting}
-          exitingId={services.exitingId}
-          message={services.message}
-          error={services.error}
-          onSubmit={services.handleCreateService}
-          onRegisterExit={services.handleRegisterExit}
-          onRefreshServices={services.loadActiveServices}
-        />
-      )}
-
       {activeModule === 'INCIDENTS' && <GuardIncidentPanel
         isOnline={isOnline}
         type={operations.incidentType}
@@ -287,6 +259,14 @@ export function GuardWorkspace({ session, isOnline, onLogout }: GuardWorkspacePr
         error={operations.incidentError}
         onSubmit={operations.reportIncident}
       />}
+
+      {activeModule === 'CONSIGNS' && (
+        <GuardConsignsPanel
+          tenantSlug={session.tenantSlug}
+          token={session.token}
+          isOnline={isOnline}
+        />
+      )}
 
       {activeModule === 'DELIVERIES' && <GuardDeliveryPanel
         isOnline={isOnline}
@@ -318,6 +298,18 @@ export function GuardWorkspace({ session, isOnline, onLogout }: GuardWorkspacePr
         onReceive={deliveries.handleReceiveDelivery}
         onCollect={deliveries.handleCollectDelivery}
       />}
+
+      <PanicButtonModal
+        isOpen={isPanicModalOpen}
+        onClose={() => setIsPanicModalOpen(false)}
+        tenantSlug={session.tenantSlug}
+        token={session.token}
+        isOnline={isOnline}
+        onAlertDispatched={() => {
+          // Si el guardia estaba en otra pestaña, podemos refrescar
+        }}
+      />
+
       <footer className="guard-footer"><span>DOMMIA GUARD</span><span>Validación en tiempo real</span></footer>
     </section>
   );

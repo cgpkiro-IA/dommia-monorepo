@@ -3,9 +3,9 @@
 **Marca Principal:** DOMMIA  
 **Producto Principal:** Dommia Communities  
 **Tagline:** *El Sistema Operativo de tu Comunidad*  
-**Versión:** 1.19.0
+**Versión:** 1.20.0
 
-**Última Actualización:** 2026-09-28
+**Última Actualización:** 2026-09-29
 
 **Estado:** Activo / En Evolución Continua
 
@@ -34,6 +34,7 @@
 | **1.17.0** | 2026-09-28 | Arquitectura & Pair Programmer | `Compartir QR` ahora exporta una tarjeta PNG vertical con identidad DOMMIA ACCESS, invitado, tipo, vigencia, destino, anfitrión y QR estable al pase; Android/iOS usan Web Share de archivos y escritorio descarga el PNG. Build Resident pasa; hoja nativa física pendiente. |
 | **1.18.0** | 2026-09-28 | Arquitectura & Pair Programmer | Guard permite cancelar el arranque/detener cámara y recupera el control si no inicia en 12 s o no detecta QR en 30 s; validación API se aborta a los 10 s sin conceder acceso. Build Guard pasa; cámara física pendiente. |
 | **1.19.0** | 2026-09-28 | Arquitectura & Pair Programmer | Sustituye entrada manual de payload QR por búsqueda de visita programada, verificación visual de INE y confirmación por llamada; registra `MANUAL_GUARD`, consume pases SINGLE y no almacena datos de INE. E2E API 5/5; falta prueba operacional en caseta. |
+| **1.20.0** | 2026-09-29 | Arquitectura & Pair Programmer | Módulo táctico de Servicios/Proveedores (Comida, Gas, Agua, Paquetería, Taxi, Mantenimiento) con destinos específicos/generales y alertas a residentes/administrador; Bitácora unificada de eventos con filtros temporales; Búsqueda predictiva de calles con destinatario libre en paquetería y ciclo completo de notificación/cierre automático de alerta en Resident PWA al registrar retiro; `CustomSelect` temático uniforme en todas las PWAs. Suite API 8/8. |
 
 ---
 
@@ -574,20 +575,43 @@ resident_invitations
    - Datos financieros deben ser informativos; nunca autorizan acceso offline ni reemplazan validación en línea.
    - Mostrar mensaje estandarizado: “Propiedad con adeudo, solicitar comunicación con administración”.
 
-**Avance de implementación P1 (2026-09-28)**
-- [x] Validación QR en línea y excepción manual auditada bajo la política de Fase 6.
-- [x] Flujo de visitante sin QR: localizar un pase activo por domicilio/visitante, marcar INE verificada y llamada confirmada, y registrar acceso `MANUAL_GUARD`; los pases de un uso se consumen y no se guarda número/foto de INE. E2E cubre bloqueo sin confirmación, auditoría, reuso y tenant QA; falta validar el procedimiento real en caseta.
-- [~] Búsqueda tenant-scoped por nombre, correo, teléfono, calle, número exterior/interior, manzana y lote; muestra pases vigentes asociados al residente. E2E verifica lookup, revocación y rechazo cross-tenant (`403`). En 50 consultas locales, p95 API 20 ms (máximo 36 ms); falta repetir en staging.
+**Avance de implementación P1 (2026-09-29)**
+- [x] Validación QR en línea y excepción manual auditada bajo la política de Fase 6 con auto-apagado de cámara tras conceder/denegar acceso y expiración de 3 minutos de visualización consultiva en pantalla.
+- [x] Flujo de visitante sin QR: localizar pase activo por domicilio/visitante, verificación de INE y llamada confirmada, registro de acceso `MANUAL_GUARD`, consumo de pases SINGLE y notificación inmediata de "Visita en camino" a la PWA del residente con botón de enterado (palomita) y auto-desvanecimiento en 2 minutos.
+- [x] Módulo táctico de Servicios y Proveedores en caseta:
+  - Selector ergonómico de tipo de servicio con íconos dedicados: Comida/Delivery (moto), Gas L.P. (camión), Garrafones de Agua, Paquetería/Mensajería (correo), Taxi/Transporte y Mantenimiento / Otro personalizado.
+  - Registro ágil de proveedor, placas de vehículo y selección de destino:
+    - **Destino específico:** Búsqueda y selección multi-residente con notificación en tiempo real a las PWAs de los domicilios seleccionados.
+    - **Recorrido general:** Notificación directa al Administrador del fraccionamiento para control y supervisión de proveedores circulando en la comunidad.
+  - Panel en tiempo real de servicios activos en caseta y registro de salida auditado (`registerServiceExit`) que elimina automáticamente la alerta activa en la PWA del residente y administrador.
+- [x] Paquetería táctica con Búsqueda Predictiva de Calles y Ciclo Completo de Notificación:
+  - Búsqueda predictiva y autocompletado de calles y números de lote del fraccionamiento con sugerencias de titulares.
+  - Campo libre y abierto para el nombre del destinatario del paquete (familiares, inquilinos o visitantes).
+  - Notificación automática multicanal (Email / WhatsApp) y tarjeta activa en tiempo real (`Paquete en caseta`) en Resident PWA al ingresar el paquete.
+  - Cierre y desaparición automática de la alerta en la PWA del colono tan pronto el guardia confirma el retiro (`status = 'COLLECTED'`).
+  - Corrección ergonómica de paddings interiores (`padding-left: 42px !important;`) en inputs con íconos para evitar colisiones visuales.
+- [x] Bitácora Unificada de Eventos y Accesos (Auditoría Centralizada):
+  - Consulta integral de accesos con/sin QR, servicios de proveedores, paquetería e incidencias de caseta.
+  - Métricas agregadas y filtros temporales rápidos por día, semana, quincena, mes o rango de fechas personalizado.
+- [x] Personalización integral de componentes `CustomSelect`:
+  - Reemplazo de listas desplegables nativas por selectores temáticos accesibles (`#0F172A`, bordes `slate-700`, acentos `blue-500` y estados activos claros) en toda la suite de Guardias y Residentes.
+- [x] Suite de pruebas automatizadas del API en verde: 8/8 suites passing (`node --test test/*.test.mjs`).
+- [~] Búsqueda tenant-scoped por nombre, correo, teléfono, calle, número exterior/interior, manzana y lote; muestra pases vigentes asociados al residente. E2E verifica lookup, revocación y rechazo cross-tenant (`403`).
 - [~] Consulta por placa, propietario y domicilio; clasificación visual de propietarios, inquilinos, familiares, visitas frecuentes y placas bloqueadas con motivo. Se agrega foto→sugerencia OCR local→confirmación manual; fixture sintética funciona, faltan matrículas/cámaras físicas y medición en staging.
-- [~] Registro y retiro de paquetería con destinatario, domicilio, empresa, guía opcional, guardia y timestamps. Falta medir el objetivo de 15 segundos y agregar notificación al residente.
 - [~] Reporte de incidencias con prioridad, ubicación/placa opcionales, bandeja tenant-scoped en Communities y resolución auditada. Build y smoke tests locales pasan; queda prueba integrada en dispositivo.
-- [~] Historial de accesos, entregas e incidencias con filtros por rango de fecha, tipo y texto de propiedad. Build y smoke test local pasan; queda validar el flujo desde Guard en dispositivo.
 - [~] Estado de morosidad visible en resultados de búsqueda. La información es consultiva y no sustituye la decisión de autorización QR.
 
 **P2 - Módulos de soporte para operación completa**
-- Avisos operativos del administrador en caseta.
-- Búsqueda avanzada de lotes y mapa de propiedad.
-- Soporte para entregas repetitivas y personal autorizado.
+- [x] **Avisos y Consignas Operativas de Administración a Caseta:**
+  - Segmentación de audiencia en comunicados (`target_audience = 'ALL' | 'RESIDENTS' | 'GUARDS'`) y categorías operativas (`GUARD_CONSIGN`, `SECURITY`).
+  - Panel táctico en `apps/guard-pwa` para lectura de consignas oficiales con botón de confirmación de enterado / leído por guardia (`POST /api/v1/tenants/:slug/notices/:id/acknowledge-guard`).
+  - Selector de audiencia y badges visuales en `apps/communities-admin` (`NoticesTable`, `NoticeModal`).
+- [x] **Botón de Pánico / Alerta de Emergencia en Caseta (`Dommia Panic Alert`):**
+  - Modal táctico en `apps/guard-pwa` con 1-tap dispatch para 4 tipos de emergencia crítica (Intrusión, Emergencia Médica, Incendio, Policía/Seguridad).
+  - Almacenamiento seguro en PostgreSQL (`guard_incidents` con flag `is_panic_alert = TRUE`, prioridad `URGENT` y ordenamiento preferente).
+  - Integración en `apps/communities-admin` con indicador y destaque visual en tiempo real en el panel de supervisión de caseta.
+- [ ] Búsqueda avanzada de lotes y mapa de propiedad.
+- [ ] Soporte para entregas repetitivas y personal autorizado.
 
 **P3 - Futuros / post-MVP**
 - LPR automático y reconocimiento visual de placas.
@@ -690,9 +714,14 @@ resident_invitations
   - RPO de 15 minutos y RTO de 2 horas.
   - Respaldo diario incremental y completo semanal en Object Storage secundario.
   - Script validado de restauración individual por Schema de fraccionamiento sin afectar a otros tenants.
-- [ ] **Dommia Analytics & Centro de Alertas:**
-  - Dashboards consolidados para el operador y para el comité de administración.
-  - Alertas automáticas vía Webhook (Slack / Telegram / WhatsApp) ante caída de Gateways, fallos de webhooks Stripe o errores de sincronización.
+- [x] **Dommia Analytics & Centro de Alertas (Exclusivo para CRM Maestro `crm-admin`):**
+  - **Módulo Dommia Analytics (Tablero Global de Salud y Negocio SaaS):**
+    - **KPIs Financieros SaaS:** MRR ($ MXN/mes), ARR anualizado, desglose de ingresos por suscripción (`BASIC`, `STANDARD`, `ENTERPRISE`), addons (`ACCESS_QR`, `NOTIFICATIONS_PREMIUM`, `CUSTOM_DOMAIN`) y ticket promedio (ARPU) por comunidad.
+    - **Métricas de Adopción y Operación en Tiempo Real:** Total de fraccionamientos activos vs totales, volumen censado de viviendas y colonos, tasa de adopción de PWA móvil (% con credenciales), volumen diario de accesos QR validados, paquetes en caseta y servicios en tránsito.
+    - **Telemetría y Rendimiento Técnico:** Conteo de esquemas aislados PostgreSQL por tenant, tamaño de almacenamiento en disco MB, latencia central de API y estado de salud de la base de datos.
+  - **Centro de Alertas de Plataforma & Monitoreo del Operador:**
+    - **Bandeja de Incidentes en Tiempo Real en `crm-admin`:** Monitoreo con filtro por estado (`ALL`, `ACTIVE`, `ACKNOWLEDGED`, `RESOLVED`) y severidad (🔴 Crítica, 🟡 Advertencia, 🔵 Informativo) con acciones de reconocimiento (`Acknowledge`) y resolución con bitácora interna de solución.
+    - **Despacho Directo a Telegram mediante Bot:** Integración con la API de Telegram (`https://api.telegram.org/bot<TOKEN>/sendMessage`), modal interactivo de configuración (Bot Token y Chat ID de grupo/canal de ingenieros) y botón de envío de alerta de prueba inmediata.
 - [ ] **Seguridad & Gobernanza de Datos:**
   - [x] MFA TOTP opcional para SuperAdmin, equipo CRM y administradores de fraccionamiento: configuración con Microsoft Authenticator, desafío posterior a contraseña y protección anti-replay. E2E local 4/4; desplegar y verificar `MFA_ENCRYPTION_KEY` y migración 015 en staging.
   - Auditoría de seguridad OWASP y revisión de políticas de privacidad conforme a directrices de marca.

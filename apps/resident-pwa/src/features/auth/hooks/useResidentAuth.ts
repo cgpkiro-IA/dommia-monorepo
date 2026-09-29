@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ResidentProfile } from '../../../types';
+import { parseClientError } from '@dommia/ui';
 
 const API = 'http://localhost:4000/api/v1';
 
@@ -16,10 +17,11 @@ export function useResidentAuth(expectedTenantSlug?: string) {
       fetch(`${API}/tenants/${tenantSlug}`),
       fetch(`${API}/auth/resident/me`, { headers: { Authorization: `Bearer ${residentToken}` } }),
     ]);
-    const tenantJson = await tenantResponse.json();
-    const residentJson = await residentResponse.json();
-    if (!tenantResponse.ok || !tenantJson.success || !residentResponse.ok || !residentJson.success) {
-      throw new Error(residentJson.message || tenantJson.message || 'No se pudo cargar el perfil Resident.');
+    const tenantJson = await tenantResponse.json().catch(() => null);
+    const residentJson = await residentResponse.json().catch(() => null);
+    if (!tenantResponse.ok || !tenantJson?.success || !residentResponse.ok || !residentJson?.success) {
+      const err = parseClientError(residentJson || tenantJson, 'No se pudo cargar el perfil del residente.');
+      throw new Error(err.description);
     }
     const fullResident = residentJson.data?.resident;
     const profileData: ResidentProfile = {
@@ -83,8 +85,11 @@ export function useResidentAuth(expectedTenantSlug?: string) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier, password, tenantSlug }),
     });
-    const json = await response.json();
-    if (!response.ok || !json.success) throw new Error(json.message || 'No se pudo iniciar sesión.');
+    const json = await response.json().catch(() => null);
+    if (!response.ok || !json?.success) {
+      const err = parseClientError(json || { status: response.status }, 'No fue posible iniciar sesión. Verifica tus credenciales.');
+      throw new Error(err.description);
+    }
     const profileData = await loadProfile(json.data.token, tenantSlug);
     const session = { token: json.data.token, profile: profileData, mustChangePassword: json.data.mustChangePassword };
     localStorage.setItem('dommia_resident_session', JSON.stringify(session));
@@ -98,8 +103,11 @@ export function useResidentAuth(expectedTenantSlug?: string) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: activationToken, password }),
     });
-    const json = await response.json();
-    if (!response.ok || !json.success) throw new Error(json.message || 'No se pudo activar la cuenta.');
+    const json = await response.json().catch(() => null);
+    if (!response.ok || !json?.success) {
+      const err = parseClientError(json || { status: response.status }, 'No se pudo activar la cuenta.');
+      throw new Error(err.description);
+    }
   }, []);
 
   const changePassword = useCallback(async (identifier: string, tenantSlug: string, currentPassword: string, newPassword: string) => {
@@ -107,8 +115,11 @@ export function useResidentAuth(expectedTenantSlug?: string) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier, tenantSlug, currentPassword, newPassword }),
     });
-    const json = await response.json();
-    if (!response.ok || !json.success) throw new Error(json.message || 'No se pudo cambiar la contraseña.');
+    const json = await response.json().catch(() => null);
+    if (!response.ok || !json?.success) {
+      const err = parseClientError(json || { status: response.status }, 'No se pudo cambiar la contraseña.');
+      throw new Error(err.description);
+    }
     setMustChangePassword(false);
     try {
       const session = JSON.parse(localStorage.getItem('dommia_resident_session') || '{}');
@@ -121,8 +132,11 @@ export function useResidentAuth(expectedTenantSlug?: string) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier, tenantSlug }),
     });
-    const json = await response.json();
-    if (!response.ok || !json.success) throw new Error(json.message || 'No se pudo solicitar la recuperación.');
+    const json = await response.json().catch(() => null);
+    if (!response.ok || !json?.success) {
+      const err = parseClientError(json || { status: response.status }, 'No se pudo solicitar la recuperación de contraseña.');
+      throw new Error(err.description);
+    }
   }, []);
 
   const resetPassword = useCallback(async (resetToken: string, newPassword: string) => {
@@ -130,8 +144,11 @@ export function useResidentAuth(expectedTenantSlug?: string) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: resetToken, newPassword }),
     });
-    const json = await response.json();
-    if (!response.ok || !json.success) throw new Error(json.message || 'No se pudo restablecer la contraseña.');
+    const json = await response.json().catch(() => null);
+    if (!response.ok || !json?.success) {
+      const err = parseClientError(json || { status: response.status }, 'No se pudo restablecer la contraseña.');
+      throw new Error(err.description);
+    }
   }, []);
 
   const logout = useCallback(() => {

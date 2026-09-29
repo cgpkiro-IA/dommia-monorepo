@@ -20,6 +20,20 @@ export function useGuardOperations(session: GuardSession | null, isOnline: boole
   const [historyProperty, setHistoryProperty] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
+  const [openIncidentsCount, setOpenIncidentsCount] = useState(0);
+
+  const loadOpenIncidents = useCallback(async () => {
+    if (!session || !isOnline) return;
+    try {
+      const incidents = await guardApiRequest<any[]>(
+        `/tenants/${encodeURIComponent(session.tenantSlug)}/guard/incidents?status=OPEN`,
+        session.token,
+      );
+      setOpenIncidentsCount(Array.isArray(incidents) ? incidents.length : 0);
+    } catch {
+      // Ignorar error transitorio
+    }
+  }, [isOnline, session]);
 
   const loadHistory = useCallback(async () => {
     if (!session) return;
@@ -48,8 +62,15 @@ export function useGuardOperations(session: GuardSession | null, isOnline: boole
   }, [historyFrom, historyProperty, historyTo, historyType, isOnline, session]);
 
   useEffect(() => {
-    if (session) void loadHistory();
-  }, [loadHistory, session]);
+    if (session) {
+      void loadHistory();
+      void loadOpenIncidents();
+      const interval = window.setInterval(() => {
+        void loadOpenIncidents();
+      }, 25000);
+      return () => window.clearInterval(interval);
+    }
+  }, [loadHistory, loadOpenIncidents, session]);
 
   const reportIncident = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -112,5 +133,7 @@ export function useGuardOperations(session: GuardSession | null, isOnline: boole
     historyLoading,
     historyError,
     loadHistory,
+    openIncidentsCount,
+    loadOpenIncidents,
   };
 }

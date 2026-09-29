@@ -58,6 +58,25 @@ export class GuardHistoryQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit = 50;
+  @Max(200)
+  limit?: number;
+}
+
+export class CreatePanicAlertDto {
+  @IsIn(['MEDICAL', 'FIRE', 'INTRUSION', 'POLICE', 'OTHER'])
+  panicType!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  propertyAddress?: string;
+
+  @IsOptional()
+  @Matches(/^[a-zA-Z0-9 -]{4,15}$/)
+  vehiclePlates?: string;
 }

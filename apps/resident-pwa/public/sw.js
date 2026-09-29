@@ -92,3 +92,51 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+
+// Push Event: Permite mostrar notificaciones nativas en segundo plano y pantalla bloqueada
+self.addEventListener('push', (event) => {
+  let data = {};
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch {
+      data = { title: 'DOMMIA Resident', body: event.data.text() };
+    }
+  }
+
+  const title = data.title || 'DOMMIA Resident';
+  const options = {
+    body: data.body || 'Tienes un nuevo aviso de tu comunidad.',
+    icon: data.icon || '/icons/icon-192x192.svg',
+    badge: data.badge || '/icons/icon-192x192.svg',
+    vibrate: [200, 100, 200],
+    data: {
+      url: data.url || '/',
+      ...data.data,
+    },
+    tag: data.tag || 'dommia-resident-alert',
+    renotify: true,
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Notification Click Event: Abre la PWA o enfoca la ventana existente al tocar la notificación
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});

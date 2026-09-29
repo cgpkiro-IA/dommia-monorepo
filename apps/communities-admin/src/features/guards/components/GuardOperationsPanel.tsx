@@ -14,6 +14,9 @@ type Incident = {
   property_address?: string;
   vehicle_plates?: string;
   status: 'OPEN' | 'RESOLVED';
+  is_panic_alert?: boolean;
+  panic_type?: string;
+  resolution_notes?: string;
   created_by_name?: string;
   created_at: string;
   resolved_by_name?: string;
@@ -43,6 +46,7 @@ const serviceConfig: Record<GuardServiceType, { label: string; icon: any; color:
 };
 
 const incidentLabels: Record<string, string> = {
+  PANIC_ALERT: '🚨 Botón de Pánico',
   SECURITY: 'Seguridad',
   SUSPICIOUS_VEHICLE: 'Vehículo sospechoso',
   MEDICAL: 'Emergencia médica',
@@ -55,7 +59,7 @@ const priorityLabels: Record<Incident['priority'], string> = {
   LOW: 'Baja',
   MEDIUM: 'Media',
   HIGH: 'Alta',
-  URGENT: 'Urgente',
+  URGENT: '🚨 Urgente / Pánico',
 };
 
 export function GuardOperationsPanel({ tenantSlug, authToken }: GuardOperationsPanelProps) {
@@ -267,19 +271,65 @@ export function GuardOperationsPanel({ tenantSlug, authToken }: GuardOperationsP
           </div>
           {loading ? <p className="p-5 text-sm text-slate-500">Cargando incidencias...</p> : incidents.length === 0 ? <p className="p-5 text-sm text-slate-500">No hay incidencias en esta vista.</p> : (
             <ul className="divide-y divide-slate-100">
-              {incidents.map((incident) => (
-                <li key={incident.id} className="grid gap-2 p-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-bold text-slate-900">{incidentLabels[incident.incident_type] || incident.incident_type}</span>
-                    <span className={`rounded px-2 py-1 text-xs font-bold ${incident.priority === 'URGENT' || incident.priority === 'HIGH' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`}>{priorityLabels[incident.priority]}</span>
-                    <span className="text-xs text-slate-500">{new Date(incident.created_at).toLocaleString('es-MX')}</span>
-                  </div>
-                  <p className="m-0 text-sm leading-5 text-slate-700">{incident.description}</p>
-                  <p className="m-0 text-xs text-slate-500">{incident.property_address || 'Ubicación no indicada'}{incident.vehicle_plates ? ` · Placas ${incident.vehicle_plates}` : ''} · {incident.created_by_name || 'Guardia'}</p>
-                  {!showResolved && <button type="button" onClick={() => void handleResolve(incident.id)} disabled={resolvingId === incident.id} className="inline-flex min-h-10 w-fit items-center gap-2 rounded-md bg-emerald-700 px-3 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50"><Check className="h-4 w-4" />{resolvingId === incident.id ? 'Guardando...' : 'Marcar resuelta'}</button>}
-                  {showResolved && <p className="m-0 text-xs text-emerald-700">Resuelta por {incident.resolved_by_name || 'administración'}</p>}
-                </li>
-              ))}
+              {incidents.map((incident) => {
+                const isPanic = incident.is_panic_alert || incident.incident_type === 'PANIC_ALERT';
+                return (
+                  <li
+                    key={incident.id}
+                    className={`grid gap-2 p-4 transition-colors ${
+                      isPanic && incident.status === 'OPEN'
+                        ? 'bg-rose-50/80 border-l-4 border-l-rose-600'
+                        : ''
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      {isPanic && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-600 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-xs animate-pulse">
+                          🚨 Pánico
+                        </span>
+                      )}
+                      <span className="text-sm font-bold text-slate-900">
+                        {incidentLabels[incident.incident_type] || incident.incident_type}
+                      </span>
+                      <span
+                        className={`rounded px-2 py-1 text-xs font-bold ${
+                          incident.priority === 'URGENT' || incident.priority === 'HIGH' || isPanic
+                            ? 'bg-rose-100 text-rose-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {priorityLabels[incident.priority]}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {new Date(incident.created_at).toLocaleString('es-MX')}
+                      </span>
+                    </div>
+                    <p className="m-0 text-sm font-medium leading-5 text-slate-800">{incident.description}</p>
+                    <p className="m-0 text-xs text-slate-500">
+                      {incident.property_address || 'Ubicación no indicada'}
+                      {incident.vehicle_plates ? ` · Placas ${incident.vehicle_plates}` : ''} · Emisor: {incident.created_by_name || 'Guardia de Caseta'}
+                    </p>
+                    {!showResolved && (
+                      <button
+                        type="button"
+                        onClick={() => void handleResolve(incident.id)}
+                        disabled={resolvingId === incident.id}
+                        className={`inline-flex min-h-10 w-fit items-center gap-2 rounded-md px-3 text-xs font-bold text-white transition-colors disabled:opacity-50 cursor-pointer ${
+                          isPanic
+                            ? 'bg-rose-700 hover:bg-rose-800'
+                            : 'bg-emerald-700 hover:bg-emerald-800'
+                        }`}
+                      >
+                        <Check className="h-4 w-4" />
+                        {resolvingId === incident.id ? 'Guardando...' : isPanic ? 'Atender y Resolver Pánico' : 'Marcar resuelta'}
+                      </button>
+                    )}
+                    {showResolved && (
+                      <p className="m-0 text-xs text-emerald-700">Resuelta por {incident.resolved_by_name || 'administración'}</p>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

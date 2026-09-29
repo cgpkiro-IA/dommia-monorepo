@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { UserSession, TenantMetadata } from '@/types';
+import { parseClientError } from '@dommia/ui';
 
 export function useAuth() {
   const [userSession, setUserSession] = useState<UserSession | null>(null);
   const [activeTenant, setActiveTenant] = useState<TenantMetadata | null>(null);
+
   const [showWorkspacePicker, setShowWorkspacePicker] = useState(false);
   const [mfaChallengeToken, setMfaChallengeToken] = useState<string | null>(null);
 
@@ -57,10 +59,10 @@ export function useAuth() {
           acceptSession(result.data as UserSession);
         }
       } else {
-        setLoginError(result.message || 'Error de autenticación. Verifica tu correo y contraseña.');
+        setLoginError(parseClientError(result, 'Error de autenticación. Verifica tu correo y contraseña.').description);
       }
-    } catch {
-      setLoginError('No se pudo conectar con el servidor de autenticación de Dommia.');
+    } catch (err) {
+      setLoginError(parseClientError(err, 'No se pudo conectar con el servidor de autenticación de Dommia.').description);
     } finally {
       setLoginLoading(false);
     }

@@ -99,8 +99,9 @@ export interface NotificationToast {
   message: string;
 }
 
-export type NoticeCategory = 'URGENT' | 'MAINTENANCE' | 'ASSEMBLY' | 'GENERAL';
+export type NoticeCategory = 'URGENT' | 'MAINTENANCE' | 'ASSEMBLY' | 'GENERAL' | 'GUARD_CONSIGN' | 'SECURITY';
 export type NoticePriority = 'HIGH' | 'MEDIUM' | 'LOW';
+export type NoticeAudience = 'ALL' | 'RESIDENTS' | 'GUARDS';
 
 export interface CommunityNotice {
   id: string;
@@ -108,6 +109,9 @@ export interface CommunityNotice {
   content: string;
   category: NoticeCategory;
   priority: NoticePriority;
+  target_audience?: NoticeAudience;
+  acknowledged_guards?: Array<{ guardId: string; guardName: string; acknowledgedAt: string }>;
+  expires_at?: string | null;
   author_name: string;
   is_pinned: boolean;
   is_published: boolean;
@@ -121,6 +125,7 @@ export interface NoticeFormData {
   content: string;
   category: NoticeCategory;
   priority: NoticePriority;
+  target_audience: NoticeAudience;
   author_name: string;
   is_pinned: boolean;
   is_published: boolean;

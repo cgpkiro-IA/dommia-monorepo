@@ -15,6 +15,23 @@ export class GuardOperationsRepository {
     return result.rows[0];
   }
 
+  async createPanicAlert(slug: string, actorId: string, data: { panicType: string; description?: string; propertyAddress?: string; vehiclePlates?: string }) {
+    const description = data.description?.trim() || `Alerta de Pánico: Emergencia ${data.panicType} reportada desde Caseta de Seguridad.`;
+    const result = await this.db.queryTenant(slug, `
+      INSERT INTO guard_incidents (incident_type, priority, description, property_address, vehicle_plates, is_panic_alert, panic_type, created_by)
+      VALUES ($1, 'URGENT', $2, $3, $4, TRUE, $5, $6)
+      RETURNING *
+    `, [
+      data.panicType === 'MEDICAL' ? 'MEDICAL' : data.panicType === 'FIRE' ? 'FIRE' : 'SECURITY',
+      description,
+      data.propertyAddress?.trim() || null,
+      data.vehiclePlates?.trim().toUpperCase() || null,
+      data.panicType,
+      actorId,
+    ]);
+    return result.rows[0];
+  }
+
   async listIncidents(slug: string, status?: 'OPEN' | 'RESOLVED') {
     const result = await this.db.queryTenant(slug, `
       SELECT i.*, concat_ws(' ', created_user.first_name, created_user.last_name) AS created_by_name,
@@ -23,8 +40,10 @@ export class GuardOperationsRepository {
       LEFT JOIN public.users created_user ON created_user.id = i.created_by
       LEFT JOIN public.users resolved_user ON resolved_user.id = i.resolved_by
       ${status ? 'WHERE i.status = $1' : ''}
-      ORDER BY CASE i.priority WHEN 'URGENT' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END,
-               i.created_at DESC
+      ORDER BY 
+        CASE WHEN i.is_panic_alert AND i.status = 'OPEN' THEN 0 ELSE 1 END,
+        CASE i.priority WHEN 'URGENT' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END,
+        i.created_at DESC
       LIMIT 100
     `, status ? [status] : []);
     return result.rows;

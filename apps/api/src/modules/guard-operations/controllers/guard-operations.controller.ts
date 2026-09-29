@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AccessOperatorClaims, AccessOperatorGuard } from '../../access/guards/access-operator.guard';
 import { FinanceAdminGuard } from '../../auth/guards/finance-admin.guard';
-import { CreateGuardIncidentDto, CreateVehicleFlagDto, GuardHistoryQueryDto } from '../dto/guard-operations.dto';
+import { CreateGuardIncidentDto, CreatePanicAlertDto, CreateVehicleFlagDto, GuardHistoryQueryDto } from '../dto/guard-operations.dto';
 import { GuardOperationsService } from '../services/guard-operations.service';
 
 @Controller('tenants/:slug/guard')
@@ -16,6 +16,15 @@ export class GuardOperationsController {
     @Body() dto: CreateGuardIncidentDto,
   ) {
     return { success: true, data: await this.guardOperations.createIncident(slug, request.user.sub, dto) };
+  }
+
+  @Post('panic')
+  async createPanicAlert(
+    @Param('slug') slug: string,
+    @Req() request: { user: AccessOperatorClaims },
+    @Body() dto: CreatePanicAlertDto,
+  ) {
+    return { success: true, data: await this.guardOperations.createPanicAlert(slug, request.user.sub, dto) };
   }
 
   @Get('incidents')

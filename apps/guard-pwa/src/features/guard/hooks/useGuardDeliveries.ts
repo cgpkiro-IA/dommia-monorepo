@@ -1,8 +1,12 @@
-'use client';
-
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { guardApiRequest } from '../guard-api';
-import type { GuardDelivery, GuardSession } from '../types';
+import type { GuardDelivery, GuardLookupResult, GuardSession } from '../types';
+
+export interface AddressSuggestion {
+  propertyId: string;
+  propertyAddress: string;
+  residents: string[];
+}
 
 export function useGuardDeliveries(session: GuardSession | null, isOnline: boolean) {
   const [deliveries, setDeliveries] = useState<GuardDelivery[]>([]);
@@ -17,6 +21,12 @@ export function useGuardDeliveries(session: GuardSession | null, isOnline: boole
   const [deliveryMessage, setDeliveryMessage] = useState('');
   const [collectingDeliveryId, setCollectingDeliveryId] = useState<string | null>(null);
   const [collectedByName, setCollectedByName] = useState('');
+
+  // Predictive Address Search State
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [addressSearchBusy, setAddressSearchBusy] = useState(false);
+  const [showAddressDropdown, setShowAddressDropdown] = useState(false);
+  const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadDeliveries = useCallback(async (statusFilter: 'PENDING' | 'COLLECTED' = deliveryFilter) => {
     if (!session) return;
@@ -35,6 +45,65 @@ export function useGuardDeliveries(session: GuardSession | null, isOnline: boole
   useEffect(() => {
     if (session) void loadDeliveries();
   }, [loadDeliveries, session]);
+
+  // Predictive search when typing in deliveryAddress
+  const handleAddressChange = (value: string) => {
+    setDeliveryAddress(value);
+    setShowAddressDropdown(true);
+
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+    if (!value.trim() || value.trim().length < 2) {
+      setAddressSuggestions([]);
+      setAddressSearchBusy(false);
+      return;
+    }
+
+    searchTimerRef.current = setTimeout(async () => {
+      if (!session || !isOnline) return;
+      try {
+        setAddressSearchBusy(true);
+        const data = await guardApiRequest<GuardLookupResult>(
+          `/tenants/${encodeURIComponent(session.tenantSlug)}/access/lookup?query=${encodeURIComponent(value.trim())}`,
+          session.token,
+        );
+
+        // Group by unique property address
+        const propertyMap = new Map<string, AddressSuggestion>();
+
+        for (const r of data?.residents || []) {
+          const propId = r.propertyId || r.id;
+          const propAddress = r.propertyAddress || 'Domicilio no especificado';
+          const residentName = r.fullName || `${r.firstName || ''} ${r.lastName || ''}`.trim();
+
+          if (!propertyMap.has(propId)) {
+            propertyMap.set(propId, {
+              propertyId: propId,
+              propertyAddress: propAddress,
+              residents: residentName ? [residentName] : [],
+            });
+          } else if (residentName) {
+            const existing = propertyMap.get(propId)!;
+            if (!existing.residents.includes(residentName)) {
+              existing.residents.push(residentName);
+            }
+          }
+        }
+
+        setAddressSuggestions(Array.from(propertyMap.values()));
+      } catch {
+        setAddressSuggestions([]);
+      } finally {
+        setAddressSearchBusy(false);
+      }
+    }, 250);
+  };
+
+  const handleSelectAddressSuggestion = (suggestion: AddressSuggestion) => {
+    setDeliveryAddress(suggestion.propertyAddress);
+    setAddressSuggestions([]);
+    setShowAddressDropdown(false);
+  };
 
   const handleReceiveDelivery = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -63,6 +132,8 @@ export function useGuardDeliveries(session: GuardSession | null, isOnline: boole
       setDeliveryCarrier('');
       setDeliveryTrackingCode('');
       setDeliveryNotes('');
+      setAddressSuggestions([]);
+      setShowAddressDropdown(false);
       setDeliveryMessage('Paquete registrado en resguardo.');
       setDeliveryFilter('PENDING');
       await loadDeliveries('PENDING');
@@ -108,6 +179,12 @@ export function useGuardDeliveries(session: GuardSession | null, isOnline: boole
     setDeliveryRecipient,
     deliveryAddress,
     setDeliveryAddress,
+    handleAddressChange,
+    addressSuggestions,
+    addressSearchBusy,
+    showAddressDropdown,
+    setShowAddressDropdown,
+    handleSelectAddressSuggestion,
     deliveryCarrier,
     setDeliveryCarrier,
     deliveryTrackingCode,

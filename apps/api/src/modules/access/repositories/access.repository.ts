@@ -1,6 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
-import { CreateGuardUserDto, CreateVisitorInvitationDto } from '../dto/access.dto';
+import {
+  CreateGuardServiceDto,
+  CreateGuardUserDto,
+  CreateVisitorInvitationDto,
+  RegisterServiceExitDto,
+  UnifiedAuditLogItem,
+  UnifiedAuditLogQueryDto,
+  UnifiedAuditLogSummary,
+} from '../dto/access.dto';
 
 export interface AccessQrPayload {
   app: 'DOMMIA_ACCESS';
@@ -176,7 +184,7 @@ export class AccessRepository {
         await client.query(`
           UPDATE invitations
           SET last_used_step = $2,
-              used_at = CASE WHEN invitation_type = 'SINGLE' THEN NOW() ELSE used_at END,
+              used_at = NOW(),
               is_active = CASE WHEN invitation_type = 'SINGLE' THEN FALSE ELSE is_active END
           WHERE id = $1
         `, [subject.id, payload.step]);
@@ -196,12 +204,27 @@ export class AccessRepository {
                COALESCE((
                  SELECT json_agg(json_build_object(
                    'id', i.id, 'visitorName', i.visitor_name, 'passType', i.invitation_type,
-                   'validFrom', i.valid_from, 'validUntil', i.valid_until, 'notes', i.notes
-                 ) ORDER BY i.valid_until ASC)
-                 FROM invitations i
-                 WHERE i.resident_id = r.id AND i.is_active = TRUE
-                   AND i.valid_from <= NOW() AND i.valid_until > NOW()
-                   AND (i.invitation_type <> 'SINGLE' OR i.used_at IS NULL)
+                   'validFrom', i.valid_from, 'validUntil', i.valid_until, 'notes', i.notes,
+                   'usedAt', i.used_at,
+                   'status', CASE 
+                     WHEN i.invitation_type = 'SINGLE' AND i.used_at IS NOT NULL THEN 'USED'
+                     WHEN NOT i.is_active AND i.used_at IS NOT NULL THEN 'USED'
+                     WHEN NOT i.is_active THEN 'REVOKED'
+                     WHEN i.valid_until <= NOW() THEN 'EXPIRED'
+                     ELSE 'ACTIVE'
+                   END
+                 ) ORDER BY i.created_at DESC)
+                 FROM (
+                   SELECT * FROM invitations
+                   WHERE resident_id = r.id
+                     AND (
+                       (is_active = TRUE AND valid_until > NOW() AND (invitation_type <> 'SINGLE' OR used_at IS NULL))
+                       OR used_at >= NOW() - INTERVAL '7 days'
+                       OR (valid_until <= NOW() AND valid_until >= NOW() - INTERVAL '7 days')
+                     )
+                   ORDER BY created_at DESC
+                   LIMIT 10
+                 ) i
                ), '[]'::json) AS active_passes
         FROM residents r
         JOIN properties p ON p.id = r.property_id
@@ -274,7 +297,8 @@ export class AccessRepository {
         SELECT i.id, i.property_id, i.resident_id, i.visitor_name, i.invitation_type,
                i.valid_from, i.valid_until, i.is_active, i.used_at,
                p.street, p.exterior_number, p.interior_number, p.block, p.lot,
-               concat_ws(' ', r.first_name, r.last_name) AS host_name
+               concat_ws(' ', r.first_name, r.last_name) AS host_name,
+               r.email AS host_email, r.phone AS host_phone
         FROM invitations i
         JOIN properties p ON p.id = i.property_id
         JOIN residents r ON r.id = i.resident_id
@@ -293,11 +317,12 @@ export class AccessRepository {
         VALUES ('MANUAL_GUARD', $1, $2, TRUE, NULL, $3, $4)
       `, [invitation.id, invitation.property_id, 'VISITA_SIN_QR; INE_VERIFICADA; AUTORIZADA_POR_LLAMADA', guardId]);
 
-      if (invitation.invitation_type === 'SINGLE') {
-        await client.query(`
-          UPDATE invitations SET used_at = NOW(), is_active = FALSE WHERE id = $1
-        `, [invitation.id]);
-      }
+      await client.query(`
+        UPDATE invitations
+        SET used_at = NOW(),
+            is_active = CASE WHEN invitation_type = 'SINGLE' THEN FALSE ELSE is_active END
+        WHERE id = $1
+      `, [invitation.id]);
 
       return { kind: 'AUTHORIZED', invitation };
     });
@@ -336,5 +361,425 @@ export class AccessRepository {
       `, [invitation.id, step]);
       return { kind: 'AUTHORIZED', invitation };
     });
+  }
+
+  async createGuardService(slug: string, guardId: string, dto: CreateGuardServiceDto) {
+    const destinationsJson = JSON.stringify(dto.destinations || []);
+    const primaryPropertyId = dto.destinations?.[0]?.propertyId || null;
+    return this.db.withTenantTransaction(slug, async (client) => {
+      const result = await client.query(`
+        INSERT INTO guard_services (
+          service_type, custom_service_name, supplier_name, vehicle_plates,
+          destination_type, destinations, status, notes, entered_by, entered_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6::jsonb, 'IN_TRANSIT', $7, $8, NOW())
+        RETURNING id, service_type, custom_service_name, supplier_name, vehicle_plates,
+                  destination_type, destinations, status, notes, entered_by, entered_at, exited_by, exited_at
+      `, [
+        dto.serviceType,
+        dto.customServiceName?.trim() || null,
+        dto.supplierName?.trim() || null,
+        dto.vehiclePlates?.trim().toUpperCase() || null,
+        dto.destinationType,
+        destinationsJson,
+        dto.notes?.trim() || null,
+        guardId,
+      ]);
+      const created = result.rows[0];
+
+      let validPropertyId: string | null = null;
+      if (primaryPropertyId) {
+        const propCheck = await client.query('SELECT id FROM properties WHERE id = $1', [primaryPropertyId]);
+        if (propCheck.rows.length > 0) {
+          validPropertyId = propCheck.rows[0].id;
+        }
+      }
+
+      await client.query(`
+        INSERT INTO access_logs (access_type, identifier, property_id, is_granted, rejection_reason, manual_reason, guard_user_id)
+        VALUES ('SERVICE_ENTRY', $1, $2, TRUE, NULL, $3, $4)
+      `, [
+        created.id,
+        validPropertyId,
+        `INGRESO_SERVICIO: ${dto.serviceType}${dto.supplierName ? ` (${dto.supplierName})` : ''}`,
+        guardId,
+      ]);
+
+      return created;
+    });
+  }
+
+  async listGuardServices(slug: string, status?: 'IN_TRANSIT' | 'COMPLETED' | 'ALL') {
+    let whereClause = '';
+    const params: any[] = [];
+    if (status === 'IN_TRANSIT' || !status) {
+      whereClause = 'WHERE s.status = $1';
+      params.push('IN_TRANSIT');
+    } else if (status === 'COMPLETED') {
+      whereClause = 'WHERE s.status = $1';
+      params.push('COMPLETED');
+    }
+
+    const result = await this.db.queryTenant(slug, `
+      SELECT s.id, s.service_type, s.custom_service_name, s.supplier_name, s.vehicle_plates,
+             s.destination_type, s.destinations, s.status, s.notes, s.entered_by, s.entered_at,
+             s.exited_by, s.exited_at
+      FROM guard_services s
+      ${whereClause}
+      ORDER BY s.entered_at DESC
+      LIMIT 100
+    `, params);
+    return result.rows;
+  }
+
+  async registerServiceExit(slug: string, serviceId: string, guardId: string, dto?: RegisterServiceExitDto) {
+    return this.db.withTenantTransaction(slug, async (client) => {
+      const result = await client.query(`
+        UPDATE guard_services
+        SET status = 'COMPLETED',
+            exited_by = $2,
+            exited_at = NOW(),
+            notes = CASE WHEN $3::text IS NOT NULL THEN CONCAT(COALESCE(notes, ''), ' [Salida: ', $3::text, ']') ELSE notes END
+        WHERE id = $1 AND status = 'IN_TRANSIT'
+        RETURNING id, service_type, custom_service_name, supplier_name, vehicle_plates,
+                  destination_type, destinations, status, notes, entered_by, entered_at, exited_by, exited_at
+      `, [serviceId, guardId, dto?.notes?.trim() || null]);
+      const updated = result.rows[0] || null;
+      if (!updated) return null;
+
+      await client.query(`
+        INSERT INTO access_logs (access_type, identifier, property_id, is_granted, rejection_reason, manual_reason, guard_user_id)
+        VALUES ('SERVICE_EXIT', $1, NULL, TRUE, NULL, 'SALIDA_SERVICIO', $2)
+      `, [serviceId, guardId]);
+
+      return updated;
+    });
+  }
+
+  async listActiveServicesForProperty(slug: string, propertyId: string) {
+    const result = await this.db.queryTenant(slug, `
+      SELECT s.id, s.service_type, s.custom_service_name, s.supplier_name, s.vehicle_plates,
+             s.destination_type, s.destinations, s.status, s.notes, s.entered_at
+      FROM guard_services s
+      WHERE s.status = 'IN_TRANSIT'
+        AND (
+          s.destination_type = 'GENERAL'
+          OR EXISTS (
+            SELECT 1 FROM jsonb_array_elements(s.destinations) elem
+            WHERE elem->>'propertyId' = $1
+          )
+        )
+      ORDER BY s.entered_at DESC
+      LIMIT 20
+    `, [propertyId]);
+    return result.rows;
+  }
+
+  async listActiveDeliveriesForProperty(slug: string, propertyId: string) {
+    const result = await this.db.queryTenant(slug, `
+      SELECT d.id, d.recipient_name, d.property_address, d.carrier, d.tracking_code, d.notes, d.status,
+             d.received_at
+      FROM guard_deliveries d
+      JOIN properties p ON p.id = $1
+      WHERE d.status = 'PENDING'
+        AND (
+          LOWER(TRIM(d.property_address)) = LOWER(TRIM(
+            CONCAT(
+              p.street, ' #', p.exterior_number,
+              CASE WHEN p.interior_number IS NOT NULL AND p.interior_number != '' THEN CONCAT(' Int. ', p.interior_number) ELSE '' END,
+              CASE WHEN p.block IS NOT NULL AND p.block != '' THEN CONCAT(' ', p.block) ELSE '' END,
+              CASE WHEN p.lot IS NOT NULL AND p.lot != '' THEN CONCAT(' Lote ', p.lot) ELSE '' END
+            )
+          ))
+          OR (
+            LOWER(d.property_address) LIKE LOWER(CONCAT('%', p.street, '%'))
+            AND (p.exterior_number IS NULL OR p.exterior_number = '' OR LOWER(d.property_address) LIKE LOWER(CONCAT('%', p.exterior_number, '%')))
+          )
+        )
+      ORDER BY d.received_at DESC
+      LIMIT 20
+    `, [propertyId]);
+    return result.rows;
+  }
+
+  async findTenantAdminContacts(slug: string) {
+    const result = await this.db.query(`
+      SELECT u.email, u.phone, u.first_name, u.last_name
+      FROM public.user_tenants ut
+      JOIN public.users u ON u.id = ut.user_id
+      JOIN public.tenants t ON t.id = ut.tenant_id
+      WHERE LOWER(t.slug) = LOWER($1) AND ut.role IN ('TENANT_ADMIN', 'SUPER_ADMIN') AND u.is_active = TRUE
+      ORDER BY CASE WHEN ut.role = 'TENANT_ADMIN' THEN 0 ELSE 1 END, u.created_at ASC
+      LIMIT 1
+    `, [slug]);
+    return result.rows[0] || null;
+  }
+
+  async getUnifiedAuditLog(slug: string, query: UnifiedAuditLogQueryDto): Promise<{
+    summary: UnifiedAuditLogSummary;
+    events: UnifiedAuditLogItem[];
+  }> {
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    if (query.startDate) {
+      conditions.push(`created_at >= $${paramIndex++}`);
+      params.push(new Date(query.startDate).toISOString());
+    }
+
+    if (query.endDate) {
+      conditions.push(`created_at <= $${paramIndex++}`);
+      // If time not specified, end of day
+      const end = new Date(query.endDate);
+      if (query.endDate.length <= 10) {
+        end.setUTCHours(23, 59, 59, 999);
+      }
+      params.push(end.toISOString());
+    }
+
+    if (query.category && query.category !== 'ALL') {
+      conditions.push(`category = $${paramIndex++}`);
+      params.push(query.category);
+    }
+
+    if (query.status && query.status !== 'ALL') {
+      conditions.push(`status = $${paramIndex++}`);
+      params.push(query.status);
+    }
+
+    if (query.search && query.search.trim().length > 0) {
+      const searchToken = `%${query.search.trim()}%`;
+      conditions.push(`(
+        title ILIKE $${paramIndex} OR
+        description ILIKE $${paramIndex} OR
+        property_address ILIKE $${paramIndex} OR
+        vehicle_plates ILIKE $${paramIndex} OR
+        notes ILIKE $${paramIndex} OR
+        actor_name ILIKE $${paramIndex}
+      )`);
+      params.push(searchToken);
+      paramIndex++;
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const limit = Math.min(Math.max(Number(query.limit) || 100, 1), 500);
+    const offset = Math.max(Number(query.offset) || 0, 0);
+
+    const cteSql = `
+      WITH combined_events AS (
+        -- 1. ACCESS LOGS (QR & MANUAL)
+        SELECT 
+          l.id::text,
+          CASE 
+            WHEN l.access_type = 'MANUAL_GUARD' THEN 'ACCESS_MANUAL'
+            WHEN l.access_type = 'QR_VISITOR' THEN 'ACCESS_QR_VISITOR'
+            WHEN l.access_type = 'QR_RESIDENT' THEN 'ACCESS_QR_RESIDENT'
+            ELSE COALESCE(l.access_type, 'ACCESS')
+          END AS event_type,
+          'ACCESS' AS category,
+          CASE 
+            WHEN l.access_type = 'MANUAL_GUARD' THEN 'Visita sin QR (Verificación en Caseta)'
+            WHEN l.access_type = 'QR_VISITOR' AND l.is_granted THEN 'Acceso Visita con QR'
+            WHEN l.access_type = 'QR_VISITOR' AND NOT l.is_granted THEN 'Acceso Denegado (QR Visita)'
+            WHEN l.access_type = 'QR_RESIDENT' AND l.is_granted THEN 'Acceso Residente con QR'
+            WHEN l.access_type = 'QR_RESIDENT' AND NOT l.is_granted THEN 'Acceso Denegado (QR Residente)'
+            ELSE 'Registro de Acceso'
+          END AS title,
+          COALESCE(
+            l.manual_reason,
+            CASE WHEN l.is_granted THEN 'Acceso autorizado en caseta' ELSE CONCAT('Rechazado: ', COALESCE(l.rejection_reason, 'No autorizado')) END
+          )::text AS description,
+          CONCAT_WS(' ', p.street, p.exterior_number, p.interior_number, p.block, p.lot)::text AS property_address,
+          NULL::text AS vehicle_plates,
+          l.is_granted,
+          CASE 
+            WHEN l.is_granted THEN 'GRANTED'
+            ELSE 'REJECTED'
+          END AS status,
+          l.rejection_reason::text,
+          l.manual_reason::text AS notes,
+          CONCAT_WS(' ', u.first_name, u.last_name)::text AS actor_name,
+          l.timestamp AS created_at
+        FROM access_logs l
+        LEFT JOIN properties p ON p.id = l.property_id
+        LEFT JOIN public.users u ON u.id = l.guard_user_id
+        WHERE l.access_type NOT IN ('SERVICE_ENTRY', 'SERVICE_EXIT')
+
+        UNION ALL
+
+        -- 2. GUARD SERVICES (ENTRY)
+        SELECT 
+          CONCAT(s.id::text, '-entry') AS id,
+          'SERVICE_ENTRY' AS event_type,
+          'SERVICE' AS category,
+          CONCAT('Ingreso de ', CASE 
+            WHEN s.service_type = 'FOOD_DELIVERY' THEN 'Comida / Delivery'
+            WHEN s.service_type = 'GAS_SUPPLY' THEN 'Gas L.P. / Pipa'
+            WHEN s.service_type = 'WATER_SUPPLY' THEN 'Agua / Garrafones'
+            WHEN s.service_type = 'PARCEL_COURIER' THEN 'Paquetería'
+            WHEN s.service_type = 'TAXI_RIDE' THEN 'Taxi / App'
+            WHEN s.service_type = 'MAINTENANCE' THEN 'Mantenimiento'
+            ELSE COALESCE(s.custom_service_name, 'Servicio / Proveedor')
+          END)::text AS title,
+          CONCAT(COALESCE(s.supplier_name, 'Proveedor'), ' - ', CASE WHEN s.destination_type = 'GENERAL' THEN 'Recorrido General' ELSE 'Destino Residencial' END)::text AS description,
+          CASE 
+            WHEN s.destination_type = 'GENERAL' THEN 'Recorrido General por Fraccionamiento'
+            ELSE (SELECT string_agg(d->>'propertyAddress', ', ') FROM jsonb_array_elements(s.destinations) d)
+          END::text AS property_address,
+          s.vehicle_plates::text,
+          TRUE AS is_granted,
+          s.status::text,
+          NULL::text AS rejection_reason,
+          s.notes::text,
+          COALESCE(CONCAT_WS(' ', u.first_name, u.last_name), s.entered_by::text)::text AS actor_name,
+          s.entered_at AS created_at
+        FROM guard_services s
+        LEFT JOIN public.users u ON u.id = s.entered_by
+
+        UNION ALL
+
+        -- 3. GUARD SERVICES (EXIT)
+        SELECT 
+          CONCAT(s.id::text, '-exit') AS id,
+          'SERVICE_EXIT' AS event_type,
+          'SERVICE' AS category,
+          CONCAT('Salida de ', CASE 
+            WHEN s.service_type = 'FOOD_DELIVERY' THEN 'Comida / Delivery'
+            WHEN s.service_type = 'GAS_SUPPLY' THEN 'Gas L.P. / Pipa'
+            WHEN s.service_type = 'WATER_SUPPLY' THEN 'Agua / Garrafones'
+            WHEN s.service_type = 'PARCEL_COURIER' THEN 'Paquetería'
+            WHEN s.service_type = 'TAXI_RIDE' THEN 'Taxi / App'
+            WHEN s.service_type = 'MAINTENANCE' THEN 'Mantenimiento'
+            ELSE COALESCE(s.custom_service_name, 'Servicio / Proveedor')
+          END)::text AS title,
+          CONCAT('Salida registrada del proveedor: ', COALESCE(s.supplier_name, ''))::text AS description,
+          CASE 
+            WHEN s.destination_type = 'GENERAL' THEN 'Recorrido General por Fraccionamiento'
+            ELSE (SELECT string_agg(d->>'propertyAddress', ', ') FROM jsonb_array_elements(s.destinations) d)
+          END::text AS property_address,
+          s.vehicle_plates::text,
+          TRUE AS is_granted,
+          'COMPLETED'::text AS status,
+          NULL::text AS rejection_reason,
+          s.notes::text,
+          COALESCE(CONCAT_WS(' ', u.first_name, u.last_name), s.exited_by::text, 'Guardia')::text AS actor_name,
+          s.exited_at AS created_at
+        FROM guard_services s
+        LEFT JOIN public.users u ON u.id = s.exited_by
+        WHERE s.exited_at IS NOT NULL
+
+        UNION ALL
+
+        -- 4. GUARD INCIDENTS
+        SELECT 
+          i.id::text,
+          'INCIDENT'::text AS event_type,
+          'INCIDENT' AS category,
+          CONCAT('Incidencia: ', i.incident_type)::text AS title,
+          i.description::text,
+          i.property_address::text,
+          i.vehicle_plates::text,
+          TRUE AS is_granted,
+          i.status::text,
+          NULL::text AS rejection_reason,
+          CONCAT('Prioridad: ', i.priority)::text AS notes,
+          CONCAT_WS(' ', u.first_name, u.last_name)::text AS actor_name,
+          i.created_at
+        FROM guard_incidents i
+        LEFT JOIN public.users u ON u.id = i.created_by
+
+        UNION ALL
+
+        -- 5. GUARD DELIVERIES
+        SELECT 
+          d.id::text,
+          'DELIVERY'::text AS event_type,
+          'DELIVERY' AS category,
+          CONCAT('Paquetería: ', d.carrier)::text AS title,
+          CONCAT('Destinatario: ', d.recipient_name, CASE WHEN d.tracking_code IS NOT NULL THEN CONCAT(' (Guía: ', d.tracking_code, ')') ELSE '' END)::text AS description,
+          d.property_address::text,
+          NULL::text AS vehicle_plates,
+          TRUE AS is_granted,
+          d.status::text,
+          d.tracking_code::text AS rejection_reason,
+          d.notes::text,
+          COALESCE(d.collected_by_name, CONCAT_WS(' ', u.first_name, u.last_name))::text AS actor_name,
+          d.received_at AS created_at
+        FROM guard_deliveries d
+        LEFT JOIN public.users u ON u.id = d.received_by
+
+        UNION ALL
+
+        -- 6. NOTICES
+        SELECT 
+          n.id::text,
+          'NOTICE'::text AS event_type,
+          'NOTICE' AS category,
+          CONCAT('Aviso: ', n.title)::text AS title,
+          n.content::text AS description,
+          'Todo el Fraccionamiento'::text AS property_address,
+          NULL::text AS vehicle_plates,
+          TRUE AS is_granted,
+          'PUBLISHED'::text AS status,
+          NULL::text AS rejection_reason,
+          CONCAT('Categoría: ', n.category, ' | Prioridad: ', n.priority)::text AS notes,
+          n.author_name::text AS actor_name,
+          n.published_at AS created_at
+        FROM notices n
+      )
+    `;
+
+    const [eventsResult, summaryResult] = await Promise.all([
+      this.db.queryTenant(slug, `
+        ${cteSql}
+        SELECT * FROM combined_events
+        ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `, params),
+      this.db.queryTenant(slug, `
+        ${cteSql}
+        SELECT 
+          COUNT(*)::int AS total_events,
+          COUNT(*) FILTER (WHERE category = 'ACCESS' AND is_granted = TRUE)::int AS granted_access_count,
+          COUNT(*) FILTER (WHERE category = 'ACCESS' AND is_granted = FALSE)::int AS rejected_access_count,
+          COUNT(*) FILTER (WHERE category = 'SERVICE')::int AS services_count,
+          COUNT(*) FILTER (WHERE category = 'INCIDENT')::int AS incidents_count,
+          COUNT(*) FILTER (WHERE category = 'DELIVERY')::int AS deliveries_count,
+          COUNT(*) FILTER (WHERE category = 'NOTICE')::int AS notices_count
+        FROM combined_events
+        ${whereClause}
+      `, params),
+    ]);
+
+    const sumRow = summaryResult.rows[0] || {};
+    const summary: UnifiedAuditLogSummary = {
+      totalEvents: sumRow.total_events || 0,
+      grantedAccessCount: sumRow.granted_access_count || 0,
+      rejectedAccessCount: sumRow.rejected_access_count || 0,
+      servicesCount: sumRow.services_count || 0,
+      incidentsCount: sumRow.incidents_count || 0,
+      deliveriesCount: sumRow.deliveries_count || 0,
+      noticesCount: sumRow.notices_count || 0,
+    };
+
+    const events: UnifiedAuditLogItem[] = eventsResult.rows.map((row) => ({
+      id: row.id,
+      eventType: row.event_type,
+      category: row.category,
+      title: row.title,
+      description: row.description,
+      propertyAddress: row.property_address || undefined,
+      vehiclePlates: row.vehicle_plates || undefined,
+      isGranted: row.is_granted,
+      status: row.status,
+      rejectionReason: row.rejection_reason || undefined,
+      notes: row.notes || undefined,
+      actorName: row.actor_name || undefined,
+      createdAt: row.created_at,
+    }));
+
+    return { summary, events };
   }
 }

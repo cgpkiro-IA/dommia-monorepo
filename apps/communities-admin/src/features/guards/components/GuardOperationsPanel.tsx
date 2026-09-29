@@ -1,7 +1,8 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, Car, Check, RefreshCw, Trash2 } from 'lucide-react';
+import { AlertTriangle, Bike, Car, Check, Clock, Droplets, HelpCircle, MapPin, Package, RefreshCw, Trash2, Truck, Wrench } from 'lucide-react';
+import type { GuardServiceItem, GuardServiceType } from '@/types';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -31,6 +32,16 @@ type GuardOperationsPanelProps = {
   authToken: string;
 };
 
+const serviceConfig: Record<GuardServiceType, { label: string; icon: any; color: string; bg: string }> = {
+  FOOD_DELIVERY: { label: 'Comida / Delivery', icon: Bike, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
+  GAS_SUPPLY: { label: 'Gas L.P.', icon: Truck, color: 'text-orange-700', bg: 'bg-orange-50 border-orange-200' },
+  WATER_SUPPLY: { label: 'Agua / Garrafones', icon: Droplets, color: 'text-cyan-700', bg: 'bg-cyan-50 border-cyan-200' },
+  PARCEL_COURIER: { label: 'Paquetería', icon: Package, color: 'text-purple-700', bg: 'bg-purple-50 border-purple-200' },
+  TAXI_RIDE: { label: 'Taxi / App', icon: Car, color: 'text-yellow-700', bg: 'bg-yellow-50 border-yellow-200' },
+  MAINTENANCE: { label: 'Mantenimiento', icon: Wrench, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
+  OTHER: { label: 'Otro Servicio', icon: HelpCircle, color: 'text-slate-700', bg: 'bg-slate-50 border-slate-200' },
+};
+
 const incidentLabels: Record<string, string> = {
   SECURITY: 'Seguridad',
   SUSPICIOUS_VEHICLE: 'Vehículo sospechoso',
@@ -50,6 +61,7 @@ const priorityLabels: Record<Incident['priority'], string> = {
 export function GuardOperationsPanel({ tenantSlug, authToken }: GuardOperationsPanelProps) {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [vehicleFlags, setVehicleFlags] = useState<VehicleFlag[]>([]);
+  const [activeServices, setActiveServices] = useState<GuardServiceItem[]>([]);
   const [showResolved, setShowResolved] = useState(false);
   const [plates, setPlates] = useState('');
   const [flagType, setFlagType] = useState<VehicleFlag['flag_type']>('BLOCKED');
@@ -65,15 +77,21 @@ export function GuardOperationsPanel({ tenantSlug, authToken }: GuardOperationsP
     setError('');
     try {
       const headers = { Authorization: `Bearer ${authToken}`, 'Cache-Control': 'no-store' };
-      const [incidentResponse, flagResponse] = await Promise.all([
+      const [incidentResponse, flagResponse, serviceResponse] = await Promise.all([
         fetch(`${API}/tenants/${encodeURIComponent(tenantSlug)}/guard/incidents?status=${showResolved ? 'RESOLVED' : 'OPEN'}`, { headers }),
         fetch(`${API}/tenants/${encodeURIComponent(tenantSlug)}/guard/vehicle-flags`, { headers }),
+        fetch(`${API}/tenants/${encodeURIComponent(tenantSlug)}/access/services?status=IN_TRANSIT`, { headers }),
       ]);
-      const [incidentBody, flagBody] = await Promise.all([incidentResponse.json(), flagResponse.json()]);
+      const [incidentBody, flagBody, serviceBody] = await Promise.all([
+        incidentResponse.json(),
+        flagResponse.json(),
+        serviceResponse.json().catch(() => ({ success: true, data: [] })),
+      ]);
       if (!incidentResponse.ok || !incidentBody.success) throw new Error(incidentBody.message || 'No se pudieron cargar las incidencias.');
       if (!flagResponse.ok || !flagBody.success) throw new Error(flagBody.message || 'No se pudo cargar la clasificación de placas.');
       setIncidents(incidentBody.data as Incident[]);
       setVehicleFlags(flagBody.data as VehicleFlag[]);
+      setActiveServices((serviceBody?.data || []) as GuardServiceItem[]);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'No se pudieron cargar las operaciones de Guard.');
     } finally {
@@ -159,6 +177,84 @@ export function GuardOperationsPanel({ tenantSlug, authToken }: GuardOperationsP
       </header>
       {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
       {message && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{message}</p>}
+
+      {/* Sección de Proveedores y Servicios Activos en el Fraccionamiento */}
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="guard-services-admin-title">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 bg-slate-50">
+          <div className="flex items-center gap-2">
+            <Truck className="h-5 w-5 text-blue-700" />
+            <h3 id="guard-services-admin-title" className="text-sm font-bold text-slate-900">
+              Proveedores y Servicios en Tránsito
+            </h3>
+          </div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            {activeServices.length} {activeServices.length === 1 ? 'servicio dentro' : 'servicios dentro'}
+          </span>
+        </div>
+
+        {loading ? (
+          <p className="p-5 text-sm text-slate-500">Cargando servicios en tránsito...</p>
+        ) : activeServices.length === 0 ? (
+          <div className="p-6 text-center text-slate-500">
+            <Check className="w-8 h-8 text-emerald-600 mx-auto mb-1.5 opacity-80" />
+            <p className="text-sm font-semibold text-slate-700">Sin proveedores en recorrido actualmente</p>
+            <p className="text-xs text-slate-500 mt-0.5">Todos los servicios y repartidores han completado su salida en caseta.</p>
+          </div>
+        ) : (
+          <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            {activeServices.map((service) => {
+              const cfg = serviceConfig[service.service_type] || serviceConfig.OTHER;
+              const Icon = cfg.icon;
+              return (
+                <div
+                  key={service.id}
+                  className={`p-3.5 rounded-xl border flex flex-col justify-between gap-2.5 transition-all shadow-sm ${cfg.bg}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-white shadow-xs">
+                        <Icon className={`w-4 h-4 ${cfg.color}`} />
+                      </div>
+                      <div>
+                        <strong className="text-xs font-bold text-slate-900 block leading-tight">
+                          {service.service_type === 'OTHER' ? service.custom_service_name || 'Otro Servicio' : cfg.label}
+                        </strong>
+                        <span className="text-[11px] font-medium text-slate-600">
+                          {service.supplier_name || 'Proveedor autorizado'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-600 flex items-center gap-1 shrink-0">
+                      <Clock className="w-3 h-3 text-slate-400" />
+                      {new Date(service.entered_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+
+                  <div className="text-[11px] space-y-1 text-slate-700 bg-white/70 p-2 rounded-lg border border-slate-200/60">
+                    {service.vehicle_plates && (
+                      <p className="font-mono">
+                        Placas: <span className="font-bold text-slate-900">{service.vehicle_plates}</span>
+                      </p>
+                    )}
+                    <p className="flex items-center gap-1 truncate font-medium">
+                      <MapPin className="w-3 h-3 text-blue-600 shrink-0" />
+                      {service.destination_type === 'GENERAL' ? (
+                        <span className="text-amber-800 font-bold">Recorrido General en Fraccionamiento</span>
+                      ) : (
+                        <span className="truncate">
+                          {(service.destinations || []).map((d) => d.propertyAddress).join(', ') || 'Destino residencial'}
+                        </span>
+                      )}
+                    </p>
+                    {service.notes && <p className="text-[10px] text-slate-500 italic truncate">Nota: {service.notes}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white" aria-labelledby="guard-incidents-title">

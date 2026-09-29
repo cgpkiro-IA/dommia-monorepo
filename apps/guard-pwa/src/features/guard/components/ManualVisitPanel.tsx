@@ -1,7 +1,7 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { Button } from '@dommia/ui';
 import type { ManualVisitCandidate } from '../types';
 
@@ -62,14 +62,63 @@ export function ManualVisitPanel({
 
       {selected && <div className="manual-visit-confirmation">
         <h3>Confirmar ingreso de {selected.visitorName}</h3>
-        <label className="manual-confirmation-check">
-          <input type="checkbox" checked={identityVerified} onChange={(event) => onIdentityVerifiedChange(event.target.checked)} disabled={!isOnline || authorizationBusy} />
-          <span>Verifiqué visualmente la INE y el nombre coincide con la visita programada. No capturar ni guardar el número o foto de la INE.</span>
-        </label>
-        <label className="manual-confirmation-check">
-          <input type="checkbox" checked={callConfirmed} onChange={(event) => onCallConfirmedChange(event.target.checked)} disabled={!isOnline || authorizationBusy} />
-          <span>Llamé a la propiedad/anfitrión y confirmó que autoriza el ingreso.</span>
-        </label>
+        
+        <button
+          type="button"
+          onClick={() => !(!isOnline || authorizationBusy) && onIdentityVerifiedChange(!identityVerified)}
+          className={`w-full p-3 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer select-none ${
+            identityVerified
+              ? 'bg-emerald-950/30 border-emerald-500/70 shadow-sm shadow-emerald-900/20'
+              : 'bg-slate-900/80 border-slate-700/80 hover:border-slate-600'
+          }`}
+        >
+          <div
+            className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+              identityVerified
+                ? 'bg-emerald-500 text-slate-950'
+                : 'border-2 border-slate-600 bg-slate-800'
+            }`}
+          >
+            {identityVerified && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+          </div>
+          <div className="text-xs leading-relaxed">
+            <strong className={`block text-xs ${identityVerified ? 'text-emerald-300' : 'text-slate-200'}`}>
+              Verificación física de identificación (INE)
+            </strong>
+            <span className="text-slate-400 text-[11px]">
+              Verifiqué visualmente la INE y el nombre coincide con la visita programada. No capturar ni guardar número o foto.
+            </span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => !(!isOnline || authorizationBusy) && onCallConfirmedChange(!callConfirmed)}
+          className={`w-full p-3 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer select-none ${
+            callConfirmed
+              ? 'bg-emerald-950/30 border-emerald-500/70 shadow-sm shadow-emerald-900/20'
+              : 'bg-slate-900/80 border-slate-700/80 hover:border-slate-600'
+          }`}
+        >
+          <div
+            className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+              callConfirmed
+                ? 'bg-emerald-500 text-slate-950'
+                : 'border-2 border-slate-600 bg-slate-800'
+            }`}
+          >
+            {callConfirmed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+          </div>
+          <div className="text-xs leading-relaxed">
+            <strong className={`block text-xs ${callConfirmed ? 'text-emerald-300' : 'text-slate-200'}`}>
+              Confirmación telefónica con residente
+            </strong>
+            <span className="text-slate-400 text-[11px]">
+              Llamé a la propiedad/anfitrión y confirmó que autoriza el ingreso en este momento.
+            </span>
+          </div>
+        </button>
+
         <Button variant="primary" size="md" type="button" onClick={onAuthorize} disabled={!isOnline || authorizationBusy || !selected.isCurrentlyValid || !identityVerified || !callConfirmed} isLoading={authorizationBusy}>
           Registrar acceso manual por llamada <ArrowRight size={16} aria-hidden="true" />
         </Button>

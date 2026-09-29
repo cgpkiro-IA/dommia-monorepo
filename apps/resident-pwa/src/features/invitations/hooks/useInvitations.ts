@@ -37,6 +37,13 @@ export function useInvitations(token: string | null, tenantSlug: string | null, 
 
   useEffect(() => {
     loadPasses();
+    const handleFocus = () => { loadPasses(); };
+    window.addEventListener('focus', handleFocus);
+    const interval = setInterval(loadPasses, 15_000);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
   }, [loadPasses]);
 
   const createPass = async (data: {

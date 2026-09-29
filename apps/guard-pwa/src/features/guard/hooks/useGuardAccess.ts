@@ -39,6 +39,7 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
     controlsRef.current = null;
     const stream = videoRef.current?.srcObject;
     if (stream instanceof MediaStream) stream.getTracks().forEach((track) => track.stop());
+    if (videoRef.current) videoRef.current.srcObject = null;
     setCameraState('idle');
   }, []);
 
@@ -46,6 +47,9 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
     cameraRequestedRef.current = false;
     if (cameraTimeoutRef.current !== null) window.clearTimeout(cameraTimeoutRef.current);
     controlsRef.current?.stop();
+    const stream = videoRef.current?.srcObject;
+    if (stream instanceof MediaStream) stream.getTracks().forEach((track) => track.stop());
+    if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
   const validatePayload = useCallback(async (rawPayload: string) => {
@@ -63,7 +67,7 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
     stopCamera();
     setValidationBusy(true);
     setResult(null);
-    setCameraMessage('');
+    setCameraMessage('Código QR detectado. Validando autorización...');
     const abortController = new AbortController();
     const timeoutId = window.setTimeout(() => abortController.abort(), 10_000);
     try {
@@ -94,12 +98,14 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
       window.clearTimeout(timeoutId);
       inFlightRef.current = false;
       setValidationBusy(false);
+      setCameraMessage('');
     }
   }, [session, stopCamera]);
 
   const startCamera = useCallback(async () => {
     if (!videoRef.current || !isOnline || validationBusy || inFlightRef.current) return;
     stopCamera();
+    setResult(null);
     setCameraMessage('');
     setCameraState('starting');
     autoSubmittedRef.current = false;
@@ -238,6 +244,7 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
   }, [manualJustification, manualOverrideBusy, result, session]);
 
   const resetAfterResult = useCallback(() => {
+    stopCamera();
     setManualVisitQuery('');
     setManualVisitCandidates([]);
     setSelectedManualVisit(null);
@@ -250,7 +257,7 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
     setResult(null);
     setCameraMessage('');
     autoSubmittedRef.current = false;
-  }, []);
+  }, [stopCamera]);
 
   const resetSession = useCallback(() => {
     stopCamera();

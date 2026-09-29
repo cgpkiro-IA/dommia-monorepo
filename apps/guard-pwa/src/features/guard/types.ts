@@ -52,7 +52,10 @@ export type GuardLookupItem = {
     id: string;
     visitorName: string;
     passType: string;
+    validFrom?: string;
     validUntil: string;
+    status?: 'ACTIVE' | 'USED' | 'EXPIRED' | 'REVOKED';
+    usedAt?: string;
     notes?: string;
   }>;
 };
@@ -103,4 +106,38 @@ export type GuardDelivery = {
   receivedAt: string;
   collectedByName?: string;
   collectedAt?: string;
+};
+
+export type GuardServiceType =
+  | 'FOOD_DELIVERY'
+  | 'GAS_SUPPLY'
+  | 'WATER_SUPPLY'
+  | 'PARCEL_COURIER'
+  | 'TAXI_RIDE'
+  | 'MAINTENANCE'
+  | 'OTHER';
+
+export type GuardServiceDestination = {
+  propertyId: string;
+  propertyAddress: string;
+  residentId?: string;
+  residentName?: string;
+  residentPhone?: string;
+  residentEmail?: string;
+};
+
+export type GuardServiceItem = {
+  id: string;
+  service_type: GuardServiceType;
+  custom_service_name?: string;
+  supplier_name?: string;
+  vehicle_plates?: string;
+  destination_type: 'SPECIFIC' | 'GENERAL';
+  destinations: GuardServiceDestination[];
+  status: 'IN_TRANSIT' | 'COMPLETED';
+  notes?: string;
+  entered_by: string;
+  entered_at: string;
+  exited_by?: string;
+  exited_at?: string;
 };

@@ -1,6 +1,13 @@
 import { Body, Controller, Get, Header, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AccessOperatorClaims, AccessOperatorGuard } from '../guards/access-operator.guard';
-import { ManualAccessOverrideDto, ManualVisitAccessDto, ValidateAccessDto } from '../dto/access.dto';
+import {
+  CreateGuardServiceDto,
+  ManualAccessOverrideDto,
+  ManualVisitAccessDto,
+  RegisterServiceExitDto,
+  UnifiedAuditLogQueryDto,
+  ValidateAccessDto,
+} from '../dto/access.dto';
 import { AccessService } from '../services/access.service';
 
 @Controller('tenants/:slug/access')
@@ -62,5 +69,44 @@ export class AccessValidationController {
     @Body() dto: ManualAccessOverrideDto,
   ) {
     return { success: true, data: await this.accessService.manualOverride(slug, request.user.sub, dto) };
+  }
+
+  @Post('services')
+  @UseGuards(AccessOperatorGuard)
+  async createService(
+    @Param('slug') slug: string,
+    @Req() request: { user: AccessOperatorClaims },
+    @Body() dto: CreateGuardServiceDto,
+  ) {
+    return { success: true, data: await this.accessService.createGuardService(slug, request.user.sub, dto) };
+  }
+
+  @Get('services')
+  @UseGuards(AccessOperatorGuard)
+  async listServices(
+    @Param('slug') slug: string,
+    @Query('status') status?: 'IN_TRANSIT' | 'COMPLETED' | 'ALL',
+  ) {
+    return { success: true, data: await this.accessService.listGuardServices(slug, status) };
+  }
+
+  @Post('services/:id/exit')
+  @UseGuards(AccessOperatorGuard)
+  async registerServiceExit(
+    @Param('slug') slug: string,
+    @Param('id') id: string,
+    @Req() request: { user: AccessOperatorClaims },
+    @Body() dto?: RegisterServiceExitDto,
+  ) {
+    return { success: true, data: await this.accessService.registerServiceExit(slug, id, request.user.sub, dto) };
+  }
+
+  @Get('unified-log')
+  @UseGuards(AccessOperatorGuard)
+  async getUnifiedAuditLog(
+    @Param('slug') slug: string,
+    @Query() query: UnifiedAuditLogQueryDto,
+  ) {
+    return { success: true, data: await this.accessService.getUnifiedAuditLog(slug, query) };
   }
 }

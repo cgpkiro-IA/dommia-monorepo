@@ -48,4 +48,56 @@ export class DeliveriesRepository {
     `, [id, guardId, collectedByName.trim()]);
     return result.rows[0] || null;
   }
+
+  async findResidentsByAddress(slug: string, propertyAddress: string) {
+    const result = await this.db.queryTenant(slug, `
+      SELECT r.id, r.first_name, r.last_name, r.email, r.phone
+      FROM residents r
+      JOIN properties p ON p.id = r.property_id
+      WHERE r.is_active = TRUE
+        AND (
+          LOWER(TRIM($1)) = LOWER(TRIM(
+            CONCAT(
+              p.street, ' #', p.exterior_number,
+              CASE WHEN p.interior_number IS NOT NULL AND p.interior_number != '' THEN CONCAT(' Int. ', p.interior_number) ELSE '' END,
+              CASE WHEN p.block IS NOT NULL AND p.block != '' THEN CONCAT(' ', p.block) ELSE '' END,
+              CASE WHEN p.lot IS NOT NULL AND p.lot != '' THEN CONCAT(' Lote ', p.lot) ELSE '' END
+            )
+          ))
+          OR (
+            LOWER($1) LIKE LOWER(CONCAT('%', p.street, '%'))
+            AND (p.exterior_number IS NULL OR p.exterior_number = '' OR LOWER($1) LIKE LOWER(CONCAT('%', p.exterior_number, '%')))
+          )
+        )
+      LIMIT 10
+    `, [propertyAddress.trim()]);
+    return result.rows;
+  }
+
+  async findPendingForProperty(slug: string, propertyId: string) {
+    const result = await this.db.queryTenant(slug, `
+      SELECT d.id, d.recipient_name, d.property_address, d.carrier, d.tracking_code, d.notes, d.status,
+             d.received_at
+      FROM guard_deliveries d
+      JOIN properties p ON p.id = $1
+      WHERE d.status = 'PENDING'
+        AND (
+          LOWER(TRIM(d.property_address)) = LOWER(TRIM(
+            CONCAT(
+              p.street, ' #', p.exterior_number,
+              CASE WHEN p.interior_number IS NOT NULL AND p.interior_number != '' THEN CONCAT(' Int. ', p.interior_number) ELSE '' END,
+              CASE WHEN p.block IS NOT NULL AND p.block != '' THEN CONCAT(' ', p.block) ELSE '' END,
+              CASE WHEN p.lot IS NOT NULL AND p.lot != '' THEN CONCAT(' Lote ', p.lot) ELSE '' END
+            )
+          ))
+          OR (
+            LOWER(d.property_address) LIKE LOWER(CONCAT('%', p.street, '%'))
+            AND (p.exterior_number IS NULL OR p.exterior_number = '' OR LOWER(d.property_address) LIKE LOWER(CONCAT('%', p.exterior_number, '%')))
+          )
+        )
+      ORDER BY d.received_at DESC
+      LIMIT 20
+    `, [propertyId]);
+    return result.rows;
+  }
 }

@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Home, Users, Car, Bell, DollarSign, Settings2, ShieldCheck, KeyRound } from 'lucide-react';
+import { Home, Users, Car, Bell, DollarSign, Settings2, ShieldCheck, KeyRound, ClipboardList } from 'lucide-react';
 
-export type AdminTab = 'PROPERTIES' | 'RESIDENTS' | 'VEHICLES' | 'NOTICES' | 'FINANCE' | 'NOTIFICATIONS' | 'GUARDS' | 'SECURITY';
+export type AdminTab = 'PROPERTIES' | 'RESIDENTS' | 'VEHICLES' | 'NOTICES' | 'FINANCE' | 'NOTIFICATIONS' | 'GUARDS' | 'SECURITY' | 'AUDIT_LOG';
 
 interface TabNavigationProps {
   activeTab: AdminTab;
@@ -43,6 +43,20 @@ export function TabNavigation({
         <span>Viviendas & Lotes ({propertiesCount})</span>
       </button>
 
+      <button
+        type="button"
+        onClick={() => onTabChange('AUDIT_LOG')}
+        aria-current={activeTab === 'AUDIT_LOG' ? 'page' : undefined}
+        className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${
+          activeTab === 'AUDIT_LOG'
+            ? 'bg-white text-slate-900 shadow-sm'
+            : 'text-slate-600 hover:text-slate-900'
+        }`}
+      >
+        <ClipboardList className="w-4 h-4 text-indigo-700" />
+        <span>Bitácora de Eventos</span>
+      </button>
+
       {notificationsEnabled && <button
         type="button"
         onClick={() => onTabChange('NOTIFICATIONS')}
@@ -62,7 +76,7 @@ export function TabNavigation({
         }`}
       >
         <ShieldCheck className="w-4 h-4 text-emerald-700" />
-        <span>Guardias</span>
+        <span>Caseta & Guardias</span>
       </button>}
 
       <button

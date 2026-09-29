@@ -30,6 +30,8 @@ import { ChargesAndPaymentsView } from '@/features/finance/components/ChargesAnd
 import { NotificationsSettings } from '@/features/notifications/components/NotificationsSettings';
 import { GuardUsersPanel } from '@/features/guards/components/GuardUsersPanel';
 import { GuardOperationsPanel } from '@/features/guards/components/GuardOperationsPanel';
+import { AdminProviderLiveAlert } from '@/features/guards/components/AdminProviderLiveAlert';
+import { UnifiedAuditLogView } from '@/features/audit/components/UnifiedAuditLogView';
 
 import { TopNavbar } from '@/features/dashboard/components/TopNavbar';
 import { CapacityHeroBanner } from '@/features/dashboard/components/CapacityHeroBanner';
@@ -120,6 +122,14 @@ export default function CommunitiesAdminPage() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {auth.activeTenant?.slug && auth.userSession?.token && (
+          <AdminProviderLiveAlert
+            tenantSlug={auth.activeTenant.slug}
+            authToken={auth.userSession.token}
+            onNavigateToGuards={accessQrEnabled ? () => setActiveTab('GUARDS') : undefined}
+          />
+        )}
+
         <CapacityHeroBanner
           metrics={properties.metrics}
           activeTenant={auth.activeTenant}
@@ -287,6 +297,13 @@ export default function CommunitiesAdminPage() {
             <GuardUsersPanel tenantSlug={auth.activeTenant.slug} authToken={auth.userSession.token} />
             <GuardOperationsPanel tenantSlug={auth.activeTenant.slug} authToken={auth.userSession.token} />
           </div>
+        )}
+
+        {activeTab === 'AUDIT_LOG' && auth.activeTenant?.slug && auth.userSession && (
+          <UnifiedAuditLogView
+            tenantSlug={auth.activeTenant.slug}
+            authToken={auth.userSession.token}
+          />
         )}
 
         {activeTab === 'SECURITY' && auth.userSession && (

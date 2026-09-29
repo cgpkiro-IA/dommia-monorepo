@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import { ResidentSessionClaims } from '../../auth/guards/resident-auth.guard';
 import { AccessNotificationStatus, NotificationDeliveryService } from '../../notifications/services/notification-delivery.service';
 import { TenantsRepository } from '../../tenants/repositories/tenants.repository';
-import { CreateGuardUserDto, CreateVisitorInvitationDto, ManualAccessOverrideDto, ManualVisitAccessDto } from '../dto/access.dto';
+import { CreateGuardServiceDto, CreateGuardUserDto, CreateVisitorInvitationDto, ManualAccessOverrideDto, ManualVisitAccessDto, RegisterServiceExitDto, UnifiedAuditLogQueryDto } from '../dto/access.dto';
 import { AccessRepository, AccessQrPayload, ManualOverrideClaims } from '../repositories/access.repository';
 
 const ACCESS_STEP_SECONDS = 15;
@@ -57,6 +57,22 @@ function generateTotp(secretHex: string, step: number): string {
     | ((digest[offset + 2] & 0xff) << 8)
     | (digest[offset + 3] & 0xff);
   return String(binary % 100000000).padStart(8, '0');
+}
+
+function extractInvitationId(payload: string): string | null {
+  const trimmed = payload.trim();
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(trimmed)) return trimmed;
+
+  try {
+    const url = new URL(trimmed);
+    const id = url.searchParams.get('id');
+    if (id && uuidRegex.test(id)) return id;
+  } catch {
+    const match = trimmed.match(/[?&]id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+    if (match) return match[1];
+  }
+  return null;
 }
 
 function parseQrPayload(payload: string): AccessQrPayload | null {
@@ -180,7 +196,78 @@ export class AccessService {
     const payload = parseQrPayload(rawPayload);
     const now = Date.now();
     const currentStep = Math.floor(now / 1000 / ACCESS_STEP_SECONDS);
-    if (!payload || payload.tenant !== slug || payload.step !== currentStep) {
+    if (!payload) {
+      const invitationId = extractInvitationId(rawPayload);
+      if (!invitationId) {
+        return { authorized: false, reason: 'INVALID_OR_EXPIRED_QR' };
+      }
+
+      const cardPayload: AccessQrPayload = {
+        app: 'DOMMIA_ACCESS',
+        kind: 'VISITOR',
+        tenant: slug,
+        subjectId: invitationId,
+        step: currentStep,
+        code: 'CARD_URL',
+      };
+
+      const validation = await this.accessRepository.validateAccess(slug, operatorId, cardPayload, (invitation, validationNow) => {
+        let reason: string | null = null;
+        if (!invitation.is_active) reason = 'PASS_REVOKED';
+        else if (new Date(invitation.valid_from).getTime() > validationNow) reason = 'PASS_NOT_YET_VALID';
+        else if (new Date(invitation.valid_until).getTime() <= validationNow) reason = 'PASS_EXPIRED';
+        else if (invitation.invitation_type === 'SINGLE' && invitation.used_at) reason = 'PASS_ALREADY_USED';
+        if (!reason && invitation.is_delinquent) reason = 'PROPERTY_DELINQUENT';
+        return reason;
+      });
+
+      const invitation = validation.subject;
+      if (!invitation) return { authorized: false, reason: 'PASS_NOT_FOUND' };
+      const notificationContacts = { email: invitation.host_email, phone: invitation.host_phone };
+      const publicValidation = {
+        authorized: validation.authorized,
+        reason: validation.reason,
+        visitorName: invitation.visitor_name,
+        propertyId: invitation.property_id,
+        propertyAddress: `${invitation.street} #${invitation.exterior_number}${invitation.interior_number ? ` int. ${invitation.interior_number}` : ''}`,
+        hostName: `${invitation.first_name} ${invitation.last_name}`,
+        manualOverrideToken: validation.reason === 'PROPERTY_DELINQUENT'
+          ? signManualOverrideToken({
+            purpose: 'DOMMIA_ACCESS_MANUAL_OVERRIDE',
+            tenant: slug,
+            guardId: operatorId,
+            invitationId: invitation.id,
+            step: currentStep,
+            exp: Date.now() + MANUAL_OVERRIDE_TTL_MS,
+          })
+          : undefined,
+        requiresManualReview: validation.reason === 'PROPERTY_DELINQUENT',
+        validatedBy: operatorId,
+      };
+
+      if (!validation.authorized) return publicValidation;
+
+      let notificationStatus: AccessNotificationStatus = 'FAILED';
+      try {
+        const tenant = await this.tenants.findByExactSlug(slug);
+        notificationStatus = await this.notificationDelivery.sendAccessGranted(
+          slug,
+          notificationContacts,
+          {
+            visitorName: invitation.visitor_name || 'Visitante',
+            communityName: tenant?.name || slug,
+            propertyAddress: publicValidation.propertyAddress || '',
+            accessTime: new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }),
+          },
+        );
+      } catch (error) {
+        this.logger.warn(`No se pudo notificar al anfitrión tras validar el acceso en ${slug}: ${error instanceof Error ? error.message : 'error desconocido'}`);
+      }
+
+      return { ...publicValidation, notificationStatus };
+    }
+
+    if (payload.tenant !== slug || payload.step !== currentStep) {
       return { authorized: false, reason: 'INVALID_OR_EXPIRED_QR' };
     }
 
@@ -367,6 +454,25 @@ export class AccessService {
     if (result.kind === 'ALREADY_USED') throw new ConflictException('Este pase de un solo uso ya fue consumido.');
 
     const invitation = result.invitation;
+    const propertyAddress = `${invitation.street} #${invitation.exterior_number}${invitation.interior_number ? ` int. ${invitation.interior_number}` : ''}${invitation.block ? ` ${invitation.block}` : ''}${invitation.lot ? ` Lote ${invitation.lot}` : ''}`;
+
+    let notificationStatus: AccessNotificationStatus = 'FAILED';
+    try {
+      const tenant = await this.tenants.findByExactSlug(slug);
+      notificationStatus = await this.notificationDelivery.sendAccessGranted(
+        slug,
+        { email: invitation.host_email, phone: invitation.host_phone },
+        {
+          visitorName: `${invitation.visitor_name} (Sin QR · Aprobado por llamada)`,
+          communityName: tenant?.name || slug,
+          propertyAddress,
+          accessTime: new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }),
+        },
+      );
+    } catch (error) {
+      this.logger.warn(`No se pudo notificar al anfitrión tras registrar acceso manual en ${slug}: ${error instanceof Error ? error.message : 'error desconocido'}`);
+    }
+
     return {
       authorized: true,
       manualAccess: true,
@@ -374,8 +480,9 @@ export class AccessService {
       reason: 'MANUAL_NO_QR_CALL_CONFIRMED',
       visitorName: invitation.visitor_name,
       propertyId: invitation.property_id,
-      propertyAddress: `${invitation.street} #${invitation.exterior_number}${invitation.interior_number ? ` int. ${invitation.interior_number}` : ''}${invitation.block ? ` ${invitation.block}` : ''}${invitation.lot ? ` Lote ${invitation.lot}` : ''}`,
+      propertyAddress,
       hostName: invitation.host_name,
+      notificationStatus,
       validatedBy: guardId,
     };
   }
@@ -429,20 +536,128 @@ export class AccessService {
 
   private toVisitorPass(row: Record<string, any>, accessCount: number) {
     const invitationType = row.invitation_type;
-    const status = !row.is_active ? 'REVOKED' : new Date(row.valid_until).getTime() <= Date.now() ? 'EXPIRED' : 'ACTIVE';
+    const isSingleUse = invitationType === 'SINGLE';
+    const isUsed = Boolean(row.used_at) || (isSingleUse && accessCount > 0);
+    const isExpired = new Date(row.valid_until).getTime() <= Date.now();
+
+    let status: 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'USED' = 'ACTIVE';
+    if (isUsed && (isSingleUse || !row.is_active)) {
+      status = 'USED';
+    } else if (!row.is_active) {
+      status = 'REVOKED';
+    } else if (isExpired) {
+      status = 'EXPIRED';
+    } else {
+      status = 'ACTIVE';
+    }
+
     return {
       id: row.id,
       visitorName: row.visitor_name,
       validFrom: new Date(row.valid_from).toISOString(),
       validUntil: new Date(row.valid_until).toISOString(),
-      passType: invitationType === 'SINGLE' ? 'SINGLE_USE' : invitationType === 'RECURRENT' ? 'TEMPORARY' : 'FREQUENT',
+      passType: isSingleUse ? 'SINGLE_USE' : invitationType === 'RECURRENT' ? 'TEMPORARY' : 'FREQUENT',
       accessCount,
       qrPayload: '',
       notes: row.notes || undefined,
       status,
+      usedAt: row.used_at ? new Date(row.used_at).toISOString() : undefined,
       synced: true,
       createdAt: new Date(row.created_at).toISOString(),
     };
+  }
+
+  async createGuardService(slug: string, guardId: string, dto: CreateGuardServiceDto) {
+    const tenant = await this.assertAccessEnabled(slug);
+    if (dto.destinationType === 'SPECIFIC' && (!dto.destinations || dto.destinations.length === 0)) {
+      throw new BadRequestException('Debes seleccionar al menos un residente o domicilio de destino.');
+    }
+
+    const service = await this.accessRepository.createGuardService(slug, guardId, dto);
+
+    const serviceLabels: Record<string, string> = {
+      FOOD_DELIVERY: 'Comida / Delivery',
+      GAS_SUPPLY: 'Gas L.P. / Suministro',
+      WATER_SUPPLY: 'Garrafones de Agua',
+      PARCEL_COURIER: 'Paquetería / Mensajería',
+      TAXI_RIDE: 'Taxi / Transporte',
+      MAINTENANCE: 'Mantenimiento / Contratistas',
+      OTHER: dto.customServiceName || 'Servicio / Proveedor',
+    };
+    const label = serviceLabels[dto.serviceType] || 'Servicio';
+    const supplier = dto.supplierName ? ` (${dto.supplierName})` : '';
+    const plates = dto.vehiclePlates ? ` [Placas: ${dto.vehiclePlates}]` : '';
+
+    if (dto.destinationType === 'SPECIFIC' && dto.destinations) {
+      for (const dest of dto.destinations) {
+        if (dest.residentEmail || dest.residentPhone) {
+          try {
+            await this.notificationDelivery.sendAccessGranted(
+              slug,
+              { email: dest.residentEmail || null, phone: dest.residentPhone || null },
+              {
+                visitorName: `Servicio en camino: ${label}${supplier}${plates}`,
+                communityName: tenant.name,
+                propertyAddress: dest.propertyAddress,
+                accessTime: new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }),
+              },
+            );
+          } catch (error) {
+            this.logger.warn(`No se pudo notificar al residente de ${dest.propertyAddress} sobre el servicio: ${error instanceof Error ? error.message : 'error desconocido'}`);
+          }
+        }
+      }
+    } else if (dto.destinationType === 'GENERAL') {
+      this.logger.log(`Proveedor en recorrido general registrado en ${slug}: ${label}${supplier}${plates}`);
+      try {
+        const admin = await this.accessRepository.findTenantAdminContacts(slug);
+        if (admin?.email || admin?.phone) {
+          await this.notificationDelivery.sendAccessGranted(
+            slug,
+            { email: admin.email || null, phone: admin.phone || null },
+            {
+              visitorName: `Proveedor en recorrido general: ${label}${supplier}${plates}`,
+              communityName: tenant.name,
+              propertyAddress: 'Recorrido General en Fraccionamiento',
+              accessTime: new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }),
+            },
+          );
+        }
+      } catch (error) {
+        this.logger.warn(`No se pudo notificar al administrador sobre el recorrido general en ${slug}: ${error instanceof Error ? error.message : 'error desconocido'}`);
+      }
+    }
+
+    return service;
+  }
+
+  async listGuardServices(slug: string, status?: 'IN_TRANSIT' | 'COMPLETED' | 'ALL') {
+    await this.assertAccessEnabled(slug);
+    return this.accessRepository.listGuardServices(slug, status);
+  }
+
+  async registerServiceExit(slug: string, serviceId: string, guardId: string, dto?: RegisterServiceExitDto) {
+    await this.assertAccessEnabled(slug);
+    const service = await this.accessRepository.registerServiceExit(slug, serviceId, guardId, dto);
+    if (!service) {
+      throw new NotFoundException('El servicio no se encuentra activo o ya fue registrado como salido.');
+    }
+    return service;
+  }
+
+  async listActiveServicesForResident(claims: ResidentSessionClaims) {
+    await this.assertAccessEnabled(claims.tenantSlug);
+    return this.accessRepository.listActiveServicesForProperty(claims.tenantSlug, claims.propertyId);
+  }
+
+  async listActiveDeliveriesForResident(claims: ResidentSessionClaims) {
+    await this.assertAccessEnabled(claims.tenantSlug);
+    return this.accessRepository.listActiveDeliveriesForProperty(claims.tenantSlug, claims.propertyId);
+  }
+
+  async getUnifiedAuditLog(slug: string, query: UnifiedAuditLogQueryDto) {
+    await this.assertAccessEnabled(slug);
+    return this.accessRepository.getUnifiedAuditLog(slug, query);
   }
 }
 

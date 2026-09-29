@@ -12,4 +12,16 @@ export class ResidentAccessController {
   async getCredential(@Req() request: { user: ResidentSessionClaims }) {
     return { success: true, data: await this.accessService.getResidentCredential(request.user) };
   }
+
+  @Get('active-services')
+  @Header('Cache-Control', 'no-store, max-age=0')
+  async getActiveServices(@Req() request: { user: ResidentSessionClaims }) {
+    return { success: true, data: await this.accessService.listActiveServicesForResident(request.user) };
+  }
+
+  @Get('active-deliveries')
+  @Header('Cache-Control', 'no-store, max-age=0')
+  async getActiveDeliveries(@Req() request: { user: ResidentSessionClaims }) {
+    return { success: true, data: await this.accessService.listActiveDeliveriesForResident(request.user) };
+  }
 }

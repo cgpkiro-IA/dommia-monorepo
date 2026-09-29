@@ -33,8 +33,31 @@ export function GuardQrScannerPanel({ videoRef, state, message, isOnline, valida
         <span className="viewfinder viewfinder-bl" aria-hidden="true" /><span className="viewfinder viewfinder-br" aria-hidden="true" />
       </div>
       {message && <p className="inline-message" role="status">{message}</p>}
-      <Button variant={state === 'idle' ? 'primary' : 'dark-outline'} size="md" className={`camera-button ${state !== 'idle' ? 'camera-button-stop' : ''}`} type="button" onClick={state === 'idle' ? onStart : onStop} disabled={!isOnline || validationBusy || hasResult}>
-        {state === 'starting' ? 'Cancelar inicio' : state === 'scanning' ? 'Detener cámara' : 'Iniciar cámara'}
+      {validationBusy && (
+        <div className="inline-message" style={{ color: '#38bdf8', fontWeight: 600 }}>
+          ⏳ Validando código con el servidor...
+        </div>
+      )}
+      {hasResult && !validationBusy && (
+        <div className="inline-message" style={{ color: '#34d399', fontWeight: 600 }}>
+          ✓ Código procesado. Resultado visible abajo.
+        </div>
+      )}
+      <Button
+        variant={state === 'idle' ? 'primary' : 'dark-outline'}
+        size="md"
+        className={`camera-button ${state !== 'idle' ? 'camera-button-stop' : ''}`}
+        type="button"
+        onClick={state === 'idle' ? onStart : onStop}
+        disabled={!isOnline || validationBusy}
+      >
+        {state === 'starting'
+          ? 'Cancelar inicio'
+          : state === 'scanning'
+            ? 'Detener cámara'
+            : hasResult
+              ? 'Escanear otro código'
+              : 'Iniciar cámara'}
         {state === 'idle' ? <Camera size={16} aria-hidden="true" /> : <CircleX size={16} aria-hidden="true" />}
       </Button>
     </section>

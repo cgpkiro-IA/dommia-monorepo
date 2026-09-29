@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { CreditCard, ArrowRight } from 'lucide-react';
-import { ResidentProfile } from '../types';
+import { CreditCard, ArrowRight, Car, Bell, Check, Bike, Truck, Droplets, Package, Wrench, HelpCircle } from 'lucide-react';
+import { ResidentProfile, ResidentServiceItem, ResidentDeliveryItem } from '../types';
 import { db } from '../lib/db';
 import { useOnlineStatus } from '../features/offline/hooks/useOnlineStatus';
 import { useDynamicQR } from '../features/credential/hooks/useDynamicQR';
@@ -62,6 +62,51 @@ export default function ResidentHomePage() {
     }
     return DEFAULT_RESIDENT_PROFILE;
   });
+
+  // Servicios activos en camino hacia el domicilio del residente
+  const [activeServices, setActiveServices] = useState<ResidentServiceItem[]>([]);
+  const [dismissedServices, setDismissedServices] = useState<Record<string, boolean>>({});
+
+  // Paquetes en resguardo en caseta
+  const [activeDeliveries, setActiveDeliveries] = useState<ResidentDeliveryItem[]>([]);
+  const [dismissedDeliveries, setDismissedDeliveries] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!residentAuth.token) return;
+    const fetchRealtimeAccessAlerts = async () => {
+      try {
+        // Consultar servicios en camino
+        const resServices = await fetch('http://localhost:4000/api/v1/auth/resident/access-credential/active-services', {
+          headers: { Authorization: `Bearer ${residentAuth.token}` },
+        });
+        if (resServices.ok) {
+          const json = await resServices.json();
+          if (json.success && Array.isArray(json.data)) {
+            setActiveServices(json.data);
+          }
+        }
+      } catch {}
+
+      try {
+        // Consultar paquetes pendientes en caseta
+        const resDeliveries = await fetch('http://localhost:4000/api/v1/auth/resident/access-credential/active-deliveries', {
+          headers: { Authorization: `Bearer ${residentAuth.token}` },
+        });
+        if (resDeliveries.ok) {
+          const json = await resDeliveries.json();
+          if (json.success && Array.isArray(json.data)) {
+            setActiveDeliveries(json.data);
+          }
+        }
+      } catch {}
+    };
+
+    void fetchRealtimeAccessAlerts();
+    const timer = setInterval(() => {
+      void fetchRealtimeAccessAlerts();
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [residentAuth.token]);
 
   useEffect(() => {
     let isMounted = true;
@@ -133,6 +178,16 @@ export default function ResidentHomePage() {
     onStatusChange: handleStatusChange,
   });
   const annualCampaign = useAnnualCampaign(profile);
+  const [dismissedArrivals, setDismissedArrivals] = useState<Record<string, boolean>>({});
+
+  const recentArrival = useMemo(() => {
+    const now = Date.now();
+    return passes.find((p) => {
+      if (!p.usedAt || dismissedArrivals[p.id]) return false;
+      const usedTime = new Date(p.usedAt).getTime();
+      return (now - usedTime) < 2 * 60 * 1000 && (now - usedTime) >= 0;
+    });
+  }, [passes, dismissedArrivals]);
 
   const openStripeCheckout = async () => {
     const charge = financialStatus?.charges.find((item) => Number(item.balance_due) > 0);
@@ -178,6 +233,173 @@ export default function ResidentHomePage() {
           lastSyncTime={lastSyncTime}
           onSyncNow={triggerSync}
         />
+
+        {/* Alerta de Paquete en Resguardo en Caseta (desaparece automáticamente al registrar retiro en caseta) */}
+        {activeDeliveries.filter((d) => !dismissedDeliveries[d.id]).map((delivery) => (
+          <div
+            key={delivery.id}
+            className="mx-4 mb-3 p-3.5 rounded-2xl bg-indigo-950/95 border-2 border-indigo-500/60 shadow-xl text-white animate-fade-in flex items-start justify-between gap-3"
+          >
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <div className="p-2 rounded-xl bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shrink-0">
+                <Package className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <strong className="text-xs font-extrabold uppercase tracking-wider text-indigo-200 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                    Paquete en caseta
+                  </strong>
+                  <span className="text-[10px] text-indigo-200 font-mono">
+                    {new Date(delivery.received_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-sm font-bold text-white mt-0.5 truncate">
+                  {delivery.carrier} • Para: {delivery.recipient_name}
+                </p>
+                {delivery.tracking_code && (
+                  <p className="text-[11px] text-indigo-200 font-mono mt-0.5 truncate">
+                    Guía: {delivery.tracking_code}
+                  </p>
+                )}
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  {delivery.notes ? `Nota: ${delivery.notes} — ` : ''}Paquete en resguardo en caseta principal esperando tu retiro.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setDismissedDeliveries((prev) => ({ ...prev, [delivery.id]: true }))}
+              title="Enterado (Cerrar aviso)"
+              aria-label="Confirmar de enterado y quitar alerta"
+              className="p-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 hover:text-emerald-200 border border-emerald-500/40 transition-all shrink-0 cursor-pointer flex items-center gap-1 text-xs font-bold shadow-sm"
+            >
+              <Check className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">Enterado</span>
+            </button>
+          </div>
+        ))}
+
+        {/* Alertas de Servicios en Camino (Comida, Gas, Garrafones, Mensajería, etc.) */}
+        {activeServices.filter((s) => !dismissedServices[s.id]).map((service) => {
+          const serviceType = service.service_type;
+          const isFood = serviceType === 'FOOD_DELIVERY';
+          const isGas = serviceType === 'GAS_SUPPLY';
+          const isWater = serviceType === 'WATER_SUPPLY';
+          const isParcel = serviceType === 'PARCEL_COURIER';
+          const isTaxi = serviceType === 'TAXI_RIDE';
+          const isMaint = serviceType === 'MAINTENANCE';
+
+          const title = isFood ? 'Comida / Delivery en camino'
+            : isGas ? 'Camión de Gas L.P. en fraccionamiento'
+            : isWater ? 'Garrafones de Agua en camino'
+            : isParcel ? 'Paquetería / Mensajería en camino'
+            : isTaxi ? 'Taxi / Transporte en camino'
+            : isMaint ? 'Mantenimiento en fraccionamiento'
+            : service.custom_service_name ? `${service.custom_service_name} en camino` : 'Servicio / Proveedor en camino';
+
+          const IconComponent = isFood ? Bike
+            : isGas ? Truck
+            : isWater ? Droplets
+            : isParcel ? Package
+            : isTaxi ? Car
+            : isMaint ? Wrench
+            : HelpCircle;
+
+          const themeBg = isFood ? 'bg-amber-950/95 border-amber-500/60'
+            : isGas ? 'bg-orange-950/95 border-orange-500/60'
+            : isWater ? 'bg-cyan-950/95 border-cyan-500/60'
+            : isParcel ? 'bg-purple-950/95 border-purple-500/60'
+            : 'bg-emerald-950/95 border-emerald-500/60';
+
+          const iconBg = isFood ? 'bg-amber-600/30 text-amber-300 border-amber-500/40'
+            : isGas ? 'bg-orange-600/30 text-orange-300 border-orange-500/40'
+            : isWater ? 'bg-cyan-600/30 text-cyan-300 border-cyan-500/40'
+            : isParcel ? 'bg-purple-600/30 text-purple-300 border-purple-500/40'
+            : 'bg-emerald-600/30 text-emerald-300 border-emerald-500/40';
+
+          return (
+            <div key={service.id} className={`mx-4 mb-3 p-3.5 rounded-2xl border-2 shadow-xl text-white animate-fade-in flex items-start justify-between gap-3 ${themeBg}`}>
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <div className={`p-2 rounded-xl border shrink-0 ${iconBg}`}>
+                  <IconComponent className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <strong className="text-xs font-extrabold uppercase tracking-wider text-amber-200 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      {title}
+                    </strong>
+                    <span className="text-[10px] text-slate-300 font-mono">
+                      {new Date(service.entered_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-white mt-0.5 truncate">
+                    {service.supplier_name || 'Proveedor autorizado en caseta'}
+                    {service.vehicle_plates ? ` (${service.vehicle_plates})` : ''}
+                  </p>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    {service.destination_type === 'GENERAL'
+                      ? 'Proveedor en circulación general dentro del fraccionamiento.'
+                      : 'Ingreso registrado en caseta. El servicio se dirige a tu domicilio.'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setDismissedServices((prev) => ({ ...prev, [service.id]: true }))}
+                title="Enterado (Cerrar aviso)"
+                aria-label="Confirmar de enterado y quitar alerta"
+                className="p-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 hover:text-emerald-200 border border-emerald-500/40 transition-all shrink-0 cursor-pointer flex items-center gap-1 text-xs font-bold shadow-sm"
+              >
+                <Check className="w-4 h-4 text-emerald-400" />
+                <span className="hidden sm:inline">Enterado</span>
+              </button>
+            </div>
+          );
+        })}
+
+        {/* Alerta de Visita en Camino (validada recientemente en caseta, auto-cierre en 2 min o con palomita) */}
+        {recentArrival && (
+          <div className="mx-4 mb-4 p-3.5 rounded-2xl bg-blue-950/95 border-2 border-blue-500/60 shadow-xl text-white animate-fade-in flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <div className="p-2 rounded-xl bg-blue-600/30 text-blue-300 border border-blue-500/40 shrink-0">
+                <Car className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <strong className="text-xs font-extrabold uppercase tracking-wider text-blue-300 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    Visita en camino
+                  </strong>
+                  <span className="text-[10px] text-blue-300 font-mono">
+                    {new Date(recentArrival.usedAt!).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-sm font-bold text-white mt-0.5 truncate">
+                  {recentArrival.visitorName}
+                </p>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  Ingreso autorizado en caseta. Tu visita ya se dirige a tu propiedad.
+                </p>
+              </div>
+            </div>
+
+            {/* Acción de Enterado / Descartar alerta con Palomita */}
+            <button
+              type="button"
+              onClick={() => setDismissedArrivals((prev) => ({ ...prev, [recentArrival.id]: true }))}
+              title="Enterado (Cerrar aviso)"
+              aria-label="Confirmar de enterado y quitar alerta"
+              className="p-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 hover:text-emerald-200 border border-emerald-500/40 transition-all shrink-0 cursor-pointer flex items-center gap-1 text-xs font-bold shadow-sm"
+            >
+              <Check className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">Enterado</span>
+            </button>
+          </div>
+        )}
 
         {/* Tab 1: Credencial Digital y Apertura */}
         {activeTab === 'credential' && (

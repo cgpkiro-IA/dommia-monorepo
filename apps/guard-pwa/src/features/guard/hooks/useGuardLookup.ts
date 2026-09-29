@@ -26,7 +26,29 @@ export function useGuardLookup(session: GuardSession | null, isOnline: boolean) 
     return () => URL.revokeObjectURL(imageUrl);
   }, [platePhoto]);
 
+  const autoClearTimeoutRef = useRef<number | null>(null);
+
+  const clearLookup = useCallback(() => {
+    if (autoClearTimeoutRef.current) {
+      window.clearTimeout(autoClearTimeoutRef.current);
+      autoClearTimeoutRef.current = null;
+    }
+    setLookupQuery('');
+    setLookupResult(null);
+    setPlatePhoto(null);
+    setPlateOcrMessage('');
+    setPlateOcrProgress(0);
+  }, []);
+
+  useEffect(() => () => {
+    if (autoClearTimeoutRef.current) window.clearTimeout(autoClearTimeoutRef.current);
+  }, []);
+
   const handleLookup = useCallback(async () => {
+    if (autoClearTimeoutRef.current) {
+      window.clearTimeout(autoClearTimeoutRef.current);
+      autoClearTimeoutRef.current = null;
+    }
     if (!session || !lookupQuery.trim()) {
       setLookupResult(null);
       return;
@@ -38,6 +60,11 @@ export function useGuardLookup(session: GuardSession | null, isOnline: boolean) 
         session.token,
       );
       setLookupResult(data);
+      // Limpiar automáticamente la consulta tras 3 minutos por privacidad y seguridad
+      autoClearTimeoutRef.current = window.setTimeout(() => {
+        setLookupResult(null);
+        setLookupQuery('');
+      }, 3 * 60 * 1000);
     } catch {
       setLookupResult({ query: lookupQuery.trim(), total: 0, residents: [], vehicles: [] });
     } finally {
@@ -100,14 +127,6 @@ export function useGuardLookup(session: GuardSession | null, isOnline: boolean) 
       setPlateOcrBusy(false);
     }
   };
-
-  const clearLookup = useCallback(() => {
-    setLookupQuery('');
-    setLookupResult(null);
-    setPlatePhoto(null);
-    setPlateOcrMessage('');
-    setPlateOcrProgress(0);
-  }, []);
 
   const removePlatePhoto = useCallback(() => {
     setPlatePhoto(null);

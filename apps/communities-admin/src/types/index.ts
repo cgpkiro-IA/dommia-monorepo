@@ -288,4 +288,69 @@ export interface AnnualCampaignFormData {
   periodEnd: string;
 }
 
+export type GuardServiceType =
+  | 'FOOD_DELIVERY'
+  | 'GAS_SUPPLY'
+  | 'WATER_SUPPLY'
+  | 'PARCEL_COURIER'
+  | 'TAXI_RIDE'
+  | 'MAINTENANCE'
+  | 'OTHER';
+
+export interface GuardServiceDestination {
+  propertyId: string;
+  propertyAddress: string;
+  residentId?: string;
+  residentName?: string;
+  residentPhone?: string;
+  residentEmail?: string;
+}
+
+export interface GuardServiceItem {
+  id: string;
+  service_type: GuardServiceType;
+  custom_service_name?: string;
+  supplier_name?: string;
+  vehicle_plates?: string;
+  destination_type: 'SPECIFIC' | 'GENERAL';
+  destinations: GuardServiceDestination[];
+  status: 'IN_TRANSIT' | 'COMPLETED';
+  notes?: string;
+  entered_by: string;
+  entered_at: string;
+  exited_by?: string;
+  exited_at?: string;
+}
+
+export type AuditCategoryFilter = 'ALL' | 'ACCESS' | 'SERVICE' | 'INCIDENT' | 'DELIVERY' | 'NOTICE';
+export type AuditPeriodFilter = 'TODAY' | 'WEEK' | 'FORTNIGHT' | 'MONTH' | 'CUSTOM';
+
+export interface UnifiedAuditLogItem {
+  id: string;
+  eventType: string;
+  category: 'ACCESS' | 'SERVICE' | 'INCIDENT' | 'DELIVERY' | 'NOTICE';
+  title: string;
+  description: string;
+  propertyAddress?: string;
+  vehiclePlates?: string;
+  isGranted: boolean;
+  status: string;
+  rejectionReason?: string;
+  notes?: string;
+  actorName?: string;
+  createdAt: string;
+}
+
+export interface UnifiedAuditLogSummary {
+  totalEvents: number;
+  grantedAccessCount: number;
+  rejectedAccessCount: number;
+  servicesCount: number;
+  incidentsCount: number;
+  deliveriesCount: number;
+  noticesCount: number;
+}
+
+
+
 

@@ -47,7 +47,7 @@ export async function prepareGuardQa() {
       }
       assert.equal(isHealthy, true, `API no disponible en ${apiBase} después de ${timeoutMs} ms (${lastHealthError}); levanta apps/api antes de ejecutar las pruebas.`);
       const seed = await readFile(resolve(repositoryRoot, 'scratch/seed_guard_qa.sql'), 'utf8');
-      const migrations = ['013_guard_operations.sql', '014_tenant_feature_tables.sql', '015_admin_mfa.sql'];
+      const migrations = ['013_guard_operations.sql', '014_tenant_feature_tables.sql', '015_admin_mfa.sql', '016_guard_services.sql'];
       for (const migrationName of migrations) {
         const migration = await readFile(resolve(repositoryRoot, 'docker/migrations', migrationName), 'utf8');
         await pool.query(migration);

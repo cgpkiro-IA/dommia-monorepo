@@ -17,3 +17,4 @@
 \i /docker-entrypoint-migrations/019_tenant_guard_schema_completion.sql
 \i /docker-entrypoint-migrations/020_tenant_finance_schema_completion.sql
 \i /docker-entrypoint-migrations/021_resident_app_refresh_sessions.sql
+\i /docker-entrypoint-migrations/022_resident_push_tokens.sql

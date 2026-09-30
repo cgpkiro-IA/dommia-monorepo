@@ -154,10 +154,11 @@ Se habilitará únicamente cuando el crecimiento lo justifique.
 
 - Login
 - MFA TOTP opcional para cuentas administrativas, con desafío posterior a contraseña cuando está habilitado
-- JWT
-- Refresh Tokens
+- Passport JWT HS256 para sesiones nuevas y `ApiAuthGuard` global con excepciones públicas explícitas (`@Public`).
+- JWT Resident móvil de 15 min con issuer/audience propios y refresh token opaco rotatorio; guardar refresh como hash.
+- Compatibilidad temporal con tokens Resident/admin HMAC de dos segmentos ya emitidos, solo hasta expirar.
 - Recuperación de Contraseña
-- RBAC
+- RBAC con `@Roles` y `RolesGuard` global; guards locales validan tenant, vivienda, audiencia y sesión.
 
 ## CRM Service
 
@@ -351,7 +352,9 @@ Nunca almacenar exclusivamente en Redis:
 ## Requerimientos Obligatorios
 
 - MFA TOTP opcional por cuenta para administradores. La configuración está en [Protocolo de Seguridad](./Protocolo%20de%20Seguridad%20y%20Proteccion%20de%20Propiedad%20Intelectual.md).
-- JWT firmado.
+- JWT firmado con claves separadas por audiencia/uso; secretos solo en configuración backend validada con Joi.
+- `ValidationPipe` global con `transform`, `whitelist` y rechazo de propiedades desconocidas en DTOs.
+- Helmet para cabeceras HTTP y CORS con allowlist exacta; en producción solo orígenes HTTPS configurados.
 - TLS.
 - Rotación de llaves.
 - RBAC.

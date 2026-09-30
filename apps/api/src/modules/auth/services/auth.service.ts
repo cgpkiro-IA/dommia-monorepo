@@ -1,5 +1,7 @@
 import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID } from 'crypto';
 import * as OTPAuth from 'otpauth';
 import * as QRCode from 'qrcode';
 import { AuthRepository } from '../repositories/auth.repository';
@@ -52,48 +54,41 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
+    private readonly config: ConfigService,
+    private readonly jwtService: JwtService,
     private readonly authRepo: AuthRepository,
     private readonly notificationDelivery: NotificationDeliveryService,
     private readonly residentRateLimiter: InMemoryResidentRateLimiter,
   ) {}
 
   private signClaims(claims: Record<string, unknown>) {
-    const encodedClaims = Buffer.from(JSON.stringify(claims)).toString('base64url');
-    const signature = createHmac('sha256', process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me')
-      .update(encodedClaims)
-      .digest('base64url');
-    return `${encodedClaims}.${signature}`;
+    const expiresAt = claims.exp;
+    if (typeof expiresAt !== 'number') throw new Error('El token requiere una expiración válida.');
+    return this.jwtService.sign({
+      ...claims,
+      exp: Math.floor(expiresAt / 1000),
+    }, {
+      secret: this.config.getOrThrow<string>('AUTH_TOKEN_SECRET'),
+      algorithm: 'HS256',
+    });
   }
 
   private verifySignedClaims(token: string) {
-    const [encodedClaims, encodedSignature] = token.split('.');
-    if (!encodedClaims || !encodedSignature) throw new UnauthorizedException('Desafío MFA inválido o expirado.');
-    const expected = Buffer.from(createHmac('sha256', process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me')
-      .update(encodedClaims).digest('base64url'));
-    const actual = Buffer.from(encodedSignature);
-    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
-      throw new UnauthorizedException('Desafío MFA inválido o expirado.');
-    }
     try {
-      const claims = JSON.parse(Buffer.from(encodedClaims, 'base64url').toString('utf8')) as Record<string, unknown>;
-      if (typeof claims.exp !== 'number' || claims.exp <= Date.now()) throw new Error('expired');
-      return claims;
+      return this.jwtService.verify<Record<string, unknown>>(token, {
+        secret: this.config.getOrThrow<string>('AUTH_TOKEN_SECRET'),
+        algorithms: ['HS256'],
+      });
     } catch {
       throw new UnauthorizedException('Desafío MFA inválido o expirado.');
     }
   }
 
   private encryptionKey() {
-    const configuredKey = process.env.MFA_ENCRYPTION_KEY;
-    if (process.env.NODE_ENV === 'production' && !configuredKey) {
-      throw new Error('MFA_ENCRYPTION_KEY es obligatorio en producción.');
-    }
-    if (configuredKey && !/^[0-9a-f]{64}$/i.test(configuredKey)) {
-      throw new Error('MFA_ENCRYPTION_KEY debe contener 64 caracteres hexadecimales.');
-    }
+    const configuredKey = this.config.get<string>('MFA_ENCRYPTION_KEY');
     return configuredKey
       ? Buffer.from(configuredKey, 'hex')
-      : createHash('sha256').update(process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me').digest();
+      : createHash('sha256').update(this.config.getOrThrow<string>('AUTH_TOKEN_SECRET')).digest();
   }
 
   private encryptSecret(secret: string) {
@@ -157,11 +152,7 @@ export class AuthService {
   }
 
   private residentAppSigningKey() {
-    const configuredKey = process.env.RESIDENT_APP_TOKEN_SECRET;
-    if (process.env.NODE_ENV === 'production' && (!configuredKey || configuredKey.length < 32)) {
-      throw new Error('RESIDENT_APP_TOKEN_SECRET debe tener al menos 32 caracteres en producción.');
-    }
-    return configuredKey || process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me';
+    return this.config.getOrThrow<string>('RESIDENT_APP_TOKEN_SECRET');
   }
 
   private async createResidentAppTokenResponse(session: {
@@ -307,6 +298,7 @@ export class AuthService {
 
   async login(dto: LoginDto): Promise<AuthSession | MfaLoginChallenge> {
     const email = dto.email.trim().toLowerCase();
+    this.residentRateLimiter.assertAllowed('admin-login', email, 8, 15 * 60 * 1000);
 
     // Verify password through repository
     const user = await this.authRepo.findUserByEmailAndPassword(email, dto.password);
@@ -515,9 +507,8 @@ export class AuthService {
     const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
     const jti = randomUUID();
     await this.authRepo.createResidentSession(jti, resident.id, dto.tenantSlug, new Date(expiresAt));
-    const claims = Buffer.from(JSON.stringify({ sub: resident.id, email: resident.email, role: 'RESIDENT', tenantSlug: dto.tenantSlug, propertyId: resident.property_id, mustChangePassword: resident.must_change_password, jti, exp: expiresAt })).toString('base64url');
-    const signature = createHmac('sha256', process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me').update(claims).digest('base64url');
-    return { token: `${claims}.${signature}`, mustChangePassword: resident.must_change_password, resident, tenantSlug: dto.tenantSlug };
+    const token = this.signClaims({ sub: resident.id, email: resident.email, role: 'RESIDENT', tenantSlug: dto.tenantSlug, propertyId: resident.property_id, mustChangePassword: resident.must_change_password, jti, exp: expiresAt });
+    return { token, mustChangePassword: resident.must_change_password, resident, tenantSlug: dto.tenantSlug };
   }
 
   async residentLogout(jti: string) {

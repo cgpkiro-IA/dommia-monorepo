@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { CrmService } from '../services/crm.service';
 import { CrmAnalyticsService } from '../services/crm-analytics.service';
-import { CrmAlertsService, CreateAlertDto } from '../services/crm-alerts.service';
+import { CrmAlertsService } from '../services/crm-alerts.service';
 import { TelegramAlertService } from '../services/telegram-alert.service';
 import { CreateProspectDto } from '../dto/create-prospect.dto';
 import { UpdateStageDto } from '../dto/update-stage.dto';
@@ -22,8 +22,12 @@ import { CreateGatewayDto } from '../dto/create-gateway.dto';
 import { SelfServiceProvisionDto } from '../dto/self-service-provision.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
 import { CrmAdminGuard } from '../../auth/guards/crm-admin.guard';
+import { Public, Roles } from '../../auth/decorators/auth-metadata.decorator';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { CreateCrmAlertDto, GatewayHeartbeatDto, ResolveCrmAlertDto, TestTelegramNotificationDto, UpdateGatewayDto, UpdateTelegramConfigDto } from '../dto/crm.dto';
 
 @Controller('crm')
+@Roles('SUPER_ADMIN', 'COMMERCIAL_EXEC', 'SUPPORT')
 export class CrmController {
   constructor(
     private readonly crmService: CrmService,
@@ -65,6 +69,9 @@ export class CrmController {
   }
 
   @Post('self-service-provision')
+  @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: 15 * 60 * 1000 } })
   @HttpCode(HttpStatus.CREATED)
   async selfServiceProvision(@Body() dto: SelfServiceProvisionDto) {
     const result = await this.crmService.selfServiceProvision(dto);
@@ -76,6 +83,9 @@ export class CrmController {
   }
 
   @Post('prospects')
+  @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000 } })
   @HttpCode(HttpStatus.CREATED)
   async createProspect(@Body() dto: CreateProspectDto) {
     const prospect = await this.crmService.createProspect(dto);
@@ -136,7 +146,7 @@ export class CrmController {
   @HttpCode(HttpStatus.OK)
   async recordHeartbeat(
     @Param('uuid') uuid: string,
-    @Body() body: { ipLocal?: string },
+    @Body() body: GatewayHeartbeatDto,
   ) {
     const gateway = await this.crmService.recordHeartbeat(uuid, body.ipLocal);
     return {
@@ -150,7 +160,7 @@ export class CrmController {
   @UseGuards(CrmAdminGuard)
   async updateGateway(
     @Param('uuid') uuid: string,
-    @Body() body: { name?: string; tenantId?: string; firmwareVersion?: string; notes?: string },
+    @Body() body: UpdateGatewayDto,
   ) {
     const gateway = await this.crmService.updateGateway(uuid, body);
     return {
@@ -194,7 +204,7 @@ export class CrmController {
   @Post('alerts')
   @UseGuards(CrmAdminGuard)
   @HttpCode(HttpStatus.CREATED)
-  async createAlert(@Body() dto: CreateAlertDto) {
+  async createAlert(@Body() dto: CreateCrmAlertDto) {
     const created = await this.crmAlertsService.create(dto);
     return {
       success: true,
@@ -222,7 +232,7 @@ export class CrmController {
   @UseGuards(CrmAdminGuard)
   async resolveAlert(
     @Param('id') id: string,
-    @Body() body: { notes?: string },
+    @Body() body: ResolveCrmAlertDto,
     @Req() request: { user?: { email: string } },
   ) {
     const userEmail = request.user?.email || 'operador-crm@dommia.com';
@@ -250,7 +260,7 @@ export class CrmController {
   @Put('alerts/telegram-config')
   @UseGuards(CrmAdminGuard)
   async updateTelegramConfig(
-    @Body() body: { enabled: boolean; botToken?: string; chatId?: string; botUsername?: string },
+    @Body() body: UpdateTelegramConfigDto,
   ) {
     const config = await this.telegramAlertService.saveConfig(body);
     return {
@@ -263,7 +273,7 @@ export class CrmController {
   @Post('alerts/telegram-test')
   @UseGuards(CrmAdminGuard)
   async testTelegramNotification(
-    @Body() body: { botToken?: string; chatId?: string },
+    @Body() body: TestTelegramNotificationDto,
   ) {
     const result = await this.telegramAlertService.testNotification(body.botToken, body.chatId);
     return {

@@ -69,6 +69,7 @@ BEGIN
 
   EXECUTE format('ALTER TABLE %I.financial_charges ADD COLUMN IF NOT EXISTS period_year INT', v_schema_name);
   EXECUTE format('ALTER TABLE %I.financial_charges ADD COLUMN IF NOT EXISTS period_month INT', v_schema_name);
+  EXECUTE format('ALTER TABLE %I.financial_charges ADD COLUMN IF NOT EXISTS fee_config_id UUID REFERENCES %I.fee_configurations(id) ON DELETE SET NULL', v_schema_name, v_schema_name);
   EXECUTE format('ALTER TABLE %I.financial_charges ADD COLUMN IF NOT EXISTS balance_due NUMERIC(12,2)', v_schema_name);
   EXECUTE format('ALTER TABLE %I.financial_charges ADD COLUMN IF NOT EXISTS notes TEXT', v_schema_name);
   EXECUTE format($update$

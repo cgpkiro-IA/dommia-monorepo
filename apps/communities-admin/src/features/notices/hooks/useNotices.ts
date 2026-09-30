@@ -15,7 +15,7 @@ const INITIAL_FORM: NoticeFormData = {
   is_published: true,
 };
 
-export function useNotices() {
+export function useNotices(authToken?: string) {
   const [notices, setNotices] = useState<CommunityNotice[]>([]);
   const [loadingNotices, setLoadingNotices] = useState(false);
 
@@ -34,7 +34,7 @@ export function useNotices() {
   const loadNotices = async (slug: string) => {
     setLoadingNotices(true);
     try {
-      const res = await fetch(`${API_BASE}/tenants/${slug}/notices`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/notices`, { headers: authToken ? { Authorization: `Bearer ${authToken}` } : {} });
       const data = await res.json();
       if (data.success) {
         setNotices(data.data || []);
@@ -80,7 +80,7 @@ export function useNotices() {
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/notices`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
         body: JSON.stringify(noticeForm),
       });
 
@@ -114,7 +114,7 @@ export function useNotices() {
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/notices/${editingNotice.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
         body: JSON.stringify(noticeForm),
       });
 
@@ -141,6 +141,7 @@ export function useNotices() {
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/notices/${id}`, {
         method: 'DELETE',
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       });
       const data = await res.json();
       if (res.ok && data.success) {

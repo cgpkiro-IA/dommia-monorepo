@@ -6,7 +6,7 @@
 ## Conexión y ciclo de vida
 
 - `DatabaseService` crea un único `pg.Pool` por proceso NestJS, con `max: 20`, `idleTimeoutMillis: 30000` y `connectionTimeoutMillis: 5000`.
-- Los parámetros se leen de `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB`. Los defaults del código son solo para desarrollo local; los entornos desplegados deben inyectar configuración/secretos explícitos.
+- Los parámetros se leen mediante `ConfigService` de `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB`. `ConfigModule` valida estas variables con Joi al iniciar; `DatabaseService` no contiene usuario ni contraseña fallback. `POSTGRES_PORT` puede usar el default validado 5432.
 - El pool comprueba conectividad al iniciar y se cierra mediante `pool.end()` al detener NestJS.
 - Consultas globales utilizan `DatabaseService.query()`. Consultas tenant-scoped usan `queryTenant()`; operaciones atómicas usan `withTenantTransaction()`.
 
@@ -54,10 +54,11 @@ Las migraciones existentes se aplican idempotentemente con `IF NOT EXISTS` cuand
 | `017_crm_alerts.sql` | Alertas de plataforma y configuración de Telegram del CRM. |
 | `018_guard_consigns_and_panic.sql` | Audiencia y acuses en avisos; campos e índices para alertas de pánico. |
 | `019_tenant_guard_schema_completion.sql` | Completa tablas, columnas e índices de Guard y bitácora para tenants existentes y nuevos. |
-| `020_tenant_finance_schema_completion.sql` | Completa metraje, configuración de cuotas, cargos y pagos para tenants existentes y nuevos. |
+| `020_tenant_finance_schema_completion.sql` | Completa metraje, configuración de cuotas, cargos y pagos; añade idempotentemente `financial_charges.fee_config_id` antes de su índice para tenants existentes y nuevos. |
 | `021_resident_app_refresh_sessions.sql` | Sesiones móviles por dispositivo y almacenamiento hasheado/rotatorio de refresh tokens. |
+| `022_resident_push_tokens.sql` | Registro y revocación de tokens push Resident por tenant, residente, plataforma y dispositivo. |
 
-El script `docker/init-db/03-tenant-feature-tables.sql` aplica las migraciones 003–021 en instalaciones nuevas. El bootstrap GCP de una base productiva vacía está en [`docker/production-bootstrap.sql`](../../docker/production-bootstrap.sql); carga la estructura y las migraciones sin conservar el tenant demo ni ejecutar el seed de usuarios. Al provisionar un tenant nuevo, `DatabaseService.provisionTenant()` ejecuta `provision_tenant_schema()`, `ensure_tenant_feature_tables($1)`, `ensure_tenant_finance_schema($1)` y `ensure_tenant_latest_guard_tables($1)`.
+El script `docker/init-db/03-tenant-feature-tables.sql` aplica las migraciones 003–022 en instalaciones nuevas. El bootstrap GCP de una base productiva vacía está en [`docker/production-bootstrap.sql`](../../docker/production-bootstrap.sql); carga la estructura y las migraciones sin conservar el tenant demo ni ejecutar el seed de usuarios. Al provisionar un tenant nuevo, `DatabaseService.provisionTenant()` ejecuta `provision_tenant_schema()`, `ensure_tenant_feature_tables($1)`, `ensure_tenant_finance_schema($1)` y `ensure_tenant_latest_guard_tables($1)`.
 
 Aplicar las migraciones a una base existente desde la raíz del repositorio:
 
@@ -71,6 +72,6 @@ Los comandos usan por defecto los valores locales de Docker Compose; sobrescríb
 
 ## Pruebas actuales
 
-La suite E2E (`pnpm test`) requiere PostgreSQL accesible y el API levantado. El helper espera hasta 15 segundos por `/health` (configurable con `DOMMIA_TEST_STARTUP_TIMEOUT_MS`), aplica 003–021 idempotentemente, ejecuta el seed `scratch/seed_guard_qa.sql` y usa el tenant aislado `guard-qa`. Variables soportadas: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `DOMMIA_TEST_API_BASE` y `DOMMIA_TEST_STARTUP_TIMEOUT_MS`.
+La suite E2E (`pnpm test`) requiere PostgreSQL accesible y el API levantado. El helper espera hasta 15 segundos por `/health` (configurable con `DOMMIA_TEST_STARTUP_TIMEOUT_MS`), aplica 003–022 idempotentemente, ejecuta el seed `scratch/seed_guard_qa.sql` y usa el tenant aislado `guard-qa`. El proceso API y el runner deben compartir `AUTH_TOKEN_SECRET`; define además las credenciales PostgreSQL y `RESIDENT_APP_TOKEN_SECRET` para pruebas Resident. Variables soportadas: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `AUTH_TOKEN_SECRET`, `RESIDENT_APP_TOKEN_SECRET`, `DOMMIA_TEST_API_BASE` y `DOMMIA_TEST_STARTUP_TIMEOUT_MS`.
 
 El alcance y el resultado más reciente están en [`Testing/README.md`](../../Testing/README.md). Las pruebas locales no sustituyen el despliegue/validación de migraciones en staging. Ejecuta [`docker/validate-schema.sql`](../../docker/validate-schema.sql) para detectar tablas, columnas, índices o funciones requeridas que falten en los schemas existentes.

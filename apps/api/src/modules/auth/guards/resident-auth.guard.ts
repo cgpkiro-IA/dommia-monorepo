@@ -1,4 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { AuthRepository } from '../repositories/auth.repository';
 
@@ -17,10 +18,26 @@ export interface ResidentSessionClaims {
 
 @Injectable()
 export class ResidentAuthGuard implements CanActivate {
-  constructor(private readonly authRepository: AuthRepository) {}
+  constructor(
+    private readonly authRepository: AuthRepository,
+    private readonly config: ConfigService,
+  ) {}
 
   async canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest<{ headers: Record<string, string | undefined>; user?: ResidentSessionClaims }>();
+    const request = context.switchToHttp().getRequest<{
+      headers: Record<string, string | undefined>;
+      user?: ResidentSessionClaims;
+    }>();
+    if (request.user) {
+      const claims = request.user;
+      if (claims.role !== 'RESIDENT' || !claims.sub || !claims.jti || !claims.tenantSlug
+        || !claims.exp || claims.exp <= Date.now()
+        || !await this.authRepository.isResidentSessionActive(claims.jti, claims.sub, claims.tenantSlug)) {
+        throw new UnauthorizedException('Sesión Resident revocada o expirada.');
+      }
+      return true;
+    }
+
     const authorization = request.headers.authorization;
     if (!authorization?.startsWith('Bearer ')) throw new UnauthorizedException('Autenticación Resident requerida.');
     const token = authorization.slice(7);
@@ -32,8 +49,8 @@ export class ResidentAuthGuard implements CanActivate {
       : [undefined, parts[0], parts[1]];
     if (!encodedClaims || !signature) throw new UnauthorizedException('Token Resident inválido.');
     const secret = isMobileJwt
-      ? process.env.RESIDENT_APP_TOKEN_SECRET || (process.env.NODE_ENV === 'production' ? '' : process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me')
-      : process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me';
+      ? this.config.getOrThrow<string>('RESIDENT_APP_TOKEN_SECRET')
+      : this.config.getOrThrow<string>('AUTH_TOKEN_SECRET');
     if (!secret) throw new UnauthorizedException('Token Resident inválido.');
     let signingInput = encodedClaims;
     if (isMobileJwt) {
@@ -75,8 +92,8 @@ export class ResidentAuthGuard implements CanActivate {
 
 @Injectable()
 export class ResidentAppAuthGuard extends ResidentAuthGuard {
-  constructor(authRepository: AuthRepository) {
-    super(authRepository);
+  constructor(authRepository: AuthRepository, config: ConfigService) {
+    super(authRepository, config);
   }
 
   async canActivate(context: ExecutionContext) {

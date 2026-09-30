@@ -165,7 +165,7 @@ export default function ResidentHomePage() {
     passes, isInviteModalOpen, setIsInviteModalOpen, sharingPass, isShareModalOpen,
     closeShareModal, shareSuccessMessage, errorMessage, isLoading, createPass, revokePass, sharePass,
   } = useInvitations(residentAuth.token, residentAuth.profile?.communitySlug || null, accessQrEnabled);
-  const { notices } = useNotices(profile.communitySlug);
+  const { notices } = useNotices(profile.communitySlug, residentAuth.token);
   const [isSpeiModalOpen, setIsSpeiModalOpen] = useState(false);
   const handleStatusChange = React.useCallback((newStatus: 'UP_TO_DATE' | 'OVERDUE') => {
     setProfile((prev) => (prev.paymentStatus === newStatus ? prev : { ...prev, paymentStatus: newStatus }));
@@ -176,9 +176,10 @@ export default function ResidentHomePage() {
     latestPaymentAlert, dismissPaymentAlert, submitSpeiPayment, stripeEnabled,
   } = useResidentFinance({
     profile,
+    token: residentAuth.token,
     onStatusChange: handleStatusChange,
   });
-  const annualCampaign = useAnnualCampaign(profile);
+  const annualCampaign = useAnnualCampaign(profile, residentAuth.token);
   const [dismissedArrivals, setDismissedArrivals] = useState<Record<string, boolean>>({});
 
   const recentArrival = useMemo(() => {

@@ -1,8 +1,12 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpStatus, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpStatus, HttpCode, UseGuards } from '@nestjs/common';
 import { VehiclesService } from '../services/vehicles.service';
 import { CreateVehicleDto, UpdateVehicleDto } from '../dto/vehicle.dto';
+import { FinanceAdminGuard } from '../../auth/guards/finance-admin.guard';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 
 @Controller('tenants/:slug/vehicles')
+@UseGuards(FinanceAdminGuard)
+@Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR')
 export class VehiclesController {
   constructor(private readonly vehiclesService: VehiclesService) {}
 

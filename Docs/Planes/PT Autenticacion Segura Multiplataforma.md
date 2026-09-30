@@ -1,9 +1,9 @@
 # PT: autenticación segura multiplataforma
 
-**Prioridad:** ASAP, antes de publicar Resident nativo.
+**Prioridad:** Gate de producción para publicar Resident nativo.
 **Alcance:** DOMMIA Resident Web, Android e iOS. CRM, Communities y Guard conservan sus identidades y permisos propios.
 **Propietario técnico:** Backend / API.
-**Estado actual:** Endpoints móviles implementados y probados en DEV el 2026-09-29. Pendiente configurar `RESIDENT_APP_TOKEN_SECRET` en GCP, cerrar guards de recursos Resident y validar en staging antes de habilitar clientes. OAuth/OIDC no forma parte del MVP.
+**Estado actual:** Seguridad y rutas Resident implementadas; API E2E local 15/15 el 2026-09-30. Guards, tenant/vivienda, revocación por contraseña, rotación/replay y recursos de avisos/finanzas están probados. Producción/staging requiere secretos, migraciones 020–022, storage privado de comprobantes e idempotencia financiera. OAuth/OIDC no forma parte del MVP.
 
 ## 1. Objetivo
 
@@ -11,13 +11,13 @@ Definir un contrato de sesión único y seguro para los clientes Resident, separ
 
 Android e iOS deben compartir el mismo contrato Resident. La PWA puede migrar por etapas. No se crearán bases de datos ni servicios de autenticación duplicados por plataforma.
 
-## 2. Decisión recomendada
+## 2. Decisión implementada
 
 El dominio de autenticación vive en `AuthModule` y `apps/api`. Es un módulo del monolito NestJS existente, no un microservicio ni un proveedor OAuth nuevo.
 
-Las rutas móviles Resident ya están bajo un espacio independiente:
+Las rutas móviles Resident implementadas bajo el espacio independiente son:
 
-| Operación | Ruta propuesta |
+| Operación | Ruta actual |
 | --- | --- |
 | Login Resident para app | `POST /api/v1/auth/app/resident/login` |
 | Cambio inicial de contraseña | `POST /api/v1/auth/app/resident/change-password` |
@@ -29,13 +29,19 @@ Las rutas móviles Resident ya están bajo un espacio independiente:
 
 Android e iOS usan las mismas rutas. No agregues `/android` ni `/ios` al contrato. El backend puede guardar `clientPlatform` y `deviceName` como metadatos de sesión, pero esos valores no otorgan permisos.
 
-Mantén `/api/v1/auth/resident/*` durante la migración para no interrumpir la PWA. El bearer legacy de 24 horas continúa funcionando en las rutas existentes. Login y recursos móviles usan las rutas `/auth/app/resident/*`; el guard móvil exige JWT con issuer/audience y `clientType` Android o iOS. Ambos formatos comparten la autorización de recursos Resident compatibles. Cuando la PWA adopte el contrato nuevo, retira las rutas legacy en una versión coordinada.
+Mantén `/api/v1/auth/resident/*` durante la transición PWA. Sus nuevos logins emiten JWT HS256 de 24 horas firmado con `AUTH_TOKEN_SECRET`; los HMAC de dos segmentos emitidos previamente se aceptan solo hasta expirar. Android/iOS usan `/auth/app/resident/*`, JWT HS256 de 15 minutos firmado con `RESIDENT_APP_TOKEN_SECRET` y refresh opaco rotatorio. `ResidentAppAuthGuard` valida issuer/audience, rol, tipo de cliente, propiedad y sesión revocable. Los endpoints compartidos compatibles usan `ResidentAuthGuard` y aceptan sesiones Resident válidas.
 
 Las rutas `/api/v1/auth/login` y sus permisos administrativos no se mezclan con Resident. CRM, Communities y Guard no deben aceptar tokens de audiencia Resident.
 
 ## 3. Tokens y sesiones
 
-Reemplaza el bearer propio actual por un JWT estándar para los tokens de acceso de aplicación. El cliente lo trata como opaco y nunca contiene una clave para verificar firmas.
+Las apps nativas usan JWT estándar para access tokens. El cliente lo trata como opaco y nunca contiene una clave para verificar firmas.
+
+El identificador `kid` pertenece al header JWT, no a los claims:
+
+```json
+{"alg":"HS256","typ":"JWT","kid":"resident-hs256-v1"}
+```
 
 Claims del access token emitido:
 
@@ -50,7 +56,6 @@ Claims del access token emitido:
   "propertyId": "<property-id>",
   "sid": "<session-id>",
   "jti": "<token-id>",
-  "kid": "resident-hs256-v1",
   "iat": 0,
   "exp": 0
 }
@@ -58,7 +63,7 @@ Claims del access token emitido:
 
 No aceptes un token Resident en rutas de CRM, administración o Guard. Cada guard valida `iss`, `aud`, firma, expiración, rol y sesión revocable. El servidor deriva usuario, tenant y vivienda de los claims; no confía en esos valores cuando llegan del cliente.
 
-Parámetros implementados inicialmente, sujetos a aceptación de Seguridad antes de PROD:
+Parámetros implementados y verificados en E2E local:
 
 - Access JWT HS256 con expiración de 15 minutos, issuer `dommia-api` y audience `dommia-resident-api`.
 - Refresh token opaco, generado con 256 bits aleatorios, por dispositivo.
@@ -67,11 +72,11 @@ Parámetros implementados inicialmente, sujetos a aceptación de Seguridad antes
 - Guardar en PostgreSQL solo el hash del refresh token.
 - Si se reutiliza un refresh token anterior, revocar la familia de sesión y registrar el evento.
 - Logout revoca el dispositivo actual. El usuario puede consultar y revocar sus otras sesiones.
-- Cambio o recuperación de contraseña revoca las sesiones existentes, según política aprobada.
+- Cambio inicial y reset móvil revocan las sesiones móviles activas; el cliente debe borrar access/refresh y volver a login.
 
-Los plazos anteriores son propuesta inicial para revisión del equipo. No deben quedar codificados como contrato hasta aceptar la política de sesión.
+Los plazos anteriores son el contrato vigente para las apps móviles y deben cambiarse solo mediante versión coordinada del contrato.
 
-La migración `021_resident_app_refresh_sessions.sql` extiende `public.resident_sessions` con plataforma, dispositivo, última actividad y expiración móvil. `public.resident_refresh_tokens` guarda hashes y el vínculo de rotación; no guarda tokens en claro. La sesión es la familia de refresh tokens.
+La migración `021_resident_app_refresh_sessions.sql` extiende `public.resident_sessions` con plataforma, dispositivo, última actividad y expiración móvil. `022_resident_push_tokens.sql` añade registro de push por dispositivo. `public.resident_refresh_tokens` guarda hashes y el vínculo de rotación; no guarda tokens en claro. La sesión es la familia de refresh tokens.
 
 Usa `RESIDENT_APP_TOKEN_SECRET`, independiente de `AUTH_TOKEN_SECRET`, para firmar y validar JWT móviles. Ambos secretos son exclusivos del API y se inyectan desde Secret Manager. El header JWT lleva `kid=resident-hs256-v1`. No compartas ninguna clave con Android, iOS o la PWA.
 
@@ -93,7 +98,7 @@ Usa OkHttp `Authenticator` solo después de tener `/refresh`, rotación, detecci
 
 ### Resident Web / PWA
 
-La PWA actualmente persiste un bearer en `localStorage`. Para igualar la protección de las apps nativas, migra la entrega web a una cookie `HttpOnly`, `Secure` y `SameSite`, con protección CSRF, o coloca un BFF que guarde los tokens en servidor.
+La PWA actualmente persiste su access JWT en `localStorage`; el contrato no expone refresh token a JavaScript. Para igualar el aislamiento de almacenamiento nativo, la migración futura recomendada es cookie `HttpOnly`, `Secure` y `SameSite` con protección CSRF o un BFF.
 
 No expongas el refresh token a JavaScript. No pongas access ni refresh tokens en `localStorage`, `sessionStorage`, URLs, analytics o logs. Durante la transición, mantén la ruta existente y limita su compatibilidad a la fecha de migración acordada.
 
@@ -110,17 +115,16 @@ No expongas el refresh token a JavaScript. No pongas access ni refresh tokens en
 
 No se requiere un nuevo Cloud Run para Auth ni una nueva base. Cloud Run y Cloud SQL existentes alojan el módulo y las tablas de sesiones. FCM/APNs son servicios de notificaciones, no reemplazan la autenticación.
 
-## 6. Rutas que siguen bloqueadas
+## 6. Recursos protegidos y bloqueos reales
 
-Antes de dar acceso a Android, iOS o una PWA migrada, protege estas rutas tenant-scoped que hoy no exigen sesión Resident de extremo a extremo:
+Los recursos Resident Mobile ya están protegidos por guard, rol y tenant/vivienda derivados de la sesión. La suite E2E local 15/15 incluye aislamiento de avisos, acceso/pases, finanzas y sesiones. Las rutas operativas se enumeran en [Contrato Resident Mobile v1](Contrato%20Resident%20Mobile%20v1.md).
 
-- Avisos publicados.
-- Estado financiero y cargos del residente.
-- Envío de comprobante SPEI.
-- Campañas, cotizaciones y envíos de pago anual.
-- Cambio de contraseña, para que el tenant y el residente salgan de la sesión cuando exista una sesión activa.
+Bloqueos restantes antes de habilitar operaciones financieras de producción:
 
-Agrega `ResidentAuthGuard`, compara tenant con la sesión y deriva `propertyId` del token. Añade pruebas cross-tenant para cada ruta. Las validaciones en Android/iOS no sustituyen controles del servidor.
+- El upload `POST /api/v1/auth/app/resident/finance/receipts` guarda en disco local y devuelve `local://` solo en DEV; falta storage privado.
+- No hay idempotencia persistida para pagos/comprobantes. Los clientes no reintentan POST financieros automáticamente.
+- `InMemoryResidentRateLimiter` es por proceso; Cloud Run multi-instancia requiere storage compartido.
+- Falta validar secretos, migraciones y CORS en staging, además de entrega real FCM/APNs y enlaces verificados.
 
 ## 7. OAuth/OIDC y SSO
 
@@ -128,15 +132,15 @@ No construyas ahora un servidor OAuth/OIDC propio. El flujo nativo primero usa c
 
 Si se aprueba SSO o login de terceros, usa un proveedor OIDC administrado y Authorization Code con PKCE para clientes públicos. No implementes Resource Owner Password Credentials, no incluyas `client_secret` en las apps y no conviertas `/login` en una imitación parcial de OAuth.
 
-## 8. Plan ASAP
+## 8. Plan de producción
 
-1. **Contrato y amenaza:** completar revisión de plazos de sesión, política de dispositivos, rate limits y proceso de rotación de `RESIDENT_APP_TOKEN_SECRET` con Seguridad.
-2. **Producción:** añadir `RESIDENT_APP_TOKEN_SECRET` a Secret Manager, aplicar migración 021 y comprobar `docker/validate-schema.sql`.
-3. **Cerrar endpoints Resident:** añadir guards a avisos y finanzas, derivar tenant/propiedad de sesión y añadir idempotencia de pagos antes de exponerlos a los clientes.
-4. **PWA Web:** diseñar la transición desde el bearer `localStorage` a cookie/BFF o mantener la ruta legacy hasta una migración coordinada.
-5. **Pruebas de concurrencia y límites:** DEV cubre login Android/iOS, rotación, replay, revocación de dispositivos y compatibilidad PWA. Falta probar refresh concurrente, expiración y rate limiting distribuido.
-6. **Clientes:** integrar Android/iOS con almacenamiento Keystore/Keychain y definir si Resident Web adopta el nuevo contrato.
-7. **Staging y rollout:** probar con cuentas QA, activar de forma gradual y monitorizar 401, refresh fallidos y eventos de replay.
+1. **Secretos y configuración:** cargar `AUTH_TOKEN_SECRET`, `RESIDENT_APP_TOKEN_SECRET`, `MFA_ENCRYPTION_KEY` y variables PostgreSQL en Secret Manager/Cloud Run. No distribuir secretos a apps.
+2. **Esquema:** desplegar migraciones versionadas 020–022 y ejecutar `docker/validate-schema.sql` contra staging antes de PROD.
+3. **Comprobantes/pagos:** aprobar storage privado e idempotencia antes de habilitar esos writes en clientes nativos.
+4. **Escalamiento:** sustituir rate limit en memoria por storage distribuido antes de múltiples instancias.
+5. **PWA:** mantener rutas actuales mientras se evalúa migración de `localStorage` a cookie/BFF; no retirar rutas legacy sin versionado coordinado.
+6. **Clientes:** Android guarda sesión cifrada con Keystore-backed `EncryptedSharedPreferences`; iOS guarda refresh en Keychain. Cada plataforma debe conservar el contrato compartido.
+7. **Staging y rollout:** repetir E2E con cuentas QA, validar dominios/HTTPS/CORS, App Links/Universal Links y eventos de replay antes del rollout gradual.
 
 ## 9. Criterios de aceptación
 

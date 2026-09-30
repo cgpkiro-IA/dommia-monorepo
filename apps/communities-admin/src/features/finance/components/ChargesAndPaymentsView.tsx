@@ -34,7 +34,7 @@ export function ChargesAndPaymentsView({
   stripeEnabled = false,
   authToken,
 }: ChargesAndPaymentsViewProps) {
-  const feesHook = useFees();
+  const feesHook = useFees(authToken);
   const opsHook = useBillingOperations(authToken);
   const annualHook = useAnnualCampaigns(authToken);
   const [activeSubTab, setActiveSubTab] = useState<FinanceSubTab>('STRUCTURES');
@@ -115,7 +115,7 @@ export function ChargesAndPaymentsView({
         </button>
       )}
 
-      <AnnualCampaignPanel tenantSlug={tenantSlug} properties={properties} {...annualHook} />
+      <AnnualCampaignPanel tenantSlug={tenantSlug} properties={properties} authToken={authToken} {...annualHook} />
 
       {/* KPI Summary Cards */}
       <FinanceMetricsHeader

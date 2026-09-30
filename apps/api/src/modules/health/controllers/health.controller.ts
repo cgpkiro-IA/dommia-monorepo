@@ -1,7 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { DatabaseService } from '../../../database/database.service';
+import { Public } from '../../auth/decorators/auth-metadata.decorator';
 
 @Controller('health')
+@Public()
 export class HealthController {
   constructor(private readonly db: DatabaseService) {}
 

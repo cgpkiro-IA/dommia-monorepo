@@ -53,7 +53,7 @@ export function useBillingOperations(authToken?: string) {
 
   const loadSummary = useCallback(async (slug: string) => {
     try {
-      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/summary`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/summary`, { headers: authHeaders });
       const json = await res.json();
       if (res.ok && json.success) {
         setSummary(json.data);
@@ -61,12 +61,12 @@ export function useBillingOperations(authToken?: string) {
     } catch (err) {
       console.error('Error al cargar resumen financiero:', err);
     }
-  }, []);
+  }, [authToken]);
 
   const loadCharges = useCallback(async (slug: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/charges`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/charges`, { headers: authHeaders });
       const json = await res.json();
       if (res.ok && json.success) {
         setCharges(json.data || []);
@@ -76,11 +76,11 @@ export function useBillingOperations(authToken?: string) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authToken]);
 
   const loadPayments = useCallback(async (slug: string) => {
     try {
-      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/payments`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/payments`, { headers: authHeaders });
       const json = await res.json();
       if (res.ok && json.success) {
         setPayments(json.data || []);
@@ -88,7 +88,7 @@ export function useBillingOperations(authToken?: string) {
     } catch (err) {
       console.error('Error al cargar pagos:', err);
     }
-  }, []);
+  }, [authToken]);
 
   const refreshAll = useCallback(
     async (slug: string) => {

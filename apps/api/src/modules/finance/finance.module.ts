@@ -13,6 +13,7 @@ import { FinanceAdminGuard } from '../auth/guards/finance-admin.guard';
 import { AuthModule } from '../auth/auth.module';
 import { ResidentAppFinanceController } from './controllers/resident-app-finance.controller';
 import { ResidentAppReceiptStorageService } from './services/resident-app-receipt-storage.service';
+import { FinanceCampaignGuard } from './guards/finance-campaign.guard';
 
 @Module({
   imports: [DatabaseModule, TenantsModule, NoticesModule, AuthModule],
@@ -24,6 +25,7 @@ import { ResidentAppReceiptStorageService } from './services/resident-app-receip
     BillingEngineRepository,
     FinanceSchedulerService,
     FinanceAdminGuard,
+    FinanceCampaignGuard,
     ResidentAppReceiptStorageService,
   ],
   exports: [

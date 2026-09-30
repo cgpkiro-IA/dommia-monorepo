@@ -90,7 +90,7 @@ apps/api/src/
 ├── common/                                 # Elementos transversales reutilizables
 │   ├── decorators/                         # Decoradores personalizados (@TenantSlug, @CurrentUser)
 │   ├── filters/                            # Filtros globales de excepción HTTP
-│   └── guards/                             # Guards de autenticación y RBAC
+│   └── guards/                             # Guards transversales; cada dominio también puede declarar guards en su módulo
 │
 ├── database/                               # Driver base de conexión PostgreSQL
 │   ├── database.module.ts

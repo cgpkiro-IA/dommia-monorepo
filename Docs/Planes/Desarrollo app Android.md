@@ -1,6 +1,6 @@
 # Desarrollo de la app Android DOMMIA Resident
 
-**Estado:** Especificación revisada y validada contra el backend existente. La Fase 1 ya quedó implementada en la app Android en su base técnica de autenticación, sesión, home y estados de sesión vencida; las funciones que dependen de permisos del servidor siguen pendientes de habilitación backend.
+**Estado:** Cliente Android integrado con el contrato móvil v1. El backend autentica y autoriza las rutas Resident; Android consume sesión, perfil, acceso, avisos, invitaciones y lectura/cotización financiera. Envío de pagos y upload de comprobantes no están implementados en Android.
 **Producto:** DOMMIA Resident para Android.
 **Backend:** API NestJS existente en `apps/api`, contrato HTTP `/api/v1`.
 **Stack propuesto:** Kotlin, Jetpack Compose, Material 3, coroutines, Retrofit/OkHttp, DataStore y Keystore.
@@ -23,7 +23,7 @@ La app Android ya contempla estos elementos en el código actual:
 - Activación, recuperación y cambio inicial de contraseña conectados al login; `passwordChangeRequired` ya detiene el acceso hasta completar el cambio.
 - Design system Android alineado con Resident PWA: canvas navy, superficies slate, acentos azul cielo/verde, tipografía sans bold, radios amplios, bordes sutiles y navegación inferior con indicador azul.
 - Actividad de acceso conectada a `GET auth/app/resident/access-credential/active-services` y `GET auth/app/resident/access-credential/active-deliveries`, mostrada en Inicio con estados de carga, vacío, error y reintento.
-- Estado financiero y campañas conectados en Inicio mediante `GET auth/app/resident/finance/status` y `GET auth/app/resident/finance/campaigns`; el envío de comprobantes permanece bloqueado hasta cerrar upload privado e idempotencia.
+- Estado financiero, campañas y cotización conectados mediante `GET auth/app/resident/finance/status`, `GET auth/app/resident/finance/campaigns` y `POST auth/app/resident/finance/campaigns/:campaignId/quote`; Android no implementa envío de pago ni upload de comprobante.
 - Pruebas E2E de aislamiento para paths móviles: avisos aislados por tenant y pases aislados por residente/propiedad, incluyendo revocación cruzada rechazada.
 - Manejo de sesiones parciales y tokens inconsistentes para evitar que la app trate una sesión rota como autenticada.
 
@@ -60,9 +60,9 @@ El backend también exige `tenantSlug` en el request de login. Obtén ese contex
 
 ### Contratos por cliente
 
-El API mantiene dos contratos durante la transición. La PWA sigue usando su bearer legacy de 24 horas. Android/iOS usan las rutas móviles JWT con refresh token rotatorio. OAuth/OIDC y SSO siguen fuera de alcance.
+El API mantiene rutas PWA y rutas nativas separadas. Las nuevas sesiones PWA usan JWT HS256 de 24 horas firmado con `AUTH_TOKEN_SECRET`; Android/iOS usan JWT móvil de 15 minutos y refresh opaco rotatorio. El servidor acepta HMAC Resident de dos segmentos emitidos antes del cambio solo hasta su expiración. OAuth/OIDC y SSO siguen fuera de alcance.
 
-La PWA mantiene `POST /api/v1/auth/resident/login`, que envía `identifier`, `password` y `tenantSlug` y devuelve un bearer legacy de 24 horas. El flujo no crea usuarios: solo autentica una cuenta que el administrador ya provisionó.
+La PWA mantiene `POST /api/v1/auth/resident/login`, que envía `identifier`, `password` y `tenantSlug` y emite un JWT Resident de 24 horas firmado con `AUTH_TOKEN_SECRET`. El flujo no crea usuarios: solo autentica una cuenta que el administrador ya provisionó.
 
 Android/iOS usan `POST /api/v1/auth/app/resident/login` con `identifier`, `password`, `tenantSlug`, `clientType` (`ANDROID` o `IOS`) y metadata opcional del dispositivo. El API devuelve `accessToken`, `refreshToken`, `tokenType`, `expiresIn`, `refreshExpiresAt`, `resident`, `tenantSlug`, `clientType` y metadata del dispositivo dentro de `data`. Si la contraseña es temporal, devuelve `passwordChangeRequired` sin tokens. El access token es un JWT HS256 con `iss=dommia-api`, `aud=dommia-resident-api`, `kid=resident-hs256-v1` y expiración de 15 minutos. El cliente debe tratarlo como opaco y no validar sus claims para tomar decisiones de autorización.
 
@@ -162,13 +162,15 @@ interface AuthApi {
 
 Codifica segmentos de ruta y query con las utilidades de Retrofit. Nunca concatenes una entrada arbitraria del usuario en una URL. Conserva exactamente el `tenantSlug` que devuelve el API; no lo derives del nombre visible de la comunidad.
 
-## 6. Endpoints Resident actuales
+## 6. Endpoints Resident
+
+El contrato normativo y completo está en [Contrato Resident Mobile v1](Contrato%20Resident%20Mobile%20v1.md). Esta sección resume rutas que Android usa y compatibilidad PWA; no es una fuente alternativa de DTOs ni autorizacion.
 
 Todas las rutas de esta tabla llevan el prefijo `https://<API_DOMAIN>/api/v1/` en PROD.
 
 | Operación | Método y ruta | Autenticación actual | Notas |
 | --- | --- | --- | --- |
-| Login Web legado | `POST auth/resident/login` | Pública | PWA actual. Body `identifier`, `password`, `tenantSlug`. Devuelve bearer propio de DOMMIA de 24 horas. |
+| Login de la PWA | `POST auth/resident/login` | Pública | Ruta conservada. Emite JWT HS256 de 24 h firmado con `AUTH_TOKEN_SECRET`; los tokens HMAC de dos segmentos ya emitidos se aceptan solo hasta expirar. |
 | Login móvil | `POST auth/app/resident/login` | Pública | Android/iOS. Body `identifier`, `password`, `tenantSlug`, `clientType`, `deviceId?`, `deviceName?`. Devuelve JWT access de 15 min y refresh opaco. |
 | Cambio inicial móvil | `POST auth/app/resident/change-password` | Pública con contraseña actual | Body `identifier`, `tenantSlug`, `currentPassword`, `newPassword`; se usa cuando login devuelve `passwordChangeRequired`. |
 | Refresh móvil | `POST auth/app/resident/refresh` | Refresh token opaco en body | Rota el refresh token; replay revoca la sesión móvil y genera auditoría. |
@@ -176,10 +178,9 @@ Todas las rutas de esta tabla llevan el prefijo `https://<API_DOMAIN>/api/v1/` e
 | Logout móvil | `POST auth/app/resident/logout` | Bearer móvil | Revoca sesión y refresh tokens del dispositivo. |
 | Sesiones móviles | `GET/DELETE auth/app/resident/sessions` | Bearer móvil | Lista dispositivos propios y permite revocar una sesión por ID. |
 | Activar cuenta provisionada | `POST auth/resident/activate` | Pública con token de activación | El administrador inicia la invitación. Body `token`, `password`. El enlace es de un uso y expira según el flujo de activación. No permite auto-registro. |
-| Perfil móvil | `GET auth/app/resident/me` | Bearer móvil | Exige issuer, audience y tipo de cliente móvil. |
 | Perfil Resident legacy | `GET auth/resident/me` | Bearer Resident | La PWA usa el bearer legacy. El servidor deriva el residente y tenant de los claims. |
 | Logout Web legado | `POST auth/resident/logout` | Bearer legacy | Revoca `jti` en el servidor. |
-| Cambiar contraseña | `POST auth/resident/change-password` | Sin guard Bearer hoy | Envía tenant, identificador, contraseña actual y nueva. Requiere corregir el contrato para derivar tenant del token. |
+| Cambiar contraseña PWA | `POST auth/resident/change-password` | Pública, valida contraseña actual | Body incluye `tenantSlug`, `identifier`, `currentPassword`, `newPassword`; no es una ruta de cambio autenticado de sesión. |
 | Solicitar recuperación | `POST auth/resident/password-recovery` | Pública | Respuesta genérica para no revelar si existe la cuenta. |
 | Restablecer contraseña | `POST auth/resident/password-reset` | Pública con token de recuperación | Body `token`, `newPassword`. No registra el token en logs ni analytics. |
 | Credencial QR | `GET auth/resident/access-credential` | Bearer Resident | Requiere entitlement `ACCESS_QR`; respuesta no-cache. |
@@ -189,18 +190,18 @@ Todas las rutas de esta tabla llevan el prefijo `https://<API_DOMAIN>/api/v1/` e
 | Metadata de tenant | `GET tenants/:slug` | Pública hoy | Se usa para nombre/módulos; no debe devolver datos personales. |
 | Servicios activos | `GET auth/resident/access-credential/active-services` | Bearer Resident | Respuesta acotada a la vivienda de la sesión. |
 | Entregas activas | `GET auth/resident/access-credential/active-deliveries` | Bearer Resident | Respuesta acotada a la vivienda de la sesión. |
-| Avisos | `GET tenants/:slug/notices?publishedOnly=true` | Sin guard en el flujo PWA actual | Requiere revisión de autorización y tenant antes de usarlo como contrato nativo. |
-| Estado financiero | `GET tenants/:slug/finance/properties/:propertyId/status` | Sin guard en el flujo PWA actual | Requiere autenticar la sesión y derivar la vivienda del token. No confíes en `propertyId` enviado por Android. |
-| Enviar comprobante SPEI | `POST tenants/:slug/finance/payments/spei-submissions` | Sin guard en el controlador actual | Body `propertyId`, `amount`, `reference`, `receiptUrl`, `payerName?`. Debe protegerse y validar tenant/vivienda desde el token antes de liberar Android. |
-| Campañas activas | `GET tenants/:slug/finance/annual-campaigns` | Sin guard en el controlador actual | Proteger tenant y datos de propiedad antes de usarlo en producción. |
-| Cotizar campaña | `POST tenants/:slug/finance/annual-campaigns/:campaignId/quote` | Sin guard en el controlador actual | Body `propertyId`; el servidor debe derivar la propiedad de la sesión Resident. |
-| Enviar pago de campaña | `POST tenants/:slug/finance/annual-campaigns/:campaignId/submissions` | Sin guard en el controlador actual | Body incluye `propertyId`, monto, referencia y comprobante. Requiere autorización e idempotencia antes de release. |
+| Avisos Resident | `GET auth/app/resident/notices` | Bearer Resident válido | `ResidentAuthGuard`; requiere audiencia `RESIDENTS` y tenant derivado de la sesión. |
+| Estado financiero PWA | `GET tenants/:slug/finance/properties/:propertyId/status` | Bearer Resident | Tenant y `propertyId` deben coincidir con la sesión; ruta legacy conservada. |
+| Envío SPEI PWA | `POST tenants/:slug/finance/payments/spei-submissions` | Bearer Resident | Requiere propiedad y tenant propios. Android no consume esta ruta legacy. |
+| Campañas compartidas | `GET tenants/:slug/finance/annual-campaigns` | Bearer Resident o administración | `FinanceCampaignGuard` valida tenant/rol; Android usa la ruta móvil app-only. |
+| Cotización PWA | `POST tenants/:slug/finance/annual-campaigns/:campaignId/quote` | Bearer Resident o administración | Para Resident, `propertyId` del body debe coincidir con su sesión; Android usa la ruta móvil app-only. |
+| Envío de pago anual PWA | `POST tenants/:slug/finance/annual-campaigns/:campaignId/submissions` | Bearer Resident | Tenant y vivienda se comparan con la sesión. No hay idempotencia financiera implementada. |
 | Checkout Stripe | `POST tenants/:slug/stripe/checkout` | Bearer Resident | Opcional por entitlement; no es requisito del MVP. |
 | Estado de Stripe | `GET tenants/:slug/stripe/session/:sessionId` | Bearer Resident | Opcional por entitlement; no es requisito del MVP. |
 
-### Rutas móviles nuevas sin impacto en PWA
+### Rutas móviles compartidas por Android e iOS
 
-Las siguientes rutas se implementan bajo `/api/v1/auth/app/resident/*` y exigen `ResidentAppAuthGuard`. Las rutas legacy de Resident y las rutas administrativas permanecen sin cambios.
+Las rutas `/api/v1/auth/app/resident/*` son el contrato nativo. Las rutas de sesión, dispositivos, acceso y finanzas exigen `ResidentAppAuthGuard`; avisos usa `ResidentAuthGuard` para permitir sesiones Resident compatibles durante la transición. Tenant, vivienda y permisos siempre los decide el API.
 
 | Operación móvil | Método y ruta | Fuente de tenant/vivienda |
 | --- | --- | --- |
@@ -216,13 +217,13 @@ Las siguientes rutas se implementan bajo `/api/v1/auth/app/resident/*` y exigen 
 | Enviar SPEI | `POST auth/app/resident/finance/spei-submissions` | `propertyId` del JWT; no se acepta del body |
 | Enviar pago de campaña | `POST auth/app/resident/finance/campaigns/:campaignId/submissions` | `propertyId` del JWT; no se acepta del body |
 
-La tabla describe el estado actual del servidor, no afirma que todas las rutas estén listas para la app. No desarrolles contra las rutas marcadas “sin guard” hasta que Backend añada y pruebe autorización Resident, aislamiento tenant y derivación de `propertyId` desde la sesión.
+Las rutas protegidas se verifican con E2E de autenticación, rol y aislamiento tenant. La PWA puede conservar HMAC de dos segmentos ya emitidos solo hasta su expiración; los nuevos logins Resident emiten JWT HS256 estándar. Usa [Contrato Resident Mobile v1](Contrato%20Resident%20Mobile%20v1.md) como fuente normativa para cualquier ruta o DTO.
 
 ## 7. Manejo de sesión
 
 Al recibir login exitoso:
 
-1. Mantén el access token solo en memoria. Guarda el refresh token cifrado en Keystore.
+1. La implementación actual persiste access token, refresh token y perfil en `EncryptedSharedPreferences`, con `MasterKey` respaldada por Android Keystore. No describir este estado como “access token solo en memoria”; cualquier cambio de almacenamiento debe preservar cifrado en reposo y limpieza de sesión.
 2. Mantén perfil y claims visuales en memoria; si necesitas cachearlos, considera esos datos PII y limita campos, retención y backup.
 3. Si login devuelve `passwordChangeRequired`, completa cambio de contraseña y vuelve a iniciar sesión.
 4. Solicita `GET auth/app/resident/me` para validar la sesión móvil y cargar el perfil del servidor.
@@ -244,7 +245,7 @@ En release, bloquea tráfico cleartext con `android:usesCleartextTraffic="false"
 
 No cifres manualmente cada JSON antes de enviarlo. TLS protege el transporte. HMAC firma tokens y códigos TOTP; no cifra su contenido. `AUTH_TOKEN_SECRET` permanece exclusivamente en el API.
 
-No guardes tokens en `SharedPreferences` plano. Usa Android Keystore para proteger el refresh token antes de persistirlo en DataStore o almacenamiento privado. Conserva el access token en memoria cuando sea posible. Usa una biblioteca Android mantenida para envolver Keystore; no diseñes tu propio formato criptográfico. Excluye tokens, archivos de sesión y datos privados de Android Auto Backup. Al hacer logout, 401 o revocación, elimina ambos tokens y el estado privado.
+No guardes tokens en `SharedPreferences` plano. El `SessionManager` actual usa `EncryptedSharedPreferences` con una `MasterKey` AES-GCM respaldada por Android Keystore y persiste access token, refresh token y perfil. Excluye tokens, archivos de sesión y datos privados de Android Auto Backup. Al hacer logout, 401 o revocación, elimina ambos tokens y el estado privado.
 
 La preferencia Android `EncryptedSharedPreferences` del documento adjunto es una opción de almacenamiento local, no el protocolo del servidor. El API nativo ya emite refresh tokens; la PWA legacy aún no los usa.
 
@@ -308,74 +309,35 @@ Registra eventos técnicos sin PII: endpoint lógico, status HTTP, duración y c
 
 Define aviso de privacidad, datos recopilados, retención y proceso de borrado antes de publicar en Play. Configura R8/ProGuard y firma Android App Bundle; guarda la llave de firma fuera del repositorio, con acceso controlado y respaldo.
 
-## 14. Bloqueos de API antes de release
+## 14. Bloqueos de release
 
-El programador Android no debe resolver estos puntos con comprobaciones del lado cliente:
+La suite E2E del backend valida guardas Resident, aislamiento tenant/vivienda y sesiones (15/15 local el 2026-09-30). No reimplementar estos controles en Android ni usar rutas financieras sin Bearer.
 
-1. **Proteger finanzas y avisos.** El flujo PWA actual consulta varias rutas tenant-scoped sin Bearer, y algunos controladores no aplican `ResidentAuthGuard`. Añadir guard, comprobar `tenantSlug` del token y derivar `propertyId` de los claims.
-2. **Proteger cambio de contraseña.** El endpoint actual recibe tenant e identificador, pero no usa `ResidentAuthGuard`. Exigir sesión y derivar identidad del token, o definir formalmente el flujo previo al login.
-3. **Definir recibos.** Crear upload autenticado a almacenamiento privado con tamaño/tipo permitido y URL firmada, o formalizar otro flujo seguro para `receiptUrl`.
-4. **Definir idempotencia financiera.** Añadir identificador idempotente antes de habilitar reintentos de POST de pago/comprobante.
-5. **Desplegar contrato móvil.** Configurar `RESIDENT_APP_TOKEN_SECRET`, aplicar la migración 021, verificar las rutas app-only en staging y coordinar el despliegue de cliente. La PWA mantiene su login legacy durante la transición.
-6. **Definir notificaciones push.** Añadir API de registro/revocación de FCM y política tenant antes de implementar push nativo.
+1. **Recibos productivos:** el endpoint actual valida y almacena archivos solo localmente en DEV (`storage=LOCAL_DEV`, `receiptUrl=local://...`). No enviar comprobantes reales en PROD.
+2. **Idempotencia financiera:** no hay clave ni persistencia idempotente; no reintentar automáticamente envíos de pago/comprobante.
+3. **Despliegue:** configurar `RESIDENT_APP_TOKEN_SECRET`, `AUTH_TOKEN_SECRET`, `MFA_ENCRYPTION_KEY`, CORS HTTPS y migraciones 020–022 en staging/PROD.
+4. **Escala:** sustituir el rate limiter Resident en memoria por storage compartido antes de desplegar varias instancias.
+5. **Integración Android:** estado/campañas/cotización están conectados; envío de pago y upload siguen sin implementarse en el cliente.
 
-No publiques información financiera/residencial en Android hasta cerrar los puntos 1–3 y hacer pruebas de aislamiento entre tenants.
+## 15. Integración backend verificada
 
-## 15. Requerimientos del backend para desbloquear Android
+La suite E2E API verificó 15/15 pruebas locales el 2026-09-30. Incluye login/MFA, guards Resident, avisos, acceso, sesiones, refresh, replay, revocación y aislamiento tenant/vivienda. El contrato normativo es [Contrato Resident Mobile v1](Contrato%20Resident%20Mobile%20v1.md); Android no debe duplicar autorización ni aceptar un `propertyId` que contradiga la sesión.
 
-Esta lista resume lo que el backend necesita aportar para que la app pueda consumir cada feature sin inventar contratos ni asumir permisos no autorizados. La primera versión de rutas móviles de acceso, avisos, invitaciones y finanzas ya está creada; quedan pendientes los puntos de endurecimiento indicados abajo.
+El backend ya protege avisos, acceso, invitaciones y finanzas móviles. Cambio/reset móvil revocan las sesiones nativas activas; refresh rota y detecta replay; push token tiene registro/revocación con alias `fcm-token` para compatibilidad.
 
-1. **Autorización real de avisos y finanzas.**
-  - Proteger `GET/POST` de notices y finance con el guard de residente autenticado.
-  - Validar `tenantSlug` y la vivienda del usuario desde el token, no desde un `propertyId` del cliente.
-  - Rechazar cualquier solicitud con otra propiedad o tenant del que pertenece a la sesión.
-
-2. **Cambio de contraseña con identidad real del residente.**
-  - Reemplazar la lógica actual basada en `tenant` + `identifier` por un endpoint autenticado con `ResidentAuthGuard`.
-  - Derivar la identidad del usuario desde el token y hacer que el cambio sea voluntario y seguro.
-
-3. **Contrato de recibos y uploads.**
-  - Definir el endpoint o flujo de generación de URL firmada para archivos de comprobante.
-  - Restrigir tipo, tamaño y privacidad del archivo antes de permitirlo desde Android.
-
-4. **Idempotencia para pagos/finanzas.**
-  - Exigir un `idempotencyKey` o equivalente para cada POST financiero.
-  - Garantizar que si el cliente reintenta por red o timeout, la operación no se duplique.
-  - Aplicarlo primero a las nuevas rutas `/auth/app/resident/finance/*` sin volver obligatorio el campo en las rutas PWA existentes.
-
-5. **Despliegue del contrato nativo móvil.**
-  - Confirmar que `RESIDENT_APP_TOKEN_SECRET` está operando en staging/prod.
-  - Validar que las rutas `auth/app/resident/*` están activadas y que `refresh` y `me` se comportan con `issuer`, `audience` y `clientType` correctos.
-
-6. **Autorización de QR y servicios asociados.**
-  - Confirmar que `access-credential`, servicios activos y entregas activas responden con datos del residente autenticado y no con una sesión legacy o un tenant arbitrario.
-  - Definir política de expiración, revocación y no-replay para el QR dinámico.
-
-6. **Notificaciones push nativas.**
-  - Contrato de registro/revocación creado bajo `/auth/app/resident/devices/fcm-token`.
-  - Falta integrar Firebase Messaging, `google-services.json`, envío del token FCM y política de expiración, limpieza y opt-in.
-
-8. **Módulos por entitlement.**
-  - Cada feature de acceso/finanzas/servicios debe responder a un entitlement explícito del usuario o del tenant.
-  - Android debe mostrar un estado `No disponible` cuando la API responda 403 por falta de permisos, no un flujo falso o inventado.
-
-9. **Compatibilidad de clientes.**
-  - Mantener operativas las rutas `/auth/resident/*` y `/tenants/:slug/*` usadas por las PWA.
-  - Compartir servicios internos cuando sea conveniente, pero conservar DTOs, guards y reglas de autorización separados por tipo de cliente.
-
-La regla de negocio es simple: Android puede construir la UX y la lógica de la app, pero no debe asumir permisos ni propiedades que el backend no haga explícitos y verificables con la sesión del residente.
+Los únicos bloqueos backend de release son los enumerados en la sección 14: almacenamiento privado productivo de recibos, idempotencia financiera persistida, rate limiting distribuido y validación en staging/proveedores/dispositivos reales.
 
 ## 16. Plan de desarrollo
 
 ### Fase 1 — Base técnica, red y autenticación móvil
 
-Esta fase es la primera entrega ejecutable y debe quedar lista antes de avanzar a perfil, QR o invitaciones.
+La base ejecutable existe: Gradle/Kotlin, Compose, flavors, Retrofit/OkHttp, login, refresh coordinado, almacenamiento cifrado y perfil. Mantén estos criterios como regresiones; no bloquean el trabajo ya integrado de perfil, QR, avisos o invitaciones.
 
-1. **Preparar el workspace Android.** Crear un módulo independiente `apps/resident-android` o equivalente, con Gradle Kotlin DSL, catálogo de versiones, Compose, Material 3, Navigation, Retrofit, OkHttp, kotlinx.serialization, DataStore y Keystore. No incorporar dependencias de backend ni secretos de producción.
-2. **Configurar ambientes.** Añadir flavors `dev` y `prod`, `API_BASE_URL` por build type, `network_security_config` y reglas de cleartext. En `prod` no debe haber HTTP claro; en `dev` solo se permite para `10.0.2.2` o IP LAN autorizada.
+1. **Mantener el workspace Android.** El módulo `apps/resident-android` ya existe con Gradle Kotlin DSL, Compose, Retrofit/OkHttp y almacenamiento cifrado. No incorporar secretos de producción.
+2. **Validar ambientes.** Conservar flavors `dev` y `prod`, `API_BASE_URL` por flavor y reglas de cleartext; en `prod` no debe haber HTTP claro.
 3. **Definir la capa de red.** Crear DTOs de login, refresh y perfil siguiendo el contrato actual; centralizar base URL, headers, timeouts, serialización y manejo de errores. Añadir un interceptor que inserte `Authorization: Bearer ...` solo para endpoints autenticados.
 4. **Definir modelo de respuesta.** Reutilizar el envelope `{ success, message, data }` del backend y traducir errores HTTP a estados `Loading`, `Success` y `Error` en la capa de UI. Evitar exponer `Response` de Retrofit directamente en Compose.
-5. **Implementar sesión segura.** Asegurar `accessToken` en memoria y `refreshToken` en Keystore protegido. Definir `SessionManager` o `AuthRepository` con login, refresh, logout, restore, invalidación por 401 y limpieza de PII. No guardar tokens en `SharedPreferences` planos ni en `SavedStateHandle`.
+5. **Mantener sesión segura.** `SessionManager` y `AuthRepository` ya guardan tokens en `EncryptedSharedPreferences` respaldada por Keystore y coordinan login, refresh, logout, restore e invalidación por 401. No guardar tokens en preferencias planas, `SavedStateHandle`, logs ni backups.
 6. **Implementar autenticación funcional.** Login de residente con `identifier`, `password`, `tenantSlug`, `clientType`, `deviceId`, `deviceName`; manejo de `passwordChangeRequired`; validación de 401, 403 y 429; flujo de recuperación y reintento manual. Mantener la UX sin “crear cuenta” ni flujos de registro público.
 7. **Implementar carga de perfil y estado de sesión.** Llamar a `GET auth/app/resident/me` para validar la sesión y cargar el perfil del servidor; también preparar la pantalla de sesión vencida/revocada.
 8. **Añadir pruebas de la base técnica.** MockWebServer para la capa REST, tests unitarios del `AuthRepository`/`SessionManager` y pruebas de integración para refresh, 401 y rotación de refresh token.
@@ -391,13 +353,11 @@ Esta fase es la primera entrega ejecutable y debe quedar lista antes de avanzar 
 6. Servicios activos y entregas pendientes mostrados en Inicio desde los endpoints móviles y derivados de `propertyId` del JWT.
 7. Estado financiero y campañas mostrados en Inicio; comprobantes pendientes de contrato seguro de upload e idempotencia.
 
-La app ya recibe los enlaces y usa los tokens solo en memoria. La recuperación se solicita desde login mediante `POST auth/resident/password-recovery`, y el cambio inicial usa `POST auth/app/resident/change-password`. Queda pendiente publicar `.well-known/assetlinks.json` en el dominio productivo con la huella SHA-256 real de Play App Signing; no se debe subir una huella ficticia.
+La app recibe los enlaces y persiste la sesión cifrada según `SessionManager`. Recuperación usa `POST auth/app/resident/password-recovery`; el cambio inicial usa `POST auth/app/resident/change-password` y revoca las sesiones móviles existentes. Queda pendiente publicar `.well-known/assetlinks.json` en el dominio productivo con la huella SHA-256 real de Play App Signing; no se debe subir una huella ficticia.
 
-### Fase 3 — Avisos y finanzas protegidas
+### Fase 3 — Avisos y finanzas
 
-1. Esperar la habilitación del backend para avisos y finanzas con auth real.
-2. No consumir endpoints de finanzas ni notices sin guard y sin derivación de tenant/property desde la sesión.
-3. Añadir manejo de idempotencia y receipt flow solo cuando el backend lo defina.
+Avisos, estado financiero, campañas y cotizaciones ya usan rutas protegidas y contexto derivado de la sesión. No implementar pagos ni recibos de producción hasta que el backend entregue storage privado e idempotencia; ver bloqueos de la sección 14.
 
 ### Fase 4 — Publicación y hardening
 
@@ -409,10 +369,10 @@ La app ya recibe los enlaces y usa los tokens solo en memoria. La recuperación 
 
 - Login, activación y recovery funcionan con el DTO actual y no filtran credenciales.
 - No existe registro público; solo inicia sesión una cuenta provisionada o invitada por un administrador.
-- En Android/iOS, el access token vence a los 15 minutos, el refresh rota y está protegido con Keystore/Keychain; logout y replay revocan la sesión móvil. La PWA conserva el bearer legacy de 24 horas durante la transición.
+- En Android/iOS, el access token vence a los 15 minutos y refresh rota; Android protege tokens con `EncryptedSharedPreferences` respaldada por Keystore e iOS guarda refresh en Keychain. Logout y replay revocan la sesión móvil. La PWA conserva rutas Resident legacy y tokens previos de dos segmentos hasta expirar.
 - Cada endpoint privado envía token y el backend verifica sesión, tenant y vivienda.
 - El QR se representa desde la respuesta del servidor, rota a los 15 segundos y nunca autoriza offline.
-- Los datos financieros no aparecen para otra vivienda o tenant. POST financieros no se duplican al reintentar.
+- Los datos financieros no aparecen para otra vivienda o tenant. Mientras el backend no ofrezca idempotencia, la app no reintenta automáticamente envíos de pago.
 - No existe tráfico HTTP cleartext en el AAB release.
 - No hay secretos, tokens, datos personales o recibos en logs, analytics, screenshots de tests ni backups Android.
 - App Links solo verifican los dominios productivos y mantienen fallback web.

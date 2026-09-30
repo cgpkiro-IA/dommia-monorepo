@@ -5,7 +5,7 @@ import { db } from '../../../lib/db';
 import { CommunityNotice } from '../../../types';
 import { API_BASE } from '@/lib/api-url';
 
-export function useNotices(communitySlug?: string) {
+export function useNotices(communitySlug: string | undefined, token: string | null) {
   const [notices, setNotices] = useState<CommunityNotice[]>([]);
 
   const loadNotices = useCallback(async () => {
@@ -44,7 +44,9 @@ export function useNotices(communitySlug?: string) {
       // 2. If online and slug provided, sync fresh delta from backend API
       if (navigator.onLine && communitySlug) {
         try {
-          const res = await fetch(`${API_BASE}/tenants/${communitySlug}/notices?publishedOnly=true`);
+          const res = await fetch(`${API_BASE}/auth/app/resident/notices`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
           if (res.ok) {
             const json = await res.json();
             if (json.success && Array.isArray(json.data) && json.data.length > 0) {
@@ -68,7 +70,7 @@ export function useNotices(communitySlug?: string) {
     } catch (err) {
       console.warn('Error loading notices from IndexedDB:', err);
     }
-  }, [communitySlug]);
+  }, [communitySlug, token]);
 
   useEffect(() => {
     loadNotices();

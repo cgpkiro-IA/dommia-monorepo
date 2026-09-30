@@ -3,8 +3,10 @@ import { TenantsService } from '../services/tenants.service';
 import { CreateTenantDto } from '../dto/create-tenant.dto';
 import { UpdateTenantDto } from '../dto/update-tenant.dto';
 import { CrmAdminGuard } from '../../auth/guards/crm-admin.guard';
+import { Public, Roles } from '../../auth/decorators/auth-metadata.decorator';
 
 @Controller('tenants')
+@Roles('SUPER_ADMIN', 'COMMERCIAL_EXEC', 'SUPPORT')
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
@@ -20,6 +22,7 @@ export class TenantsController {
   }
 
   @Get(':slug')
+  @Public()
   async findOne(@Param('slug') slug: string) {
     const tenant = await this.tenantsService.findBySlug(slug);
     return {

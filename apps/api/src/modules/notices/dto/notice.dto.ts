@@ -122,3 +122,13 @@ export class UpdateNoticeDto {
   is_published?: boolean;
 }
 
+export class AcknowledgeGuardNoticeDto {
+  @IsString()
+  @IsOptional()
+  guardUserId?: string;
+
+  @IsString()
+  @IsOptional()
+  guardName?: string;
+}
+

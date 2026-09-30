@@ -1,10 +1,12 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, HttpStatus, HttpCode, UseGuards } from '@nestjs/common';
 import { FinanceAdminGuard } from '../../auth/guards/finance-admin.guard';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 import { PropertiesService } from '../services/properties.service';
 import { CreatePropertyDto, UpdatePropertyDto } from '../dto/property.dto';
 
 @Controller('tenants/:slug/properties')
 @UseGuards(FinanceAdminGuard)
+@Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR')
 export class PropertiesController {
   constructor(private readonly propertiesService: PropertiesService) {}
 

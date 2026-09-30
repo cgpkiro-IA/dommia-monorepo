@@ -19,10 +19,10 @@ export function useAnnualCampaigns(authToken?: string) {
   const [loading, setLoading] = useState(false);
 
   const loadCampaigns = useCallback(async (slug: string) => {
-    const res = await fetch(`${API_BASE}/tenants/${slug}/finance/annual-campaigns`);
+    const res = await fetch(`${API_BASE}/tenants/${slug}/finance/annual-campaigns`, { headers: authToken ? { Authorization: `Bearer ${authToken}` } : {} });
     const json = await res.json();
     if (res.ok && json.success) setCampaigns(json.data || []);
-  }, []);
+  }, [authToken]);
 
   const createCampaign = useCallback(async (slug: string) => {
     setLoading(true);
@@ -35,13 +35,13 @@ export function useAnnualCampaigns(authToken?: string) {
       await loadCampaigns(slug);
       return true;
     } finally { setLoading(false); }
-  }, [form, loadCampaigns]);
+  }, [authToken, form, loadCampaigns]);
 
   const loadCommitments = useCallback(async (slug: string, campaignId: string) => {
-    const res = await fetch(`${API_BASE}/tenants/${slug}/finance/annual-campaigns/${campaignId}/commitments`);
+    const res = await fetch(`${API_BASE}/tenants/${slug}/finance/annual-campaigns/${campaignId}/commitments`, { headers: authToken ? { Authorization: `Bearer ${authToken}` } : {} });
     const json = await res.json();
     if (res.ok && json.success) setCommitments(json.data || []);
-  }, []);
+  }, [authToken]);
 
   const review = useCallback(async (slug: string, id: string, status: 'APPROVED' | 'REJECTED') => {
     const res = await fetch(`${API_BASE}/tenants/${slug}/finance/annual-commitments/${id}/review`, {
@@ -49,7 +49,7 @@ export function useAnnualCampaigns(authToken?: string) {
     });
     if (res.ok) setCommitments((items) => items.map((item) => item.id === id ? { ...item, status } : item));
     return res.ok;
-  }, []);
+  }, [authToken]);
 
   const recordCash = useCallback(async (slug: string, campaignId: string, propertyId: string, amount: number, reference: string) => {
     const res = await fetch(`${API_BASE}/tenants/${slug}/finance/annual-campaigns/${campaignId}/cash`, {

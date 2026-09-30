@@ -45,8 +45,8 @@ export default function CommunitiesAdminPage() {
   const properties = useProperties(auth.userSession?.token);
   const residents = useResidents(auth.userSession?.token);
   const vehicles = useVehicles();
-  const notices = useNotices();
-  const fees = useFees();
+  const notices = useNotices(auth.userSession?.token);
+  const fees = useFees(auth.userSession?.token);
 
   const [activeTab, setActiveTab] = useState<AdminTab>('PROPERTIES');
   const [toast, setToast] = useState<NotificationToast | null>(null);

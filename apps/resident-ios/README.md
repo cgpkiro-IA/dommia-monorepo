@@ -1,10 +1,12 @@
 # DOMMIA Resident iOS
 
-Base nativa SwiftUI para DOMMIA Resident. Android e iOS comparten el contrato descrito en `Docs/Planes/Contrato Resident Mobile v1.md`.
+Cliente nativo SwiftUI para DOMMIA Resident. Android e iOS comparten el contrato normativo [Contrato Resident Mobile v1](../../Docs/Planes/Contrato%20Resident%20Mobile%20v1.md); esta guía solo describe el estado del scaffold y detalles de plataforma.
 
 ## Estado
 
-La estructura y la capa de autenticacion estan preparadas. Falta abrir el proyecto en macOS/Xcode para crear el target de aplicacion, firmar el bundle y ejecutar el simulador o dispositivo.
+Los servicios Swift implementan login, refresh/logout, perfil, avisos, invitaciones, credencial de acceso, lectura financiera/campañas y upload de recibo en DEV. El upload devuelve `local://` y no es apto para PROD; iOS todavía no envía pagos.
+
+Falta abrir el proyecto en macOS/Xcode para crear/configurar el target de aplicación, firmar el bundle y ejecutar simulador/dispositivo. Estos pasos de plataforma no cambian el contrato HTTP compartido.
 
 ## Estructura
 
@@ -39,4 +41,4 @@ resident-ios/
 5. Define el Bundle ID productivo y el Team ID antes de habilitar Universal Links.
 6. Ejecuta las pruebas de auth contra el API local o staging.
 
-No agregues secretos de backend, tokens ni contraseñas al bundle.
+No agregues secretos de backend, tokens ni contraseñas al bundle. El refresh se guarda en Keychain; el access token se mantiene en memoria.

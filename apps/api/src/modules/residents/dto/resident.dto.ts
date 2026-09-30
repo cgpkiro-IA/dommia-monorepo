@@ -95,3 +95,17 @@ export class InviteResidentsDto {
   @IsOptional()
   delivery?: 'NONE' | 'EMAIL' | 'WHATSAPP';
 }
+
+export class InviteResidentDto {
+  @IsUUID('4')
+  @IsOptional()
+  createdBy?: string;
+
+  @IsIn(['AUTO', 'EMAIL', 'PHONE'])
+  @IsOptional()
+  contactMethod?: 'AUTO' | 'EMAIL' | 'PHONE';
+
+  @IsIn(['NONE', 'EMAIL', 'WHATSAPP'])
+  @IsOptional()
+  delivery?: 'NONE' | 'EMAIL' | 'WHATSAPP';
+}

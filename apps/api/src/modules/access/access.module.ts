@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule } from '../../database/database.module';
 import { AuthModule } from '../auth/auth.module';
 import { TenantsModule } from '../tenants/tenants.module';
@@ -14,7 +15,7 @@ import { AccessRepository } from './repositories/access.repository';
 import { GuardUsersController } from './controllers/guard-users.controller';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, TenantsModule, NotificationsModule],
+  imports: [DatabaseModule, AuthModule, TenantsModule, NotificationsModule, ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }])],
   controllers: [ResidentInvitationsController, ResidentAccessController, ResidentAppAccessController, AccessValidationController, GuardUsersController],
   providers: [AccessService, AccessRepository, AccessOperatorGuard, FinanceAdminGuard],
   exports: [AccessService, AccessOperatorGuard],

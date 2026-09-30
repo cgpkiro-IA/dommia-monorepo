@@ -9,12 +9,19 @@ import {
   ValidateAccessDto,
 } from '../dto/access.dto';
 import { AccessService } from '../services/access.service';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
+import { Public } from '../../auth/decorators/auth-metadata.decorator';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller('tenants/:slug/access')
+@Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'GUARD')
 export class AccessValidationController {
   constructor(private readonly accessService: AccessService) {}
 
   @Get('invitations/:id/pass')
+  @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Header('Cache-Control', 'no-store, max-age=0')
   async getGuestPass(@Param('slug') slug: string, @Param('id') id: string) {
     return { success: true, data: await this.accessService.getGuestPass(slug, id) };

@@ -2,9 +2,11 @@ import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nes
 import { ResidentAuthGuard, ResidentSessionClaims } from '../../auth/guards/resident-auth.guard';
 import { CreateVisitorInvitationDto } from '../dto/access.dto';
 import { AccessService } from '../services/access.service';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 
 @Controller('auth/resident/invitations')
 @UseGuards(ResidentAuthGuard)
+@Roles('RESIDENT')
 export class ResidentInvitationsController {
   constructor(private readonly accessService: AccessService) {}
 

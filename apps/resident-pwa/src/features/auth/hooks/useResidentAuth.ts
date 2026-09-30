@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ResidentProfile } from '../../../types';
 import { parseClientError } from '@dommia/ui';
-
-const API = 'http://localhost:4000/api/v1';
+import { API_BASE as API } from '@/lib/api-url';
 
 export function useResidentAuth(expectedTenantSlug?: string) {
   const [profile, setProfile] = useState<ResidentProfile | null>(null);

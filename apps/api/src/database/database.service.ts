@@ -51,6 +51,26 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     return res;
   }
 
+  async withTransaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
+    let releaseError: Error | undefined;
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        releaseError = rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError));
+      }
+      throw error;
+    } finally {
+      client.release(releaseError);
+    }
+  }
+
   /**
    * Execute a query inside a specific tenant's schema in PostgreSQL
    * Dynamically switches search_path = tenant_<slug>, public
@@ -131,6 +151,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       [slug, name, tier, maxProperties, contactEmail],
     );
     await this.query('SELECT public.ensure_tenant_feature_tables($1)', [slug]);
+    await this.query('SELECT public.ensure_tenant_finance_schema($1)', [slug]);
+    await this.query('SELECT public.ensure_tenant_latest_guard_tables($1)', [slug]);
     const tenantId = res.rows[0].id;
     this.logger.log(`Provisioned tenant ${slug} with ID ${tenantId} and schema tenant_${slug}`);
     return tenantId;

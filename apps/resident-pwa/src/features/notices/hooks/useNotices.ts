@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '../../../lib/db';
 import { CommunityNotice } from '../../../types';
+import { API_BASE } from '@/lib/api-url';
 
 export function useNotices(communitySlug?: string) {
   const [notices, setNotices] = useState<CommunityNotice[]>([]);
@@ -43,7 +44,7 @@ export function useNotices(communitySlug?: string) {
       // 2. If online and slug provided, sync fresh delta from backend API
       if (navigator.onLine && communitySlug) {
         try {
-          const res = await fetch(`http://localhost:4000/api/v1/tenants/${communitySlug}/notices?publishedOnly=true`);
+          const res = await fetch(`${API_BASE}/tenants/${communitySlug}/notices?publishedOnly=true`);
           if (res.ok) {
             const json = await res.json();
             if (json.success && Array.isArray(json.data) && json.data.length > 0) {

@@ -3,6 +3,7 @@
 import React from 'react';
 import { AlertTriangle, Zap, ExternalLink } from 'lucide-react';
 import { TenantMetadata, Metrics } from '@/types';
+import { CRM_URL } from '@/lib/app-urls';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -65,7 +66,7 @@ export function UpgradeModal({
 
           <div className="space-y-3">
             <a
-              href="http://localhost:3001"
+              href={CRM_URL}
               target="_blank"
               rel="noreferrer"
               className="w-full py-3.5 px-4 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all"

@@ -504,7 +504,7 @@ export class AccessRepository {
 
   async findTenantAdminContacts(slug: string) {
     const result = await this.db.query(`
-      SELECT u.email, u.phone, u.first_name, u.last_name
+      SELECT u.email, t.contact_phone AS phone, u.first_name, u.last_name
       FROM public.user_tenants ut
       JOIN public.users u ON u.id = ut.user_id
       JOIN public.tenants t ON t.id = ut.tenant_id

@@ -58,9 +58,15 @@ Lineamientos de identidad visual, directrices de comunicación y tono de voz:
 ## 🗺️ 3. [Planes & Roadmap](./Planes/)
 Planificación de ingeniería, seguimiento de entregables y roadmap de producción:
 * **[Plan de Desarrollo Maestro por Fases.md](./Planes/Plan%20de%20Desarrollo%20Maestro%20por%20Fases.md):** **(Documento Vivo Principal)** Bitácora de versiones, mapa de ruta de las Fases 0 a 7, checklists de tareas técnicas con criterios de aceptación y estado en tiempo real.
+* **[Desarrollo app Android.md](./Planes/Desarrollo%20app%20Android.md):** Guía de punta a punta para crear DOMMIA Resident nativa, integrar la API existente y cerrar brechas de seguridad antes del release.
+* **[Desarrollo app iOS.md](./Planes/Desarrollo%20app%20iOS.md):** Base técnica para crear la app nativa iOS de DOMMIA Resident con arquitectura MVVM, Keychain, URLSession, autentificación móvil y seguridad por backend.
+	El scaffold inicial vive en [`apps/resident-ios`](../apps/resident-ios/README.md).
+* **[Contrato Resident Mobile v1.md](./Planes/Contrato%20Resident%20Mobile%20v1.md):** Contrato común y corregido para Android/iOS: autenticación, sesiones, recursos móviles, errores y pendientes previos al release.
+* **[PT Autenticación Segura Multiplataforma.md](./Planes/PT%20Autenticacion%20Segura%20Multiplataforma.md):** Estado y contrato de autenticación nativa Resident para Android/iOS, sesiones revocables, compatibilidad con PWA y pendientes de seguridad previos a producción.
 * **[SaaS Modular Frac Plan Maestro.md](./Planes/SaaS%20Modular%20Frac%20Plan%20Maestro.md):** Documento histórico de referencia; sus propuestas de IoT/Wiegand no son alcance vigente del MVP.
 
 ---
 
 ## 🧪 4. Guía de Pruebas & Operación
 * Consulta la carpeta **[`/Testing`](../Testing/)** para comandos verificados, precondiciones E2E, migraciones requeridas y brechas de validación local/staging/dispositivos.
+* Consulta [Despliegue GCP Producción](./Despliegue%20GCP%20Produccion.md) para configuración Cloud Run/Cloud SQL, bootstrap de una base vacía y auditoría de esquema.

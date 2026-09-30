@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ResidentProfile } from '../../../types';
+import { API_BASE } from '@/lib/api-url';
 
 interface Campaign {
   id: string;
@@ -30,7 +31,7 @@ export function useAnnualCampaign(profile: ResidentProfile) {
 
   const loadCampaign = useCallback(async () => {
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${profile.communitySlug}/finance/annual-campaigns`);
+      const res = await fetch(`${API_BASE}/tenants/${profile.communitySlug}/finance/annual-campaigns`);
       const json = await res.json();
       if (res.ok && json.success) {
         const active = (json.data || []).find((item: Campaign) => item.status === 'ACTIVE');
@@ -47,7 +48,7 @@ export function useAnnualCampaign(profile: ResidentProfile) {
 
   const loadQuote = useCallback(async () => {
     if (!campaign || !profile.propertyId) return;
-    const res = await fetch(`http://localhost:4000/api/v1/tenants/${profile.communitySlug}/finance/annual-campaigns/${campaign.id}/quote`, {
+    const res = await fetch(`${API_BASE}/tenants/${profile.communitySlug}/finance/annual-campaigns/${campaign.id}/quote`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ propertyId: profile.propertyId }),
     });
@@ -61,7 +62,7 @@ export function useAnnualCampaign(profile: ResidentProfile) {
     setIsSubmitting(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${profile.communitySlug}/finance/annual-campaigns/${campaign.id}/submissions`, {
+      const res = await fetch(`${API_BASE}/tenants/${profile.communitySlug}/finance/annual-campaigns/${campaign.id}/submissions`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ propertyId: profile.propertyId, amount: quote.netAmount, reference, receiptUrl, payerName: profile.name }),
       });

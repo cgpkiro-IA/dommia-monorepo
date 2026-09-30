@@ -1,14 +1,63 @@
 import { Injectable } from '@nestjs/common';
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 import { DatabaseService } from '../../../database/database.service';
+import { ResidentAppPushTokenDto } from '../dto/resident-app-auth.dto';
+import { ResidentSessionClaims } from '../guards/resident-auth.guard';
 
 @Injectable()
 export class AuthRepository {
   constructor(private readonly db: DatabaseService) {}
 
+  async registerResidentPushToken(claims: ResidentSessionClaims, dto: ResidentAppPushTokenDto) {
+    const tenant = await this.db.query(
+      `SELECT id FROM public.tenants
+       WHERE LOWER(REPLACE(slug, '-', '_')) = LOWER(REPLACE($1, '-', '_'))
+       LIMIT 1`,
+      [claims.tenantSlug],
+    );
+    if (!tenant.rows[0]) return null;
+
+    const result = await this.db.query(`
+      INSERT INTO public.resident_push_tokens
+        (tenant_id, resident_id, session_jti, client_type, device_id, token, is_active, last_seen_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, TRUE, NOW(), NOW())
+      ON CONFLICT (tenant_id, resident_id, client_type, device_id)
+      DO UPDATE SET
+        session_jti = EXCLUDED.session_jti,
+        token = EXCLUDED.token,
+        is_active = TRUE,
+        last_seen_at = NOW(),
+        updated_at = NOW()
+      RETURNING id, device_id AS "deviceId", client_type AS "clientType", is_active AS "isActive", last_seen_at AS "lastSeenAt"
+    `, [tenant.rows[0].id, claims.sub, claims.jti, claims.clientType, dto.deviceId, dto.token]);
+    return result.rows[0] || null;
+  }
+
+  async revokeResidentPushToken(claims: ResidentSessionClaims, deviceId: string) {
+    const tenant = await this.db.query(
+      `SELECT id FROM public.tenants
+       WHERE LOWER(REPLACE(slug, '-', '_')) = LOWER(REPLACE($1, '-', '_'))
+       LIMIT 1`,
+      [claims.tenantSlug],
+    );
+    if (!tenant.rows[0]) return null;
+
+    const result = await this.db.query(`
+      UPDATE public.resident_push_tokens
+      SET is_active = FALSE, updated_at = NOW()
+      WHERE tenant_id = $1 AND resident_id = $2 AND client_type = $3 AND device_id = $4
+      RETURNING id, device_id AS "deviceId", client_type AS "clientType", is_active AS "isActive"
+    `, [tenant.rows[0].id, claims.sub, claims.clientType, deviceId]);
+    return result.rows[0] || null;
+  }
+
   async recordResidentAudit(slug: string, action: string, entityId: string | null, metadata?: Record<string, unknown>) {
     try {
-      const tenant = await this.db.query('SELECT id FROM public.tenants WHERE LOWER(slug) = LOWER($1) LIMIT 1', [slug]);
+      const tenant = await this.db.query(`
+        SELECT id FROM public.tenants
+        WHERE LOWER(REPLACE(slug, '-', '_')) = LOWER(REPLACE($1, '-', '_'))
+        LIMIT 1
+      `, [slug]);
       await this.db.query(
         `INSERT INTO public.audit_logs (tenant_id, action, entity, entity_id, new_value)
          VALUES ($1, $2, 'ResidentAuth', $3, $4::jsonb)`,
@@ -44,6 +93,151 @@ export class AuthRepository {
     );
   }
 
+  async createResidentAppSession(input: {
+    jti: string;
+    residentId: string;
+    tenantSlug: string;
+    clientType: 'ANDROID' | 'IOS';
+    deviceId?: string;
+    deviceName?: string;
+    refreshTokenHash: string;
+    refreshExpiresAt: Date;
+    refreshAbsoluteExpiresAt: Date;
+  }) {
+    return this.db.withTransaction(async (client) => {
+      const session = await client.query(`
+        INSERT INTO public.resident_sessions (
+          jti, resident_id, tenant_slug, expires_at, client_type, device_id, device_name,
+          last_used_at, refresh_expires_at, refresh_absolute_expires_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8, $9)
+        RETURNING id, jti
+      `, [
+        input.jti,
+        input.residentId,
+        input.tenantSlug,
+        input.refreshAbsoluteExpiresAt,
+        input.clientType,
+        input.deviceId || null,
+        input.deviceName || null,
+        input.refreshExpiresAt,
+        input.refreshAbsoluteExpiresAt,
+      ]);
+      const row = session.rows[0];
+      await client.query(`
+        INSERT INTO public.resident_refresh_tokens (session_id, token_hash, expires_at)
+        VALUES ($1, $2, $3)
+      `, [row.id, input.refreshTokenHash, input.refreshExpiresAt]);
+      return row as { id: string; jti: string };
+    });
+  }
+
+  async rotateResidentAppRefreshToken(currentTokenHash: string, nextTokenHash: string) {
+    return this.db.withTransaction(async (client) => {
+      const found = await client.query(`
+        SELECT rt.id AS refresh_id, rt.session_id, rt.expires_at AS token_expires_at,
+               rt.used_at, rt.revoked_at AS token_revoked_at,
+               s.jti, s.resident_id, s.tenant_slug, s.client_type, s.device_id, s.device_name,
+               s.revoked_at AS session_revoked_at, s.refresh_absolute_expires_at
+        FROM public.resident_refresh_tokens rt
+        JOIN public.resident_sessions s ON s.id = rt.session_id
+        WHERE rt.token_hash = $1
+        FOR UPDATE OF rt, s
+      `, [currentTokenHash]);
+      const session = found.rows[0];
+      if (!session) return { kind: 'INVALID' as const };
+
+      if (session.session_revoked_at || new Date(session.refresh_absolute_expires_at).getTime() <= Date.now()) {
+        return { kind: 'EXPIRED' as const };
+      }
+
+      if (session.used_at) {
+        await client.query(`
+          UPDATE public.resident_sessions
+          SET revoked_at = COALESCE(revoked_at, NOW()), reuse_detected_at = NOW()
+          WHERE id = $1
+        `, [session.session_id]);
+        await client.query(`
+          UPDATE public.resident_refresh_tokens
+          SET revoked_at = COALESCE(revoked_at, NOW())
+          WHERE session_id = $1 AND revoked_at IS NULL
+        `, [session.session_id]);
+        return {
+          kind: 'REPLAY' as const,
+          residentId: session.resident_id as string,
+          tenantSlug: session.tenant_slug as string,
+          clientType: session.client_type as 'ANDROID' | 'IOS',
+        };
+      }
+
+      if (session.token_revoked_at || new Date(session.token_expires_at).getTime() <= Date.now()) {
+        return { kind: 'EXPIRED' as const };
+      }
+
+      const nextRefreshId = randomUUID();
+      const next = await client.query(`
+        INSERT INTO public.resident_refresh_tokens (id, session_id, token_hash, expires_at)
+        VALUES ($1, $2, $3, LEAST(NOW() + INTERVAL '30 days', $4))
+        RETURNING expires_at
+      `, [nextRefreshId, session.session_id, nextTokenHash, session.refresh_absolute_expires_at]);
+      await client.query(`
+        UPDATE public.resident_refresh_tokens
+        SET used_at = NOW(), replaced_by_id = $2
+        WHERE id = $1 AND used_at IS NULL AND revoked_at IS NULL
+      `, [session.refresh_id, nextRefreshId]);
+      await client.query(`
+        UPDATE public.resident_sessions
+        SET last_used_at = NOW(), refresh_expires_at = $2
+        WHERE id = $1
+      `, [session.session_id, next.rows[0].expires_at]);
+
+      return {
+        kind: 'ROTATED' as const,
+        session: {
+          id: session.session_id,
+          jti: session.jti,
+          residentId: session.resident_id,
+          tenantSlug: session.tenant_slug,
+          clientType: session.client_type,
+          deviceId: session.device_id,
+          deviceName: session.device_name,
+        },
+        refreshExpiresAt: next.rows[0].expires_at as Date,
+      };
+    });
+  }
+
+  async listResidentAppSessions(residentId: string, tenantSlug: string, currentJti: string) {
+    const result = await this.db.query(`
+      SELECT id, client_type AS "clientType", device_id AS "deviceId", device_name AS "deviceName",
+             created_at AS "createdAt", last_used_at AS "lastUsedAt",
+             refresh_expires_at AS "refreshExpiresAt", (jti = $3) AS "isCurrent"
+      FROM public.resident_sessions
+      WHERE resident_id = $1 AND tenant_slug = $2 AND client_type IN ('ANDROID', 'IOS')
+        AND revoked_at IS NULL AND refresh_expires_at > NOW()
+      ORDER BY last_used_at DESC NULLS LAST, created_at DESC
+    `, [residentId, tenantSlug, currentJti]);
+    return result.rows;
+  }
+
+  async revokeResidentAppSession(sessionId: string, residentId: string, tenantSlug: string) {
+    return this.db.withTransaction(async (client) => {
+      const result = await client.query(`
+        UPDATE public.resident_sessions
+        SET revoked_at = COALESCE(revoked_at, NOW())
+        WHERE id = $1 AND resident_id = $2 AND tenant_slug = $3
+          AND client_type IN ('ANDROID', 'IOS') AND revoked_at IS NULL
+        RETURNING id
+      `, [sessionId, residentId, tenantSlug]);
+      if (!result.rows[0]) return false;
+      await client.query(`
+        UPDATE public.resident_refresh_tokens
+        SET revoked_at = COALESCE(revoked_at, NOW())
+        WHERE session_id = $1 AND revoked_at IS NULL
+      `, [sessionId]);
+      return true;
+    });
+  }
+
   async isResidentSessionActive(jti: string, residentId: string, tenantSlug: string) {
     const result = await this.db.query(
       'SELECT 1 FROM public.resident_sessions WHERE jti = $1 AND resident_id = $2 AND tenant_slug = $3 AND revoked_at IS NULL AND expires_at > NOW()',
@@ -53,7 +247,42 @@ export class AuthRepository {
   }
 
   async revokeResidentSession(jti: string) {
-    await this.db.query('UPDATE public.resident_sessions SET revoked_at = NOW() WHERE jti = $1 AND revoked_at IS NULL', [jti]);
+    await this.db.withTransaction(async (client) => {
+      const result = await client.query(`
+        UPDATE public.resident_sessions
+        SET revoked_at = COALESCE(revoked_at, NOW())
+        WHERE jti = $1 AND revoked_at IS NULL
+        RETURNING id
+      `, [jti]);
+      if (!result.rows[0]) return;
+      await client.query(`
+        UPDATE public.resident_refresh_tokens
+        SET revoked_at = COALESCE(revoked_at, NOW())
+        WHERE session_id = $1 AND revoked_at IS NULL
+      `, [result.rows[0].id]);
+    });
+  }
+
+  async revokeAllResidentAppSessions(residentId: string, tenantSlug: string) {
+    return this.db.withTransaction(async (client) => {
+      const sessions = await client.query(`
+        UPDATE public.resident_sessions
+        SET revoked_at = COALESCE(revoked_at, NOW())
+        WHERE resident_id = $1 AND tenant_slug = $2
+          AND client_type IN ('ANDROID', 'IOS') AND revoked_at IS NULL
+        RETURNING id
+      `, [residentId, tenantSlug]);
+
+      if (!sessions.rowCount) return 0;
+
+      await client.query(`
+        UPDATE public.resident_refresh_tokens
+        SET revoked_at = COALESCE(revoked_at, NOW())
+        WHERE session_id = ANY($1::uuid[]) AND revoked_at IS NULL
+      `, [sessions.rows.map((session) => session.id)]);
+
+      return sessions.rowCount;
+    });
   }
 
   async activateResident(token: string, password: string) {

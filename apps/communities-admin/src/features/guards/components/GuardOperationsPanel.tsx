@@ -3,8 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Bike, Car, Check, Clock, Droplets, HelpCircle, MapPin, Package, RefreshCw, Trash2, Truck, Wrench } from 'lucide-react';
 import type { GuardServiceItem, GuardServiceType } from '@/types';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+import { API_BASE as API } from '@/lib/api-url';
 
 type Incident = {
   id: string;

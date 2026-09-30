@@ -1,8 +1,9 @@
 import type { GuardSession } from './types';
 import { hasAccessModule } from './guard-utils';
 import { parseClientError } from '@dommia/ui';
+import { API_BASE } from '@/lib/api-url';
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+export { API_BASE };
 export const GUARD_SESSION_KEY = 'dommia_guard_session';
 
 export async function guardApiRequest<T>(path: string, token: string, init: RequestInit = {}): Promise<T> {

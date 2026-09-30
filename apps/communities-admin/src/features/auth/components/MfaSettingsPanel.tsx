@@ -2,8 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { Check, Copy, KeyRound, Loader2, ShieldCheck, ShieldOff } from 'lucide-react';
-
-const API = 'http://localhost:4000/api/v1';
+import { API_BASE as API } from '@/lib/api-url';
 interface SetupData { secret: string; qrCodeDataUrl: string }
 
 interface MfaSettingsPanelProps {

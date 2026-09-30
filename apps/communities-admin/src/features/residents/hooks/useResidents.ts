@@ -2,6 +2,7 @@
 
 import { useRef, useState, useMemo } from 'react';
 import { Resident, Property } from '@/types';
+import { API_BASE } from '@/lib/api-url';
 
 export type InviteContactMethod = 'AUTO' | 'EMAIL' | 'PHONE';
 export type InviteDelivery = 'NONE' | 'EMAIL' | 'WHATSAPP';
@@ -46,7 +47,7 @@ export function useResidents(authToken?: string) {
     setInvitationResults([]);
     setLoadingResidents(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/residents`, { headers: authHeaders });
+      const res = await fetch(`${API_BASE}/tenants/${slug}/residents`, { headers: authHeaders });
       const data = await res.json();
       if (data.success && requestId === loadRequestRef.current) {
         setResidents(data.data || []);
@@ -106,7 +107,7 @@ export function useResidents(authToken?: string) {
     setFormError(null);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/residents`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/residents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(residentForm),
@@ -134,7 +135,7 @@ export function useResidents(authToken?: string) {
     setFormError(null);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/residents/${editingResident.id}`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/residents/${editingResident.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
@@ -176,7 +177,7 @@ export function useResidents(authToken?: string) {
     }
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/residents/${id}`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/residents/${id}`, {
         method: 'DELETE', headers: authHeaders,
       });
       const result = await res.json();
@@ -196,7 +197,7 @@ export function useResidents(authToken?: string) {
       if (ids !== 'ALL' && selectedIds.length !== ids.length) {
         throw new Error('La selección contiene un residente inválido. Actualiza el padrón e inténtalo de nuevo.');
       }
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/residents/invite`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/residents/invite`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(ids === 'ALL' ? { all: true, contactMethod, delivery } : { residentIds: selectedIds, contactMethod, delivery }),
       });

@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { TotpResult } from '../../../lib/totp';
 import { ResidentProfile } from '../../../types';
+import { API_BASE as API } from '@/lib/api-url';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const EMPTY_QR: TotpResult = { code: '', payload: '', qrImage: '', timeRemaining: 0, progressPercent: 0 };
 
 export function useDynamicQR(profile: ResidentProfile | null, token: string | null, enabled: boolean) {

@@ -19,8 +19,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import type { GuardServiceItem, GuardServiceType } from '@/types';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+import { API_BASE as API } from '@/lib/api-url';
 
 const serviceIcons: Record<GuardServiceType, any> = {
   FOOD_DELIVERY: Bike,

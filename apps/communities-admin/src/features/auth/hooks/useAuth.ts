@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { UserSession, TenantMetadata } from '@/types';
+import { API_BASE } from '@/lib/api-url';
 import { parseClientError } from '@dommia/ui';
 
 export function useAuth() {
@@ -41,7 +42,7 @@ export function useAuth() {
     setLoginError(null);
 
     try {
-      const res = await fetch('http://localhost:4000/api/v1/auth/login', {
+      const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -73,7 +74,7 @@ export function useAuth() {
     setLoginLoading(true);
     setLoginError(null);
     try {
-      const res = await fetch('http://localhost:4000/api/v1/auth/mfa/verify', {
+      const res = await fetch(`${API_BASE}/auth/mfa/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ challengeToken: mfaChallengeToken, code: code.replace(/\s/g, '') }),
@@ -98,7 +99,7 @@ export function useAuth() {
     setLoginLoading(true);
     setLoginError(null);
     try {
-      const res = await fetch('http://localhost:4000/api/v1/auth/select-tenant', {
+      const res = await fetch(`${API_BASE}/auth/select-tenant`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userSession.token}` },
         body: JSON.stringify({ tenantSlug: t.slug }),

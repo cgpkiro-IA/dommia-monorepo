@@ -3,7 +3,7 @@
 **Marca Principal:** DOMMIA  
 **Producto Principal:** Dommia Communities  
 **Tagline:** *El Sistema Operativo de tu Comunidad*  
-**Versión:** 1.20.0
+**Versión:** 1.21.0
 
 **Última Actualización:** 2026-09-29
 
@@ -35,6 +35,7 @@
 | **1.18.0** | 2026-09-28 | Arquitectura & Pair Programmer | Guard permite cancelar el arranque/detener cámara y recupera el control si no inicia en 12 s o no detecta QR en 30 s; validación API se aborta a los 10 s sin conceder acceso. Build Guard pasa; cámara física pendiente. |
 | **1.19.0** | 2026-09-28 | Arquitectura & Pair Programmer | Sustituye entrada manual de payload QR por búsqueda de visita programada, verificación visual de INE y confirmación por llamada; registra `MANUAL_GUARD`, consume pases SINGLE y no almacena datos de INE. E2E API 5/5; falta prueba operacional en caseta. |
 | **1.20.0** | 2026-09-29 | Arquitectura & Pair Programmer | Módulo táctico de Servicios/Proveedores (Comida, Gas, Agua, Paquetería, Taxi, Mantenimiento) con destinos específicos/generales y alertas a residentes/administrador; Bitácora unificada de eventos con filtros temporales; Búsqueda predictiva de calles con destinatario libre en paquetería y ciclo completo de notificación/cierre automático de alerta en Resident PWA al registrar retiro; `CustomSelect` temático uniforme en todas las PWAs. Suite API 8/8. |
+| **1.21.0** | 2026-09-29 | Arquitectura & Pair Programmer | Agrega rutas de sesión móvil Resident bajo `/auth/app/resident/*`: JWT HS256 de acceso de 15 minutos con audiencia propia y `RESIDENT_APP_TOKEN_SECRET`; refresh opaco hasheado, rotación y detección de replay; lista/revocación de sesiones por dispositivo; cambio inicial de contraseña y guard app-only. La PWA conserva su bearer legacy. Migración 021; E2E API 9/9 en DEV. Pendiente GCP/staging y proteger rutas Resident de avisos/finanzas. |
 
 ---
 

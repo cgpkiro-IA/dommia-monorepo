@@ -115,7 +115,7 @@ export class AccessService {
   }
 
   async assertAccessEnabled(slug: string) {
-    const tenant = await this.tenants.findByExactSlug(slug);
+    const tenant = await this.tenants.findBySlug(slug);
     if (!tenant || !tenant.is_active) throw new NotFoundException('Fraccionamiento no encontrado.');
     const modules = tenant.modules;
     const enabled = Array.isArray(modules)
@@ -249,7 +249,7 @@ export class AccessService {
 
       let notificationStatus: AccessNotificationStatus = 'FAILED';
       try {
-        const tenant = await this.tenants.findByExactSlug(slug);
+        const tenant = await this.tenants.findBySlug(slug);
         notificationStatus = await this.notificationDelivery.sendAccessGranted(
           slug,
           notificationContacts,
@@ -317,7 +317,7 @@ export class AccessService {
 
     let notificationStatus: AccessNotificationStatus = 'FAILED';
     try {
-      const tenant = await this.tenants.findByExactSlug(slug);
+      const tenant = await this.tenants.findBySlug(slug);
       notificationStatus = await this.notificationDelivery.sendAccessGranted(
         slug,
         notificationContacts || { email: null, phone: null },
@@ -458,7 +458,7 @@ export class AccessService {
 
     let notificationStatus: AccessNotificationStatus = 'FAILED';
     try {
-      const tenant = await this.tenants.findByExactSlug(slug);
+      const tenant = await this.tenants.findBySlug(slug);
       notificationStatus = await this.notificationDelivery.sendAccessGranted(
         slug,
         { email: invitation.host_email, phone: invitation.host_phone },
@@ -519,7 +519,7 @@ export class AccessService {
 
     let notificationStatus: AccessNotificationStatus = 'FAILED';
     try {
-      const tenant = await this.tenants.findByExactSlug(slug);
+      const tenant = await this.tenants.findBySlug(slug);
       notificationStatus = await this.notificationDelivery.sendAccessGranted(slug, validation.notificationContacts, {
         visitorName: validation.visitorName,
         communityName: tenant?.name || slug,

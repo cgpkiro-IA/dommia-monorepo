@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { CreditCard, ArrowRight, Car, Bell, Check, Bike, Truck, Droplets, Package, Wrench, HelpCircle } from 'lucide-react';
+import { API_BASE } from '@/lib/api-url';
 import { ResidentProfile, ResidentServiceItem, ResidentDeliveryItem } from '../types';
 import { db } from '../lib/db';
 import { useOnlineStatus } from '../features/offline/hooks/useOnlineStatus';
@@ -76,7 +77,7 @@ export default function ResidentHomePage() {
     const fetchRealtimeAccessAlerts = async () => {
       try {
         // Consultar servicios en camino
-        const resServices = await fetch('http://localhost:4000/api/v1/auth/resident/access-credential/active-services', {
+        const resServices = await fetch(`${API_BASE}/auth/resident/access-credential/active-services`, {
           headers: { Authorization: `Bearer ${residentAuth.token}` },
         });
         if (resServices.ok) {
@@ -89,7 +90,7 @@ export default function ResidentHomePage() {
 
       try {
         // Consultar paquetes pendientes en caseta
-        const resDeliveries = await fetch('http://localhost:4000/api/v1/auth/resident/access-credential/active-deliveries', {
+        const resDeliveries = await fetch(`${API_BASE}/auth/resident/access-credential/active-deliveries`, {
           headers: { Authorization: `Bearer ${residentAuth.token}` },
         });
         if (resDeliveries.ok) {
@@ -139,7 +140,7 @@ export default function ResidentHomePage() {
       return;
     }
     if (checkoutState !== 'success' || !sessionId || !residentAuth.profile?.communitySlug) return;
-    fetch(`http://localhost:4000/api/v1/tenants/${residentAuth.profile.communitySlug}/stripe/session/${encodeURIComponent(sessionId)}`, { headers: { Authorization: `Bearer ${residentAuth.token}` } })
+    fetch(`${API_BASE}/tenants/${residentAuth.profile.communitySlug}/stripe/session/${encodeURIComponent(sessionId)}`, { headers: { Authorization: `Bearer ${residentAuth.token}` } })
       .then(async (response) => {
         const json = await response.json();
         if (!response.ok || !json.success) throw new Error(json.message || 'No se pudo verificar el pago.');
@@ -192,7 +193,7 @@ export default function ResidentHomePage() {
   const openStripeCheckout = async () => {
     const charge = financialStatus?.charges.find((item) => Number(item.balance_due) > 0);
     if (!charge || !profile.propertyId || !residentAuth.token) return;
-    const response = await fetch(`http://localhost:4000/api/v1/tenants/${profile.communitySlug}/stripe/checkout`, {
+    const response = await fetch(`${API_BASE}/tenants/${profile.communitySlug}/stripe/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${residentAuth.token}` },
       body: JSON.stringify({ propertyId: profile.propertyId, chargeId: charge.id, successUrl: `${window.location.origin}/?stripe=success&session_id={CHECKOUT_SESSION_ID}`, cancelUrl: `${window.location.origin}/?stripe=cancelled` }),

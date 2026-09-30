@@ -3,6 +3,12 @@
 import React from 'react';
 import { TrendingUp, BarChart3, Bell, Layers, Building2, Radio, SlidersHorizontal, ShieldCheck } from 'lucide-react';
 
+const portalUrl = process.env.NEXT_PUBLIC_PORTAL_URL?.trim();
+if (!portalUrl || !/^https?:\/\//i.test(portalUrl)) {
+  throw new Error('NEXT_PUBLIC_PORTAL_URL debe definir una URL HTTP(S) antes de compilar CRM.');
+}
+const portalOrigin = new URL(portalUrl).origin;
+
 export type CrmTab = 'dashboard' | 'analytics' | 'alerts' | 'pipeline' | 'tenants' | 'gateways' | 'plans' | 'security';
 
 interface TabNavProps {
@@ -133,18 +139,17 @@ export function TabNav({
           </button>
         </nav>
 
-        {/* Quick link to Landing Comercial */}
         <div className="hidden md:flex items-center text-xs text-slate-400">
           <span className="inline-flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            Landing Comercial Activa en{' '}
+            Portal público{' '}
             <a
-              href="http://localhost:3000"
+              href={portalOrigin}
               target="_blank"
               rel="noreferrer"
               className="text-blue-400 hover:underline font-mono"
             >
-              :3000
+              {new URL(portalOrigin).host}
             </a>
           </span>
         </div>

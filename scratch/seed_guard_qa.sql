@@ -2,7 +2,7 @@ BEGIN;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public.tenants WHERE slug = 'guard-qa') THEN
+  IF NOT EXISTS (SELECT 1 FROM public.tenants WHERE lower(replace(slug, '-', '_')) = 'guard_qa') THEN
     PERFORM public.provision_tenant_schema(
       'guard-qa',
       'Comunidad QA Guard',
@@ -14,11 +14,13 @@ BEGIN
 END $$;
 
 SELECT public.ensure_tenant_feature_tables('guard-qa');
+SELECT public.ensure_tenant_finance_schema('guard-qa');
+SELECT public.ensure_tenant_latest_guard_tables('guard-qa');
 
 UPDATE public.tenants
 SET modules = modules || '{"ACCESS_QR": true, "dynamic_qr": true, "rfid": false, "stripe_auto": false, "STRIPE": false, "STRIPE_CONNECT": false, "FINANCE_STRIPE": false, "NOTIFICATIONS_PREMIUM": false}'::jsonb,
     updated_at = NOW()
-WHERE slug = 'guard-qa';
+  WHERE lower(replace(slug, '-', '_')) = 'guard_qa';
 
 ALTER TABLE tenant_guard_qa.properties
   ADD COLUMN IF NOT EXISTS lot_size_m2 NUMERIC(10,2) DEFAULT 150.00,
@@ -113,7 +115,7 @@ CROSS JOIN (VALUES
   ('guard.sur@qa.dommia.test', 'Mario', 'Guardia Sur', 'GUARD'),
   ('guard.apoyo@qa.dommia.test', 'Sofía', 'Guardia Apoyo', 'GUARD')
 ) AS seed(email, first_name, last_name, role)
-WHERE tenant.slug = 'guard-qa'
+WHERE lower(replace(tenant.slug, '-', '_')) = 'guard_qa'
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO public.user_tenants (user_id, tenant_id, role)
@@ -126,7 +128,7 @@ CROSS JOIN (VALUES
   ('guard.apoyo@qa.dommia.test', 'GUARD')
 ) AS seed(email, role)
 JOIN public.users u ON LOWER(u.email) = seed.email
-WHERE tenant.slug = 'guard-qa'
+WHERE lower(replace(tenant.slug, '-', '_')) = 'guard_qa'
   AND NOT EXISTS (
     SELECT 1 FROM public.user_tenants ut WHERE ut.user_id = u.id AND ut.tenant_id = tenant.id
   );

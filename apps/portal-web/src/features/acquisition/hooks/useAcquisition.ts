@@ -11,8 +11,7 @@ import {
 } from '../../../types';
 
 import { trackEvent } from '../../../lib/analytics';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+import { API_BASE } from '@/lib/api-url';
 
 interface UseAcquisitionProps {
   selectedTier?: string;

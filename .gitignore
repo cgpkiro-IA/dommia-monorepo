@@ -21,6 +21,7 @@ build/
 # Tests and coverage
 coverage/
 *.snap
+.local/
 
 # Logs
 logs/

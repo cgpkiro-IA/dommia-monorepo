@@ -57,7 +57,11 @@ export function ResidentsTable({
   notificationsPremium,
   error,
 }: ResidentsTableProps) {
-  const residentAppUrl = (process.env.NEXT_PUBLIC_RESIDENT_APP_URL || 'http://localhost:3003').replace(/\/$/, '');
+  const configuredResidentAppUrl = process.env.NEXT_PUBLIC_RESIDENT_APP_URL?.trim();
+  if (!configuredResidentAppUrl || !/^https?:\/\//i.test(configuredResidentAppUrl)) {
+    throw new Error('NEXT_PUBLIC_RESIDENT_APP_URL debe definir una URL HTTP(S) antes de compilar Communities.');
+  }
+  const residentAppUrl = configuredResidentAppUrl.replace(/\/$/, '');
   const getActivationUrl = (token: string, tenantSlug?: string) => `${residentAppUrl}/activate-resident?token=${encodeURIComponent(token)}${tenantSlug ? `&tenant=${encodeURIComponent(tenantSlug)}` : ''}`;
   const [inviteContactMethod, setInviteContactMethod] = React.useState<InviteContactMethod>('AUTO');
   const [inviteDelivery, setInviteDelivery] = React.useState<InviteDelivery>('NONE');

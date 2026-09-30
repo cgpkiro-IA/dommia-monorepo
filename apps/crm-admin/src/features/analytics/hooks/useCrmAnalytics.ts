@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { parseClientError, ClientErrorState } from '@dommia/ui';
+import { API_BASE } from '@/lib/api-url';
 
 export interface CrmAnalyticsData {
   financials: {
@@ -50,7 +51,7 @@ export function useCrmAnalytics(token: string | null) {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('http://localhost:4000/api/v1/crm/analytics', {
+      const res = await fetch(`${API_BASE}/crm/analytics`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();

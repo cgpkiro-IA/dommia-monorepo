@@ -38,6 +38,7 @@ export interface AlertSummary {
 }
 
 import { parseClientError, ClientErrorState } from '@dommia/ui';
+import { API_BASE } from '@/lib/api-url';
 
 export function useCrmAlerts(token: string | null) {
   const [alerts, setAlerts] = useState<CrmAlert[]>([]);
@@ -58,7 +59,7 @@ export function useCrmAlerts(token: string | null) {
       if (statusFilter !== 'ALL') queryParams.set('status', statusFilter);
       if (severityFilter !== 'ALL') queryParams.set('severity', severityFilter);
 
-      const res = await fetch(`http://localhost:4000/api/v1/crm/alerts?${queryParams.toString()}`, {
+      const res = await fetch(`${API_BASE}/crm/alerts?${queryParams.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
@@ -78,7 +79,7 @@ export function useCrmAlerts(token: string | null) {
   const fetchTelegramConfig = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:4000/api/v1/crm/alerts/telegram-config', {
+      const res = await fetch(`${API_BASE}/crm/alerts/telegram-config`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
@@ -97,7 +98,7 @@ export function useCrmAlerts(token: string | null) {
     if (!token) return;
     try {
       setActionBusy(id);
-      const res = await fetch(`http://localhost:4000/api/v1/crm/alerts/${id}/acknowledge`, {
+      const res = await fetch(`${API_BASE}/crm/alerts/${id}/acknowledge`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -114,7 +115,7 @@ export function useCrmAlerts(token: string | null) {
     if (!token) return;
     try {
       setActionBusy(id);
-      const res = await fetch(`http://localhost:4000/api/v1/crm/alerts/${id}/resolve`, {
+      const res = await fetch(`${API_BASE}/crm/alerts/${id}/resolve`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -139,7 +140,7 @@ export function useCrmAlerts(token: string | null) {
   }) => {
     if (!token) return false;
     try {
-      const res = await fetch('http://localhost:4000/api/v1/crm/alerts/telegram-config', {
+      const res = await fetch(`${API_BASE}/crm/alerts/telegram-config`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -161,7 +162,7 @@ export function useCrmAlerts(token: string | null) {
   const testTelegramAlert = async (botToken?: string, chatId?: string) => {
     if (!token) return { success: false, message: 'No autenticado' };
     try {
-      const res = await fetch('http://localhost:4000/api/v1/crm/alerts/telegram-test', {
+      const res = await fetch(`${API_BASE}/crm/alerts/telegram-test`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

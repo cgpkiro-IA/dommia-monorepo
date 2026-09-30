@@ -63,6 +63,7 @@ Planificación de ingeniería, seguimiento de entregables y roadmap de producci�
 	El scaffold inicial vive en [`apps/resident-ios`](../apps/resident-ios/README.md).
 * **[Contrato Resident Mobile v1.md](./Planes/Contrato%20Resident%20Mobile%20v1.md):** **Fuente normativa única** para integración Android/iOS con el backend: autenticación, sesiones, rutas, DTOs, aislamiento, errores y bloqueos PROD.
 * **[PT Autenticación Segura Multiplataforma.md](./Planes/PT%20Autenticacion%20Segura%20Multiplataforma.md):** Registro del estado de implementación, E2E y gates de producción; no sustituye el contrato Mobile.
+* **[PT Rendición Financiera Mensual.md](./Planes/PT%20Rendicion%20Financiera%20Mensual.md):** Contrato funcional/técnico de ingresos, egresos, conciliación, evidencias privadas GCS, publicación y lectura Resident opcional.
 * **[SaaS Modular Frac Plan Maestro.md](./Planes/SaaS%20Modular%20Frac%20Plan%20Maestro.md):** Documento histórico de referencia; sus propuestas de IoT/Wiegand no son alcance vigente del MVP.
 
 ---

@@ -511,6 +511,7 @@ Responsabilidades:
 - Consumir `GET /api/v1/auth/app/resident/finance/status` y `/campaigns` con JWT móvil; el API deriva tenant y vivienda.
 - El estado actual del servicio iOS implementa estado, campañas y `POST /finance/receipts`. El upload guarda en local y devuelve `storage=LOCAL_DEV`; no usarlo ni enviar `local://` en PROD.
 - No se implementa envío de pago en iOS. No enviar pagos ni comprobantes productivos hasta que exista storage privado e idempotencia del lado servidor.
+- `FinanceService.monthlyReports()` consulta rendiciones publicadas del tenant; `markMonthlyReportReviewed(id:)` registra revisión opcional. La app no puede crear gastos ni publicar cierres.
 
 ---
 

@@ -3,7 +3,7 @@
 **Marca Principal:** DOMMIA  
 **Producto Principal:** Dommia Communities  
 **Tagline:** *El Sistema Operativo de tu Comunidad*  
-**Versión:** 1.22.0
+**Versión:** 1.23.0
 
 **Última Actualización:** 2026-09-30
 
@@ -37,6 +37,7 @@
 | **1.20.0** | 2026-09-29 | Arquitectura & Pair Programmer | Módulo táctico de Servicios/Proveedores (Comida, Gas, Agua, Paquetería, Taxi, Mantenimiento) con destinos específicos/generales y alertas a residentes/administrador; Bitácora unificada de eventos con filtros temporales; Búsqueda predictiva de calles con destinatario libre en paquetería y ciclo completo de notificación/cierre automático de alerta en Resident PWA al registrar retiro; `CustomSelect` temático uniforme en todas las PWAs. Suite API 8/8. |
 | **1.21.0** | 2026-09-29 | Arquitectura & Pair Programmer | Corte histórico del contrato móvil: JWT HS256 de acceso de 15 minutos, refresh opaco hasheado/rotatorio, sesiones por dispositivo y migración 021. En esa fecha E2E API 9/9; los guards Resident de avisos/finanzas y la verificación de producción se cerraron posteriormente en 1.22.0. |
 | **1.22.0** | 2026-09-30 | Arquitectura & Pair Programmer | Cierra hardening backend: Passport/JWT y guard global con rutas públicas explícitas, roles globales, guards tenant-scoped para Resident/Guard/admin, DTOs estrictos, Helmet, CORS allowlist y validación Joi fail-fast; JWT estándar para nuevas sesiones y compatibilidad temporal HMAC existente. Protege avisos/finanzas móviles, acota pagos a tenant/vivienda, limita endpoints públicos, corrige migración 020 (`fee_config_id`) y documenta push 022. Suite API E2E local 15/15; staging/producción siguen pendientes. |
+| **1.23.0** | 2026-09-30 | Arquitectura & Pair Programmer | Implementa rendición mensual en base caja: ingresos derivados sin duplicar pagos, egresos categorizados, evidencias privadas GCS/redactadas, conciliación, snapshot versionado e inmutable y revisión Resident opcional. `reporting_start_month` por tenant lista periodos faltantes. Escritura exclusiva `TENANT_ADMIN`; lectura Resident solo de publicados y evidencia redactada. Migración 023; E2E API 16/16. |
 
 ---
 
@@ -363,6 +364,13 @@ flowchart TD
   - Cálculo de saldo consolidado, desglose de adeudos por concepto y saldo a favor por vivienda.
   - Emisión de recibos digitales con folio interno.
   - Clasificación de estado de cuenta: Al corriente vs Moroso (bandera consumida por Dommia Access / Casetas).
+- [x] **Rendición mensual de ingresos y egresos:**
+  - Ingresos de caja derivados de pagos aprobados, anticipos y campañas anuales, sin recaptura ni doble conteo.
+  - Periodos requeridos desde el mes de rollout/provisión, con faltantes visibles al administrador.
+  - Egresos asociados a revisión y categoría; evidencia general (estado bancario) y por gasto, privada en GCS para PROD.
+  - Conciliación de banco/efectivo, justificación de diferencias y snapshot publicado inmutable por revisión.
+  - Gestión exclusiva del `TENANT_ADMIN` de la comunidad; Resident consulta publicaciones, evidencia redactada y puede marcar lectura opcional.
+  - Especificación completa en [PT Rendición Financiera Mensual](PT%20Rendicion%20Financiera%20Mensual.md).
 
 ### 🔐 UNIDAD PRE-F4: Onboarding y Acceso Seguro de Residentes
 **Objetivo:** Permitir que cada residente tenga una cuenta propia en Dommia Resident antes de utilizar pagos, estados de cuenta, invitaciones y accesos digitales.

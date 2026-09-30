@@ -1,5 +1,5 @@
 import { ResidentsService } from '../services/residents.service';
-import { CreateResidentDto, InviteResidentsDto, UpdateResidentDto } from '../dto/resident.dto';
+import { CreateResidentDto, InviteResidentDto, InviteResidentsDto, UpdateResidentDto } from '../dto/resident.dto';
 export declare class ResidentsController {
     private readonly residentsService;
     constructor(residentsService: ResidentsService);
@@ -22,11 +22,7 @@ export declare class ResidentsController {
         success: boolean;
         message: string;
     }>;
-    inviteResident(slug: string, id: string, body: {
-        createdBy?: string;
-        contactMethod?: 'AUTO' | 'EMAIL' | 'PHONE';
-        delivery?: 'NONE' | 'EMAIL' | 'WHATSAPP';
-    }): Promise<{
+    inviteResident(slug: string, id: string, body: InviteResidentDto): Promise<{
         success: boolean;
         message: string;
         data: {

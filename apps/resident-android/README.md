@@ -8,6 +8,7 @@ Cliente nativo Android de DOMMIA Resident. El contrato HTTP compartido con iOS y
 - Refresh concurrente coordinado, perfil y logout mediante rutas `auth/app/resident/*`.
 - Persistencia actual de access token, refresh token y perfil en `EncryptedSharedPreferences` con `MasterKey` respaldada por Android Keystore.
 - Perfil, QR, avisos, invitaciones, servicios/entregas activas, estado/campañas financieras y cotización usan recursos autenticados del contrato móvil.
+- Rendiciones financieras publicadas se consultan desde `/auth/app/resident/finance/monthly-reports`; la revisión es opcional y Resident no puede editar/publicar.
 - Push registra/revoca `fcm-token`, alias compatible del endpoint genérico `push-token`.
 
 ## Límites actuales

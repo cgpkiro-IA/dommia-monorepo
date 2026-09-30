@@ -25,6 +25,8 @@ import { useResidentFinance } from '../features/finance/hooks/useResidentFinance
 import { PaymentAlertModal } from '../features/finance/components/PaymentAlertModal';
 import { SpeiDetailsModal } from '../features/finance/components/SpeiDetailsModal';
 import { AnnualCampaignCard } from '../features/finance/components/AnnualCampaignCard';
+import { MonthlyFinancialReports } from '../features/finance/components/MonthlyFinancialReports';
+import { useMonthlyFinancialReports } from '../features/finance/hooks/useMonthlyFinancialReports';
 import { useAnnualCampaign } from '../features/finance/hooks/useAnnualCampaign';
 import { useResidentAuth } from '../features/auth/hooks/useResidentAuth';
 import { ResidentAccessGate } from '../features/auth/components/ResidentAccessGate';
@@ -180,6 +182,7 @@ export default function ResidentHomePage() {
     onStatusChange: handleStatusChange,
   });
   const annualCampaign = useAnnualCampaign(profile, residentAuth.token);
+  const monthlyReports = useMonthlyFinancialReports(residentAuth.token);
   const [dismissedArrivals, setDismissedArrivals] = useState<Record<string, boolean>>({});
 
   const recentArrival = useMemo(() => {
@@ -472,6 +475,7 @@ export default function ResidentHomePage() {
           <>
             <AnnualCampaignCard {...annualCampaign} onLoadQuote={annualCampaign.loadQuote} onSubmit={annualCampaign.submit} />
             <ResidentFinanceCard profile={profile} financialStatus={financialStatus} isLoading={isFinanceLoading} stripeEnabled={stripeEnabled} onOpenStripe={openStripeCheckout} onOpenSpeiModal={() => setIsSpeiModalOpen(true)} onRefresh={refreshFinancialStatus} />
+            <MonthlyFinancialReports reports={monthlyReports.reports} loading={monthlyReports.loading} error={monthlyReports.error} onRefresh={monthlyReports.load} onReview={monthlyReports.markReviewed} onDownloadEvidence={monthlyReports.downloadEvidence} />
           </>
         )}
       </main>

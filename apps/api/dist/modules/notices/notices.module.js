@@ -15,6 +15,7 @@ const resident_app_notices_controller_1 = require("./controllers/resident-app-no
 const auth_module_1 = require("../auth/auth.module");
 const notices_service_1 = require("./services/notices.service");
 const notices_repository_1 = require("./repositories/notices.repository");
+const access_operator_guard_1 = require("../access/guards/access-operator.guard");
 let NoticesModule = class NoticesModule {
 };
 exports.NoticesModule = NoticesModule;
@@ -22,7 +23,7 @@ exports.NoticesModule = NoticesModule = __decorate([
     (0, common_1.Module)({
         imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule, auth_module_1.AuthModule],
         controllers: [notices_controller_1.NoticesController, resident_app_notices_controller_1.ResidentAppNoticesController],
-        providers: [notices_service_1.NoticesService, notices_repository_1.NoticesRepository],
+        providers: [notices_service_1.NoticesService, notices_repository_1.NoticesRepository, access_operator_guard_1.AccessOperatorGuard],
         exports: [notices_service_1.NoticesService, notices_repository_1.NoticesRepository],
     })
 ], NoticesModule);

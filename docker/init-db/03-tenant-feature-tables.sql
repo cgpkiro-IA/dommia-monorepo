@@ -18,3 +18,4 @@
 \i /docker-entrypoint-migrations/020_tenant_finance_schema_completion.sql
 \i /docker-entrypoint-migrations/021_resident_app_refresh_sessions.sql
 \i /docker-entrypoint-migrations/022_resident_push_tokens.sql
+\i /docker-entrypoint-migrations/023_tenant_monthly_financial_reports.sql

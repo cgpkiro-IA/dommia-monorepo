@@ -198,6 +198,10 @@ Todas las rutas de recursos siguientes requieren una sesion Resident valida y ro
 | Upload de comprobante DEV | `POST /api/v1/auth/app/resident/finance/receipts` |
 | Registrar push token | `POST /api/v1/auth/app/resident/devices/push-token` |
 | Revocar push token | `DELETE /api/v1/auth/app/resident/devices/push-token/:deviceId` |
+| Listar rendiciones publicadas | `GET /api/v1/auth/app/resident/finance/monthly-reports` |
+| Consultar rendición | `GET /api/v1/auth/app/resident/finance/monthly-reports/:id` |
+| Marcar revisión opcional | `POST /api/v1/auth/app/resident/finance/monthly-reports/:id/review` |
+| Descargar evidencia redactada | `GET /api/v1/auth/app/resident/finance/monthly-reports/evidence/:evidenceId/content` |
 
 ### Payloads de recursos móviles
 
@@ -213,6 +217,8 @@ Los DTOs del API son la lista allowlist. No envíes propiedades extras; el `Vali
 | Registrar push token | `deviceId` UUID, `token` (20–4096). El servidor obtiene plataforma de `clientType`. |
 
 Las rutas de recursos Resident Mobile normalizan la respuesta como `{ success, message?, data }`. Los errores HTTP procesados por `ResidentAppExceptionFilter` responden `{ success: false, message, data: null, statusCode, error }`. Cada `data` conserva el modelo propio de su endpoint; no reutilices modelos de rutas PWA legacy.
+
+Las rendiciones mensuales son de solo lectura para Resident. La marca de revisión es opcional, idempotente y no condiciona el acceso. El snapshot publicado incluye agregados de ingresos/egresos y evidencias expresamente redactadas; no expone objetos `ADMIN_ONLY` ni datos de otro tenant.
 
 ### Push multiplataforma
 
@@ -281,7 +287,7 @@ No se permite en esta fase:
 - Cambiar campos de éxito de `/api/v1/auth/resident/*`, `/api/v1/auth/*` administrativo o rutas `tenants/*` existentes sin versionado y prueba de consumidores.
 - Cambiar servicios compartidos de forma que alteren la respuesta de clientes legacy.
 
-La implementacion debe usar adaptadores, mappers o servicios especificos de app para transformar respuestas sin afectar los contratos existentes. Puede leer y actualizar registros existentes cuando la operacion ya forme parte del contrato movil actual, por ejemplo revocar una sesion movil existente. Esta version consume las migraciones existentes 021 (`resident_app_refresh_sessions`) y 022 (`resident_push_tokens`); cualquier nueva migracion requiere revision, bootstrap y cobertura E2E.
+La implementacion debe usar adaptadores, mappers o servicios especificos de app para transformar respuestas sin afectar los contratos existentes. Puede leer y actualizar registros existentes cuando la operacion ya forme parte del contrato movil actual, por ejemplo revocar una sesion movil existente. Esta version consume las migraciones 021 (`resident_app_refresh_sessions`), 022 (`resident_push_tokens`) y 023 (`tenant_monthly_financial_reports`); cualquier nueva migracion requiere revision, bootstrap y cobertura E2E.
 
 La compatibilidad móvil se prueba contra `/api/v1/auth/app/*` y las rutas compartidas explícitamente indicadas aquí; no se debe ampliar o cambiar el contrato PWA/admin por conveniencia del cliente nativo.
 

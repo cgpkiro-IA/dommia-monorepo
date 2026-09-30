@@ -39,6 +39,34 @@ public struct FinanceService: Sendable {
         guard let data = response.data else { throw APIError.decoding("El comprobante no contiene referencia.") }
         return data
     }
+
+    public func monthlyReports() async throws -> [MonthlyFinancialReport] {
+        let token = try await session.accessToken()
+        let response: APIEnvelope<[MonthlyFinancialReport]> = try await client.send(
+            path: "auth/app/resident/finance/monthly-reports",
+            accessToken: token
+        )
+        return response.data ?? []
+    }
+
+    public func markMonthlyReportReviewed(id: String) async throws -> Date? {
+        let token = try await session.accessToken()
+        let response: APIEnvelope<MonthlyReportReviewResult> = try await client.send(
+            path: "auth/app/resident/finance/monthly-reports/\(id)/review",
+            method: "POST",
+            body: EmptyRequest(),
+            accessToken: token
+        )
+        return response.data?.reviewedAt
+    }
+
+    public func downloadMonthlyEvidence(id: String) async throws -> Data {
+        let token = try await session.accessToken()
+        return try await client.download(
+            path: "auth/app/resident/finance/monthly-reports/evidence/\(id)/content",
+            accessToken: token
+        )
+    }
 }
 
 private struct ReceiptUploadRequest: Encodable, Sendable {

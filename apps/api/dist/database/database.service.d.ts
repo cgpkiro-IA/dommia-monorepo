@@ -1,10 +1,11 @@
 import { OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PoolClient, QueryResult, QueryResultRow } from 'pg';
 export declare class DatabaseService implements OnModuleInit, OnModuleDestroy {
     private pool;
     private readonly logger;
     private setTenantSearchPath;
-    constructor();
+    constructor(config: ConfigService);
     onModuleInit(): Promise<void>;
     onModuleDestroy(): Promise<void>;
     query<T extends QueryResultRow = any>(text: string, params?: any[]): Promise<QueryResult<T>>;

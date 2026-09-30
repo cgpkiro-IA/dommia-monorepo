@@ -16,6 +16,7 @@ END $$;
 SELECT public.ensure_tenant_feature_tables('guard-qa');
 SELECT public.ensure_tenant_finance_schema('guard-qa');
 SELECT public.ensure_tenant_latest_guard_tables('guard-qa');
+SELECT public.ensure_tenant_monthly_financial_reports('guard-qa');
 
 UPDATE public.tenants
 SET modules = modules || '{"ACCESS_QR": true, "dynamic_qr": true, "rfid": false, "stripe_auto": false, "STRIPE": false, "STRIPE_CONNECT": false, "FINANCE_STRIPE": false, "NOTIFICATIONS_PREMIUM": false}'::jsonb,

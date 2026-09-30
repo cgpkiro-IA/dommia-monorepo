@@ -69,6 +69,7 @@ export async function prepareGuardQa() {
         '020_tenant_finance_schema_completion.sql',
         '021_resident_app_refresh_sessions.sql',
         '022_resident_push_tokens.sql',
+        '023_tenant_monthly_financial_reports.sql',
       ];
       for (const migrationName of migrations) {
         const migration = await readFile(resolve(repositoryRoot, 'docker/migrations', migrationName), 'utf8');

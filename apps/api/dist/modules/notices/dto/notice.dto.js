@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateNoticeDto = exports.CreateNoticeDto = void 0;
+exports.AcknowledgeGuardNoticeDto = exports.UpdateNoticeDto = exports.CreateNoticeDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateNoticeDto {
     title;
@@ -191,4 +191,19 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateNoticeDto.prototype, "is_published", void 0);
+class AcknowledgeGuardNoticeDto {
+    guardUserId;
+    guardName;
+}
+exports.AcknowledgeGuardNoticeDto = AcknowledgeGuardNoticeDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], AcknowledgeGuardNoticeDto.prototype, "guardUserId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], AcknowledgeGuardNoticeDto.prototype, "guardName", void 0);
 //# sourceMappingURL=notice.dto.js.map

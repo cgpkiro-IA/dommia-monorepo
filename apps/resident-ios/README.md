@@ -4,7 +4,7 @@ Cliente nativo SwiftUI para DOMMIA Resident. Android e iOS comparten el contrato
 
 ## Estado
 
-Los servicios Swift implementan login, refresh/logout, perfil, avisos, invitaciones, credencial de acceso, lectura financiera/campañas y upload de recibo en DEV. El upload devuelve `local://` y no es apto para PROD; iOS todavía no envía pagos.
+Los servicios Swift implementan login, refresh/logout, perfil, avisos, invitaciones, credencial de acceso, lectura financiera/campañas, rendiciones mensuales con revisión opcional y upload de recibo en DEV. El upload devuelve `local://` y no es apto para PROD; iOS todavía no envía pagos.
 
 Falta abrir el proyecto en macOS/Xcode para crear/configurar el target de aplicación, firmar el bundle y ejecutar simulador/dispositivo. Estos pasos de plataforma no cambian el contrato HTTP compartido.
 

@@ -61,3 +61,93 @@ data class ExistingCommitment(
     val id: String = "",
     val status: String = "PENDING_APPROVAL",
 )
+
+@Serializable
+data class MonthlyFinancialReport(
+    val id: String = "",
+    @SerialName("period_start") val periodStart: String = "",
+    val revision: Int = 1,
+    @SerialName("published_at") val publishedAt: String? = null,
+    @SerialName("reviewed_by_current_resident") val reviewedByCurrentResident: Boolean = false,
+    @SerialName("report_snapshot") val snapshot: MonthlyReportSnapshot = MonthlyReportSnapshot(),
+)
+
+@Serializable
+data class MonthlyReportSnapshot(
+    val opening: MonthlyReportOpening = MonthlyReportOpening(),
+    val income: MonthlyReportTotal = MonthlyReportTotal(),
+    val expenses: MonthlyReportExpenses = MonthlyReportExpenses(),
+    val reportEvidence: List<MonthlyReportEvidence> = emptyList(),
+    val activity: MonthlyReportActivity = MonthlyReportActivity(),
+    val closing: MonthlyReportClosing = MonthlyReportClosing(),
+)
+
+@Serializable
+data class MonthlyReportOpening(val bank: Double = 0.0, val cash: Double = 0.0, val total: Double = 0.0)
+
+@Serializable
+data class MonthlyReportTotal(
+    val total: Double = 0.0,
+    val regular: List<MonthlyReportIncomeLine> = emptyList(),
+    val annualAdvance: MonthlyReportAnnualAdvance = MonthlyReportAnnualAdvance(),
+)
+
+@Serializable
+data class MonthlyReportIncomeLine(
+    val category: String = "",
+    val paymentMethod: String = "",
+    val count: Int = 0,
+    val amount: Double = 0.0,
+)
+
+@Serializable
+data class MonthlyReportAnnualAdvance(val count: Int = 0, val amount: Double = 0.0)
+
+@Serializable
+data class MonthlyReportExpenses(
+    val total: Double = 0.0,
+    val byCategory: List<MonthlyReportCategory> = emptyList(),
+    val items: List<MonthlyReportExpenseItem> = emptyList(),
+)
+
+@Serializable
+data class MonthlyReportExpenseItem(
+    val id: String = "",
+    val category: String = "",
+    val description: String = "",
+    val vendorName: String? = null,
+    val expenseDate: String = "",
+    val amount: Double = 0.0,
+    val evidence: List<MonthlyReportEvidence> = emptyList(),
+)
+
+@Serializable
+data class MonthlyReportEvidence(
+    val id: String = "",
+    val fileName: String = "evidencia",
+    val contentType: String = "application/octet-stream",
+    val sizeBytes: Int = 0,
+)
+
+@Serializable
+data class MonthlyReportActivity(
+    val pendingPaymentCount: Int = 0,
+    val pendingPaymentAmount: Double = 0.0,
+    val chargesIssuedCount: Int = 0,
+    val chargesIssuedAmount: Double = 0.0,
+    val chargesOutstandingAmount: Double = 0.0,
+)
+
+@Serializable
+data class MonthlyReportCategory(
+    val category: String = "",
+    val count: Int = 0,
+    val amount: Double = 0.0,
+)
+
+@Serializable
+data class MonthlyReportClosing(
+    val calculated: Double = 0.0,
+    val reportedTotal: Double = 0.0,
+    val variance: Double = 0.0,
+)

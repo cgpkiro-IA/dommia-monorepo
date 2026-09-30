@@ -40,6 +40,11 @@ export const envValidationSchema = Joi.object({
     then: Joi.string().uri({ scheme: ['https'] }).required(),
     otherwise: Joi.string().optional(),
   }),
+  GCS_FINANCE_EVIDENCE_BUCKET: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(3).required(),
+    otherwise: Joi.string().optional(),
+  }),
   PORT: Joi.number().port(),
   API_PORT: Joi.number().port(),
 }).unknown(true);

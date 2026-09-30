@@ -1,3 +1,5 @@
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { AuthRepository } from '../repositories/auth.repository';
 import { LoginDto } from '../dto/login.dto';
 import { ResidentActivateDto, ResidentChangePasswordDto, ResidentLoginDto, ResidentPasswordRecoveryRequestDto, ResidentPasswordResetDto } from '../dto/resident-auth.dto';
@@ -34,11 +36,13 @@ export interface MfaLoginChallenge {
     expiresIn: number;
 }
 export declare class AuthService {
+    private readonly config;
+    private readonly jwtService;
     private readonly authRepo;
     private readonly notificationDelivery;
     private readonly residentRateLimiter;
     private readonly logger;
-    constructor(authRepo: AuthRepository, notificationDelivery: NotificationDeliveryService, residentRateLimiter: InMemoryResidentRateLimiter);
+    constructor(config: ConfigService, jwtService: JwtService, authRepo: AuthRepository, notificationDelivery: NotificationDeliveryService, residentRateLimiter: InMemoryResidentRateLimiter);
     private signClaims;
     private verifySignedClaims;
     private encryptionKey;

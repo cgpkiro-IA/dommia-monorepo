@@ -16,12 +16,18 @@ exports.NoticesController = void 0;
 const common_1 = require("@nestjs/common");
 const notices_service_1 = require("../services/notices.service");
 const notice_dto_1 = require("../dto/notice.dto");
+const access_operator_guard_1 = require("../../access/guards/access-operator.guard");
+const finance_admin_guard_1 = require("../../auth/guards/finance-admin.guard");
+const auth_metadata_decorator_1 = require("../../auth/decorators/auth-metadata.decorator");
 let NoticesController = class NoticesController {
     noticesService;
     constructor(noticesService) {
         this.noticesService = noticesService;
     }
-    async getNotices(slug, publishedOnly, audience) {
+    async getNotices(slug, request, publishedOnly, audience) {
+        if (request.user.role === 'GUARD' && audience !== 'GUARDS') {
+            throw new common_1.ForbiddenException('El personal de caseta solo puede consultar consignas de guardia.');
+        }
         const isPublishedOnly = publishedOnly === 'true';
         const notices = await this.noticesService.getTenantNotices(slug, isPublishedOnly, audience);
         return {
@@ -72,24 +78,31 @@ let NoticesController = class NoticesController {
 exports.NoticesController = NoticesController;
 __decorate([
     (0, common_1.Get)(),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'GUARD'),
+    (0, common_1.UseGuards)(access_operator_guard_1.AccessOperatorGuard),
     __param(0, (0, common_1.Param)('slug')),
-    __param(1, (0, common_1.Query)('publishedOnly')),
-    __param(2, (0, common_1.Query)('audience')),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Query)('publishedOnly')),
+    __param(3, (0, common_1.Query)('audience')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, Object, String, String]),
     __metadata("design:returntype", Promise)
 ], NoticesController.prototype, "getNotices", null);
 __decorate([
     (0, common_1.Post)(':id/acknowledge-guard'),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'GUARD'),
+    (0, common_1.UseGuards)(access_operator_guard_1.AccessOperatorGuard),
     __param(0, (0, common_1.Param)('slug')),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:paramtypes", [String, String, notice_dto_1.AcknowledgeGuardNoticeDto]),
     __metadata("design:returntype", Promise)
 ], NoticesController.prototype, "acknowledgeNoticeByGuard", null);
 __decorate([
     (0, common_1.Get)(':id'),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR'),
+    (0, common_1.UseGuards)(finance_admin_guard_1.FinanceAdminGuard),
     __param(0, (0, common_1.Param)('slug')),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -98,6 +111,8 @@ __decorate([
 ], NoticesController.prototype, "getNoticeById", null);
 __decorate([
     (0, common_1.Post)(),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR'),
+    (0, common_1.UseGuards)(finance_admin_guard_1.FinanceAdminGuard),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
     __param(0, (0, common_1.Param)('slug')),
     __param(1, (0, common_1.Body)()),
@@ -107,6 +122,8 @@ __decorate([
 ], NoticesController.prototype, "createNotice", null);
 __decorate([
     (0, common_1.Put)(':id'),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR'),
+    (0, common_1.UseGuards)(finance_admin_guard_1.FinanceAdminGuard),
     __param(0, (0, common_1.Param)('slug')),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
@@ -116,6 +133,8 @@ __decorate([
 ], NoticesController.prototype, "updateNotice", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR'),
+    (0, common_1.UseGuards)(finance_admin_guard_1.FinanceAdminGuard),
     __param(0, (0, common_1.Param)('slug')),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),

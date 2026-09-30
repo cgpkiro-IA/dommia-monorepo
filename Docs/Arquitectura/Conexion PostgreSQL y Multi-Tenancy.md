@@ -57,8 +57,9 @@ Las migraciones existentes se aplican idempotentemente con `IF NOT EXISTS` cuand
 | `020_tenant_finance_schema_completion.sql` | Completa metraje, configuración de cuotas, cargos y pagos; añade idempotentemente `financial_charges.fee_config_id` antes de su índice para tenants existentes y nuevos. |
 | `021_resident_app_refresh_sessions.sql` | Sesiones móviles por dispositivo y almacenamiento hasheado/rotatorio de refresh tokens. |
 | `022_resident_push_tokens.sql` | Registro y revocación de tokens push Resident por tenant, residente, plataforma y dispositivo. |
+| `023_tenant_monthly_financial_reports.sql` | Función de aprovisionamiento y tablas tenant-scoped para gastos, cierre mensual versionado, evidencias y revisión opcional Resident. |
 
-El script `docker/init-db/03-tenant-feature-tables.sql` aplica las migraciones 003–022 en instalaciones nuevas. El bootstrap GCP de una base productiva vacía está en [`docker/production-bootstrap.sql`](../../docker/production-bootstrap.sql); carga la estructura y las migraciones sin conservar el tenant demo ni ejecutar el seed de usuarios. Al provisionar un tenant nuevo, `DatabaseService.provisionTenant()` ejecuta `provision_tenant_schema()`, `ensure_tenant_feature_tables($1)`, `ensure_tenant_finance_schema($1)` y `ensure_tenant_latest_guard_tables($1)`.
+El script `docker/init-db/03-tenant-feature-tables.sql` aplica las migraciones 003–023 en instalaciones nuevas. El bootstrap GCP de una base productiva vacía está en [`docker/production-bootstrap.sql`](../../docker/production-bootstrap.sql); carga la estructura y las migraciones sin conservar el tenant demo ni ejecutar el seed de usuarios. Al provisionar un tenant nuevo, `DatabaseService.provisionTenant()` ejecuta las funciones de features, finanzas, Guard y `ensure_tenant_monthly_financial_reports($1)`.
 
 Aplicar las migraciones a una base existente desde la raíz del repositorio:
 
@@ -72,6 +73,6 @@ Los comandos usan por defecto los valores locales de Docker Compose; sobrescríb
 
 ## Pruebas actuales
 
-La suite E2E (`pnpm test`) requiere PostgreSQL accesible y el API levantado. El helper espera hasta 15 segundos por `/health` (configurable con `DOMMIA_TEST_STARTUP_TIMEOUT_MS`), aplica 003–022 idempotentemente, ejecuta el seed `scratch/seed_guard_qa.sql` y usa el tenant aislado `guard-qa`. El proceso API y el runner deben compartir `AUTH_TOKEN_SECRET`; define además las credenciales PostgreSQL y `RESIDENT_APP_TOKEN_SECRET` para pruebas Resident. Variables soportadas: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `AUTH_TOKEN_SECRET`, `RESIDENT_APP_TOKEN_SECRET`, `DOMMIA_TEST_API_BASE` y `DOMMIA_TEST_STARTUP_TIMEOUT_MS`.
+La suite E2E (`pnpm test`) requiere PostgreSQL accesible y el API levantado. El helper espera hasta 15 segundos por `/health` (configurable con `DOMMIA_TEST_STARTUP_TIMEOUT_MS`), aplica 003–023 idempotentemente, ejecuta el seed `scratch/seed_guard_qa.sql` y usa el tenant aislado `guard-qa`. El proceso API y el runner deben compartir `AUTH_TOKEN_SECRET`; define además las credenciales PostgreSQL y `RESIDENT_APP_TOKEN_SECRET` para pruebas Resident. Variables soportadas: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `AUTH_TOKEN_SECRET`, `RESIDENT_APP_TOKEN_SECRET`, `DOMMIA_TEST_API_BASE` y `DOMMIA_TEST_STARTUP_TIMEOUT_MS`.
 
 El alcance y el resultado más reciente están en [`Testing/README.md`](../../Testing/README.md). Las pruebas locales no sustituyen el despliegue/validación de migraciones en staging. Ejecuta [`docker/validate-schema.sql`](../../docker/validate-schema.sql) para detectar tablas, columnas, índices o funciones requeridas que falten en los schemas existentes.

@@ -1,8 +1,10 @@
 import { BillingEngineService } from '../services/billing-engine.service';
 import { GenerateMonthlyChargesDto, CreatePaymentDto, QueryChargesDto, QueryPaymentsDto, SubmitSpeiPaymentDto, ReviewPaymentDto, CreateAnnualCampaignDto, AnnualCampaignQuoteDto, SubmitAnnualPaymentDto } from '../dto/financial-operations.dto';
+import { ResidentSessionClaims } from '../../auth/guards/resident-auth.guard';
 export declare class BillingEngineController {
     private readonly billingService;
     constructor(billingService: BillingEngineService);
+    private assertResidentProperty;
     generateMonthlyBilling(slug: string, dto: GenerateMonthlyChargesDto): Promise<{
         success: boolean;
         message: string;
@@ -92,7 +94,9 @@ export declare class BillingEngineController {
         data: any[];
         count: number;
     }>;
-    submitSpeiPayment(slug: string, dto: SubmitSpeiPaymentDto): Promise<{
+    submitSpeiPayment(slug: string, request: {
+        user: ResidentSessionClaims;
+    }, dto: SubmitSpeiPaymentDto): Promise<{
         success: boolean;
         message: string;
         data: {
@@ -149,7 +153,9 @@ export declare class BillingEngineController {
             remainingBalance?: undefined;
         };
     }>;
-    getPropertyStatus(slug: string, propertyId: string): Promise<{
+    getPropertyStatus(slug: string, propertyId: string, request: {
+        user: ResidentSessionClaims;
+    }): Promise<{
         success: boolean;
         data: {
             propertyId: string;
@@ -187,7 +193,9 @@ export declare class BillingEngineController {
         success: boolean;
         data: any;
     }>;
-    getAnnualCampaignQuote(slug: string, campaignId: string, dto: AnnualCampaignQuoteDto): Promise<{
+    getAnnualCampaignQuote(slug: string, campaignId: string, dto: AnnualCampaignQuoteDto, request: {
+        user: ResidentSessionClaims;
+    }): Promise<{
         success: boolean;
         data: {
             missingProperty: boolean;
@@ -207,7 +215,9 @@ export declare class BillingEngineController {
             missingProperty?: undefined;
         };
     }>;
-    submitAnnualPayment(slug: string, campaignId: string, dto: SubmitAnnualPaymentDto): Promise<{
+    submitAnnualPayment(slug: string, campaignId: string, dto: SubmitAnnualPaymentDto, request: {
+        user: ResidentSessionClaims;
+    }): Promise<{
         success: boolean;
         message: string;
         data: any;

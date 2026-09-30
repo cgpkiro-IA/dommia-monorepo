@@ -24,6 +24,7 @@ La app Android ya contempla estos elementos en el código actual:
 - Design system Android alineado con Resident PWA: canvas navy, superficies slate, acentos azul cielo/verde, tipografía sans bold, radios amplios, bordes sutiles y navegación inferior con indicador azul.
 - Actividad de acceso conectada a `GET auth/app/resident/access-credential/active-services` y `GET auth/app/resident/access-credential/active-deliveries`, mostrada en Inicio con estados de carga, vacío, error y reintento.
 - Estado financiero, campañas y cotización conectados mediante `GET auth/app/resident/finance/status`, `GET auth/app/resident/finance/campaigns` y `POST auth/app/resident/finance/campaigns/:campaignId/quote`; Android no implementa envío de pago ni upload de comprobante.
+- Rendiciones mensuales publicadas conectadas mediante `GET auth/app/resident/finance/monthly-reports`; la revisión es opcional y Resident no puede editar ni publicar.
 - Pruebas E2E de aislamiento para paths móviles: avisos aislados por tenant y pases aislados por residente/propiedad, incluyendo revocación cruzada rechazada.
 - Manejo de sesiones parciales y tokens inconsistentes para evitar que la app trate una sesión rota como autenticada.
 
@@ -216,6 +217,7 @@ Las rutas `/api/v1/auth/app/resident/*` son el contrato nativo. Las rutas de ses
 | Cotizar campaña | `POST auth/app/resident/finance/campaigns/:campaignId/quote` | `propertyId` del JWT móvil |
 | Enviar SPEI | `POST auth/app/resident/finance/spei-submissions` | `propertyId` del JWT; no se acepta del body |
 | Enviar pago de campaña | `POST auth/app/resident/finance/campaigns/:campaignId/submissions` | `propertyId` del JWT; no se acepta del body |
+| Rendiciones mensuales | `GET auth/app/resident/finance/monthly-reports` | Solo publicaciones del tenant de sesión; `POST .../:id/review` registra revisión opcional |
 
 Las rutas protegidas se verifican con E2E de autenticación, rol y aislamiento tenant. La PWA puede conservar HMAC de dos segmentos ya emitidos solo hasta su expiración; los nuevos logins Resident emiten JWT HS256 estándar. Usa [Contrato Resident Mobile v1](Contrato%20Resident%20Mobile%20v1.md) como fuente normativa para cualquier ruta o DTO.
 

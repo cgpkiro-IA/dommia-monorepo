@@ -1,5 +1,8 @@
 package com.dommia.resident.feature.home
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,23 +20,50 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dommia.resident.core.model.AnnualCampaign
 import com.dommia.resident.core.model.FinancialStatus
+import com.dommia.resident.core.model.MonthlyFinancialReport
+import com.dommia.resident.core.model.MonthlyReportEvidence
 import com.dommia.resident.core.network.ApiResult
 import com.dommia.resident.core.session.ResidentFinanceRepository
 import java.text.NumberFormat
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @Composable
 fun ResidentFinanceSection(repository: ResidentFinanceRepository?) {
     var status by remember { mutableStateOf<FinancialStatus?>(null) }
     var campaigns by remember { mutableStateOf<List<AnnualCampaign>>(emptyList()) }
+    var monthlyReports by remember { mutableStateOf<List<MonthlyFinancialReport>>(emptyList()) }
     var state by remember { mutableStateOf<FinanceState>(FinanceState.Loading) }
     var reloadKey by remember { mutableStateOf(0) }
+    var reportActionMessage by remember { mutableStateOf<String?>(null) }
+    var pendingEvidence by remember { mutableStateOf<MonthlyReportEvidence?>(null) }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val evidenceSaver = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
+        val evidence = pendingEvidence
+        pendingEvidence = null
+        if (uri != null && evidence != null && repository != null) {
+            coroutineScope.launch {
+                when (val result = repository.downloadMonthlyEvidence(evidence.id)) {
+                    is ApiResult.Success -> {
+                        val saved = runCatching {
+                            context.contentResolver.openOutputStream(uri)?.use { it.write(result.value) } ?: error("No se pudo guardar el archivo.")
+                        }.isSuccess
+                        reportActionMessage = if (saved) "Evidencia guardada." else "No se pudo guardar la evidencia."
+                    }
+                    is ApiResult.Error -> reportActionMessage = result.message
+                    is ApiResult.Loading -> Unit
+                }
+            }
+        }
+    }
 
     LaunchedEffect(repository, reloadKey) {
         if (repository == null) {
@@ -47,7 +77,14 @@ fun ResidentFinanceSection(repository: ResidentFinanceRepository?) {
                 when (val campaignsResult = repository.getCampaigns()) {
                     is ApiResult.Success -> {
                         campaigns = campaignsResult.value
-                        state = FinanceState.Ready
+                        when (val reportsResult = repository.getMonthlyReports()) {
+                            is ApiResult.Success -> {
+                                monthlyReports = reportsResult.value
+                                state = FinanceState.Ready
+                            }
+                            is ApiResult.Error -> state = FinanceState.Error(reportsResult.message)
+                            is ApiResult.Loading -> Unit
+                        }
                     }
                     is ApiResult.Error -> state = FinanceState.Error(campaignsResult.message)
                     is ApiResult.Loading -> Unit
@@ -102,6 +139,52 @@ fun ResidentFinanceSection(repository: ResidentFinanceRepository?) {
                             Text("${campaign.name} · ${campaign.discountPercentage}% de descuento")
                         }
                     }
+                    if (monthlyReports.isNotEmpty()) {
+                        Text("Rendiciones mensuales", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        monthlyReports.take(3).forEach { report ->
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(report.periodStart.take(7), fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Ingresos ${formatMoney(report.snapshot.income.total)} · Egresos ${formatMoney(report.snapshot.expenses.total)} · Saldo ${formatMoney(report.snapshot.closing.reportedTotal)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    if (report.reviewedByCurrentResident) "Revisado" else "Consulta opcional",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                )
+                                report.snapshot.income.regular.forEach { income ->
+                                    Text("${income.category} · ${income.paymentMethod}: ${formatMoney(income.amount)}", style = MaterialTheme.typography.bodySmall)
+                                }
+                                report.snapshot.reportEvidence.forEach { evidence ->
+                                    TextButton(onClick = { pendingEvidence = evidence; evidenceSaver.launch(evidence.fileName) }) {
+                                        Text("Descargar ${evidence.fileName}")
+                                    }
+                                }
+                                report.snapshot.expenses.items.forEach { expense ->
+                                    Text("${expense.description}: ${formatMoney(expense.amount)}", style = MaterialTheme.typography.bodySmall)
+                                    expense.evidence.forEach { evidence ->
+                                        TextButton(onClick = { pendingEvidence = evidence; evidenceSaver.launch(evidence.fileName) }) {
+                                            Text("Descargar ${evidence.fileName}")
+                                        }
+                                    }
+                                }
+                                if (!report.reviewedByCurrentResident) {
+                                    TextButton(onClick = {
+                                        coroutineScope.launch {
+                                            when (val result = repository.markMonthlyReportReviewed(report.id)) {
+                                                is ApiResult.Success -> monthlyReports = monthlyReports.map { if (it.id == report.id) it.copy(reviewedByCurrentResident = true) else it }
+                                                is ApiResult.Error -> reportActionMessage = result.message
+                                                is ApiResult.Loading -> Unit
+                                            }
+                                        }
+                                    }) { Text("Marcar revisión opcional") }
+                                }
+                            }
+                        }
+                    }
+                    reportActionMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     Text(
                         "El envío de comprobantes estará disponible cuando el backend habilite upload seguro e idempotencia.",
                         style = MaterialTheme.typography.bodySmall,

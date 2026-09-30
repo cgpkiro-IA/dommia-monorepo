@@ -30,3 +30,7 @@ export declare class UpdateNoticeDto {
     isPublished?: boolean;
     is_published?: boolean;
 }
+export declare class AcknowledgeGuardNoticeDto {
+    guardUserId?: string;
+    guardName?: string;
+}

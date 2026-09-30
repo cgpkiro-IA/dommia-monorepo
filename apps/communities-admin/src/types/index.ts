@@ -99,8 +99,9 @@ export interface NotificationToast {
   message: string;
 }
 
-export type NoticeCategory = 'URGENT' | 'MAINTENANCE' | 'ASSEMBLY' | 'GENERAL';
+export type NoticeCategory = 'URGENT' | 'MAINTENANCE' | 'ASSEMBLY' | 'GENERAL' | 'GUARD_CONSIGN' | 'SECURITY';
 export type NoticePriority = 'HIGH' | 'MEDIUM' | 'LOW';
+export type NoticeAudience = 'ALL' | 'RESIDENTS' | 'GUARDS';
 
 export interface CommunityNotice {
   id: string;
@@ -108,6 +109,9 @@ export interface CommunityNotice {
   content: string;
   category: NoticeCategory;
   priority: NoticePriority;
+  target_audience?: NoticeAudience;
+  acknowledged_guards?: Array<{ guardId: string; guardName: string; acknowledgedAt: string }>;
+  expires_at?: string | null;
   author_name: string;
   is_pinned: boolean;
   is_published: boolean;
@@ -121,6 +125,7 @@ export interface NoticeFormData {
   content: string;
   category: NoticeCategory;
   priority: NoticePriority;
+  target_audience: NoticeAudience;
   author_name: string;
   is_pinned: boolean;
   is_published: boolean;
@@ -287,5 +292,70 @@ export interface AnnualCampaignFormData {
   periodStart: string;
   periodEnd: string;
 }
+
+export type GuardServiceType =
+  | 'FOOD_DELIVERY'
+  | 'GAS_SUPPLY'
+  | 'WATER_SUPPLY'
+  | 'PARCEL_COURIER'
+  | 'TAXI_RIDE'
+  | 'MAINTENANCE'
+  | 'OTHER';
+
+export interface GuardServiceDestination {
+  propertyId: string;
+  propertyAddress: string;
+  residentId?: string;
+  residentName?: string;
+  residentPhone?: string;
+  residentEmail?: string;
+}
+
+export interface GuardServiceItem {
+  id: string;
+  service_type: GuardServiceType;
+  custom_service_name?: string;
+  supplier_name?: string;
+  vehicle_plates?: string;
+  destination_type: 'SPECIFIC' | 'GENERAL';
+  destinations: GuardServiceDestination[];
+  status: 'IN_TRANSIT' | 'COMPLETED';
+  notes?: string;
+  entered_by: string;
+  entered_at: string;
+  exited_by?: string;
+  exited_at?: string;
+}
+
+export type AuditCategoryFilter = 'ALL' | 'ACCESS' | 'SERVICE' | 'INCIDENT' | 'DELIVERY' | 'NOTICE';
+export type AuditPeriodFilter = 'TODAY' | 'WEEK' | 'FORTNIGHT' | 'MONTH' | 'CUSTOM';
+
+export interface UnifiedAuditLogItem {
+  id: string;
+  eventType: string;
+  category: 'ACCESS' | 'SERVICE' | 'INCIDENT' | 'DELIVERY' | 'NOTICE';
+  title: string;
+  description: string;
+  propertyAddress?: string;
+  vehiclePlates?: string;
+  isGranted: boolean;
+  status: string;
+  rejectionReason?: string;
+  notes?: string;
+  actorName?: string;
+  createdAt: string;
+}
+
+export interface UnifiedAuditLogSummary {
+  totalEvents: number;
+  grantedAccessCount: number;
+  rejectedAccessCount: number;
+  servicesCount: number;
+  incidentsCount: number;
+  deliveriesCount: number;
+  noticesCount: number;
+}
+
+
 
 

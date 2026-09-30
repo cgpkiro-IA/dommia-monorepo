@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { GatewayFormData } from '../components/GatewayModal';
+import { crmApiFetch } from '../../auth/api';
 
 const INITIAL_GATEWAY_FORM: GatewayFormData = {
   uuid: '',
@@ -23,7 +24,7 @@ export function useGateways({ onRefresh, showFeedback }: UseGatewaysProps) {
 
   const handleSimulateHeartbeat = async (uuid: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/crm/gateways/${uuid}/heartbeat`, {
+      const res = await crmApiFetch(`/crm/gateways/${uuid}/heartbeat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ipLocal: '192.168.1.50' }),
@@ -42,7 +43,7 @@ export function useGateways({ onRefresh, showFeedback }: UseGatewaysProps) {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('http://localhost:4000/api/v1/crm/gateways', {
+      const res = await crmApiFetch('/crm/gateways', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

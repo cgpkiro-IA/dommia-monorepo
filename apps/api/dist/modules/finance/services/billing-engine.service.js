@@ -56,12 +56,21 @@ let BillingEngineService = class BillingEngineService {
     }
     async recordPayment(slug, dto) {
         const tenant = await this.validateTenant(slug);
+        if (['STRIPE_CARD'].includes(dto.paymentMethod || dto.payment_method || 'CASH') && !this.hasStripeEnabled(tenant.modules)) {
+            throw new common_1.BadRequestException('Stripe no está habilitado para este fraccionamiento. Continúa con SPEI o efectivo.');
+        }
         if (dto.amount <= 0) {
             throw new common_1.BadRequestException('El monto debe ser mayor a $0.00 MXN.');
         }
         const result = await this.billingRepo.recordPayment(tenant.slug, dto);
         if (!result) {
             throw new common_1.NotFoundException('La propiedad especificada no existe en este fraccionamiento.');
+        }
+        if (result.invalidCharge) {
+            throw new common_1.BadRequestException('El cargo seleccionado no existe o no pertenece a la vivienda indicada.');
+        }
+        if (result.exceedsBalance) {
+            throw new common_1.BadRequestException(`El pago excede el saldo pendiente del cargo. Saldo disponible: $${Number(result.remainingBalance).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN.`);
         }
         const methodLabels = {
             CASH: 'Efectivo en Ventanilla',
@@ -90,6 +99,12 @@ let BillingEngineService = class BillingEngineService {
             data: result,
         };
     }
+    hasStripeEnabled(modules) {
+        if (Array.isArray(modules)) {
+            return modules.some((module) => ['STRIPE', 'STRIPE_CONNECT', 'FINANCE_STRIPE'].includes(module));
+        }
+        return Boolean(modules && Object.entries(modules).some(([key, enabled]) => enabled && ['STRIPE', 'STRIPE_CONNECT', 'FINANCE_STRIPE'].includes(key)));
+    }
     async getPayments(slug, filters) {
         const tenant = await this.validateTenant(slug);
         const payments = await this.billingRepo.findAllPayments(tenant.slug, filters);
@@ -97,6 +112,37 @@ let BillingEngineService = class BillingEngineService {
             success: true,
             data: payments,
             count: payments.length,
+        };
+    }
+    async submitSpeiPayment(slug, dto) {
+        const tenant = await this.validateTenant(slug);
+        const result = await this.billingRepo.submitSpeiPayment(tenant.slug, dto);
+        if (!result)
+            throw new common_1.NotFoundException('La vivienda indicada no existe en este fraccionamiento.');
+        if (result.invalidCharge)
+            throw new common_1.BadRequestException('El cargo indicado no pertenece a la vivienda.');
+        if (result.duplicateReference)
+            throw new common_1.BadRequestException('La referencia SPEI ya fue enviada anteriormente.');
+        return {
+            success: true,
+            message: `Comprobante SPEI recibido para ${result.propertyAddress}. Queda pendiente de validación por administración.`,
+            data: result,
+        };
+    }
+    async reviewPayment(slug, id, dto) {
+        const tenant = await this.validateTenant(slug);
+        const result = await this.billingRepo.reviewPayment(tenant.slug, id, dto.status, dto.reviewedByName, dto.notes);
+        if (!result)
+            throw new common_1.NotFoundException('El comprobante no existe o ya fue revisado.');
+        if (result.invalidCharge)
+            throw new common_1.BadRequestException('El cargo asociado no pertenece a la vivienda.');
+        if (result.exceedsBalance) {
+            throw new common_1.BadRequestException(`El comprobante excede el saldo del cargo. Saldo disponible: $${Number(result.remainingBalance).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN.`);
+        }
+        return {
+            success: true,
+            message: dto.status === 'APPROVED' ? 'Comprobante aprobado y pago acreditado.' : 'Comprobante rechazado.',
+            data: result,
         };
     }
     async getPropertyStatus(slug, propertyId) {
@@ -114,6 +160,47 @@ let BillingEngineService = class BillingEngineService {
             success: true,
             data: summary.summary,
         };
+    }
+    async listAnnualCampaigns(slug) {
+        const tenant = await this.validateTenant(slug);
+        return { success: true, data: await this.billingRepo.listAnnualCampaigns(tenant.slug) };
+    }
+    async createAnnualCampaign(slug, dto) {
+        const tenant = await this.validateTenant(slug);
+        return { success: true, data: await this.billingRepo.createAnnualCampaign(tenant.slug, dto) };
+    }
+    async getAnnualCampaignQuote(slug, campaignId, dto) {
+        const tenant = await this.validateTenant(slug);
+        const quote = await this.billingRepo.getAnnualCampaignQuote(tenant.slug, campaignId, dto);
+        if (!quote)
+            throw new common_1.NotFoundException('La campaña anual no existe o no está activa.');
+        if (quote.missingProperty)
+            throw new common_1.NotFoundException('La vivienda indicada no existe.');
+        return { success: true, data: quote };
+    }
+    async submitAnnualPayment(slug, campaignId, dto, method) {
+        const tenant = await this.validateTenant(slug);
+        const result = await this.billingRepo.submitAnnualPayment(tenant.slug, campaignId, dto, method);
+        if (!result)
+            throw new common_1.NotFoundException('La campaña anual no existe o no está activa.');
+        if (result.missingProperty)
+            throw new common_1.NotFoundException('La vivienda indicada no existe.');
+        if (result.duplicateCommitment)
+            throw new common_1.BadRequestException('La vivienda ya tiene un compromiso en esta campaña.');
+        if (result.invalidAmount)
+            throw new common_1.BadRequestException(`El monto debe ser exactamente $${Number(result.expectedAmount).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN.`);
+        return { success: true, message: 'Pago anual enviado a validación de administración.', data: result };
+    }
+    async listAnnualCommitments(slug, campaignId) {
+        const tenant = await this.validateTenant(slug);
+        return { success: true, data: await this.billingRepo.listAnnualCommitments(tenant.slug, campaignId) };
+    }
+    async reviewAnnualCommitment(slug, id, dto) {
+        const tenant = await this.validateTenant(slug);
+        const commitment = await this.billingRepo.reviewAnnualCommitment(tenant.slug, id, dto.status, dto.reviewedByName, dto.notes);
+        if (!commitment)
+            throw new common_1.NotFoundException('El compromiso anual no existe o ya fue revisado.');
+        return { success: true, message: dto.status === 'APPROVED' ? 'Pago anual aprobado y reservado para el periodo de campaña.' : 'Pago anual rechazado.', data: commitment };
     }
 };
 exports.BillingEngineService = BillingEngineService;

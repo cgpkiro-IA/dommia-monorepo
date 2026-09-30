@@ -27,9 +27,9 @@ let NoticesService = class NoticesService {
         }
         return tenant;
     }
-    async getTenantNotices(slug, publishedOnly = false) {
+    async getTenantNotices(slug, publishedOnly = false, audience) {
         const tenant = await this.validateTenant(slug);
-        return this.noticesRepo.findAllByTenant(tenant.slug, publishedOnly);
+        return this.noticesRepo.findAllByTenant(tenant.slug, publishedOnly, audience);
     }
     async getNoticeById(slug, id) {
         const tenant = await this.validateTenant(slug);
@@ -44,11 +44,15 @@ let NoticesService = class NoticesService {
         const authorName = dto.author_name?.trim() || dto.authorName?.trim() || 'Administración';
         const isPinned = dto.is_pinned !== undefined ? dto.is_pinned : (dto.isPinned ?? false);
         const isPublished = dto.is_published !== undefined ? dto.is_published : (dto.isPublished ?? true);
+        const targetAudience = dto.target_audience || dto.targetAudience || (dto.category === 'GUARD_CONSIGN' ? 'GUARDS' : 'ALL');
+        const expiresAt = dto.expires_at || dto.expiresAt;
         return this.noticesRepo.create(tenant.slug, {
             title: dto.title,
             content: dto.content,
             category: dto.category,
             priority: dto.priority,
+            targetAudience,
+            expiresAt,
             authorName,
             isPinned,
             isPublished,
@@ -59,17 +63,29 @@ let NoticesService = class NoticesService {
         const authorName = dto.author_name !== undefined ? dto.author_name.trim() : (dto.authorName !== undefined ? dto.authorName.trim() : undefined);
         const isPinned = dto.is_pinned !== undefined ? dto.is_pinned : dto.isPinned;
         const isPublished = dto.is_published !== undefined ? dto.is_published : dto.isPublished;
+        const targetAudience = dto.target_audience || dto.targetAudience;
+        const expiresAt = dto.expires_at || dto.expiresAt;
         const notice = await this.noticesRepo.update(tenant.slug, id, {
             title: dto.title,
             content: dto.content,
             category: dto.category,
             priority: dto.priority,
+            targetAudience,
+            expiresAt,
             authorName,
             isPinned,
             isPublished,
         });
         if (!notice) {
             throw new common_1.NotFoundException(`Aviso con ID "${id}" no encontrado para actualizar`);
+        }
+        return notice;
+    }
+    async acknowledgeNoticeByGuard(slug, id, guardUserId, guardName) {
+        const tenant = await this.validateTenant(slug);
+        const notice = await this.noticesRepo.acknowledgeByGuard(tenant.slug, id, guardUserId, guardName);
+        if (!notice) {
+            throw new common_1.NotFoundException(`Aviso con ID "${id}" no encontrado`);
         }
         return notice;
     }

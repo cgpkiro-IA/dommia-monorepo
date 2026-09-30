@@ -1,9 +1,19 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { createHmac, randomUUID } from 'crypto';
+import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
+import * as OTPAuth from 'otpauth';
+import * as QRCode from 'qrcode';
 import { AuthRepository } from '../repositories/auth.repository';
 import { LoginDto } from '../dto/login.dto';
 import { ResidentActivateDto, ResidentChangePasswordDto, ResidentLoginDto, ResidentPasswordRecoveryRequestDto, ResidentPasswordResetDto } from '../dto/resident-auth.dto';
+import { ResidentAppChangePasswordDto, ResidentAppLoginDto, ResidentAppPasswordResetDto } from '../dto/resident-app-auth.dto';
 import { NotificationDeliveryService } from '../../notifications/services/notification-delivery.service';
+import { InMemoryResidentRateLimiter } from './resident-rate-limiter';
+
+const RESIDENT_APP_ACCESS_TTL_SECONDS = 15 * 60;
+const RESIDENT_APP_REFRESH_IDLE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const RESIDENT_APP_REFRESH_ABSOLUTE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+const RESIDENT_APP_ISSUER = 'dommia-api';
+const RESIDENT_APP_AUDIENCE = 'dommia-resident-api';
 
 export interface TenantInfo {
   id: string;
@@ -31,12 +41,254 @@ export interface AuthSession {
   token: string;
 }
 
+export interface MfaLoginChallenge {
+  mfaRequired: true;
+  challengeToken: string;
+  expiresIn: number;
+}
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private readonly residentRateLimits = new Map<string, { count: number; resetAt: number }>();
 
-  constructor(private readonly authRepo: AuthRepository, private readonly notificationDelivery: NotificationDeliveryService) {}
+  constructor(
+    private readonly authRepo: AuthRepository,
+    private readonly notificationDelivery: NotificationDeliveryService,
+    private readonly residentRateLimiter: InMemoryResidentRateLimiter,
+  ) {}
+
+  private signClaims(claims: Record<string, unknown>) {
+    const encodedClaims = Buffer.from(JSON.stringify(claims)).toString('base64url');
+    const signature = createHmac('sha256', process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me')
+      .update(encodedClaims)
+      .digest('base64url');
+    return `${encodedClaims}.${signature}`;
+  }
+
+  private verifySignedClaims(token: string) {
+    const [encodedClaims, encodedSignature] = token.split('.');
+    if (!encodedClaims || !encodedSignature) throw new UnauthorizedException('Desafío MFA inválido o expirado.');
+    const expected = Buffer.from(createHmac('sha256', process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me')
+      .update(encodedClaims).digest('base64url'));
+    const actual = Buffer.from(encodedSignature);
+    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+      throw new UnauthorizedException('Desafío MFA inválido o expirado.');
+    }
+    try {
+      const claims = JSON.parse(Buffer.from(encodedClaims, 'base64url').toString('utf8')) as Record<string, unknown>;
+      if (typeof claims.exp !== 'number' || claims.exp <= Date.now()) throw new Error('expired');
+      return claims;
+    } catch {
+      throw new UnauthorizedException('Desafío MFA inválido o expirado.');
+    }
+  }
+
+  private encryptionKey() {
+    const configuredKey = process.env.MFA_ENCRYPTION_KEY;
+    if (process.env.NODE_ENV === 'production' && !configuredKey) {
+      throw new Error('MFA_ENCRYPTION_KEY es obligatorio en producción.');
+    }
+    if (configuredKey && !/^[0-9a-f]{64}$/i.test(configuredKey)) {
+      throw new Error('MFA_ENCRYPTION_KEY debe contener 64 caracteres hexadecimales.');
+    }
+    return configuredKey
+      ? Buffer.from(configuredKey, 'hex')
+      : createHash('sha256').update(process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me').digest();
+  }
+
+  private encryptSecret(secret: string) {
+    const iv = randomBytes(12);
+    const cipher = createCipheriv('aes-256-gcm', this.encryptionKey(), iv);
+    const ciphertext = Buffer.concat([cipher.update(secret, 'utf8'), cipher.final()]);
+    return [iv, cipher.getAuthTag(), ciphertext].map((part) => part.toString('base64url')).join('.');
+  }
+
+  private decryptSecret(encryptedSecret: string) {
+    const [encodedIv, encodedTag, encodedCiphertext] = encryptedSecret.split('.');
+    if (!encodedIv || !encodedTag || !encodedCiphertext) throw new Error('El secreto MFA almacenado no es válido.');
+    const decipher = createDecipheriv('aes-256-gcm', this.encryptionKey(), Buffer.from(encodedIv, 'base64url'));
+    decipher.setAuthTag(Buffer.from(encodedTag, 'base64url'));
+    return Buffer.concat([
+      decipher.update(Buffer.from(encodedCiphertext, 'base64url')),
+      decipher.final(),
+    ]).toString('utf8');
+  }
+
+  private validateTotp(secretBase32: string, code: string) {
+    const totp = new OTPAuth.TOTP({
+      issuer: 'Dommia',
+      label: 'Administrador',
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: OTPAuth.Secret.fromBase32(secretBase32),
+    });
+    const delta = totp.validate({ token: code.replace(/\s/g, ''), window: 1 });
+    return delta === null ? null : OTPAuth.TOTP.counter({ period: 30 }) + delta;
+  }
+
+  private signResidentAppAccessToken(session: {
+    id: string;
+    jti: string;
+    residentId: string;
+    tenantSlug: string;
+    clientType: 'ANDROID' | 'IOS';
+  }, propertyId: string) {
+    const issuedAt = Math.floor(Date.now() / 1000);
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT', kid: 'resident-hs256-v1' })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify({
+      iss: RESIDENT_APP_ISSUER,
+      aud: RESIDENT_APP_AUDIENCE,
+      sub: session.residentId,
+      role: 'RESIDENT',
+      tenantSlug: session.tenantSlug,
+      propertyId,
+      sid: session.id,
+      jti: session.jti,
+      clientType: session.clientType,
+      iat: issuedAt,
+      exp: issuedAt + RESIDENT_APP_ACCESS_TTL_SECONDS,
+    })).toString('base64url');
+    const signingInput = `${header}.${payload}`;
+    const signature = createHmac('sha256', this.residentAppSigningKey())
+      .update(signingInput)
+      .digest('base64url');
+    return `${signingInput}.${signature}`;
+  }
+
+  private residentAppSigningKey() {
+    const configuredKey = process.env.RESIDENT_APP_TOKEN_SECRET;
+    if (process.env.NODE_ENV === 'production' && (!configuredKey || configuredKey.length < 32)) {
+      throw new Error('RESIDENT_APP_TOKEN_SECRET debe tener al menos 32 caracteres en producción.');
+    }
+    return configuredKey || process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me';
+  }
+
+  private async createResidentAppTokenResponse(session: {
+    id: string;
+    jti: string;
+    residentId: string;
+    tenantSlug: string;
+    clientType: 'ANDROID' | 'IOS';
+    deviceId?: string;
+    deviceName?: string;
+  }, refreshToken: string, refreshExpiresAt: Date) {
+    const resident = await this.authRepo.findResidentProfile(session.tenantSlug, session.residentId);
+    if (!resident?.is_active) {
+      await this.authRepo.revokeResidentSession(session.jti);
+      throw new UnauthorizedException('La sesión Resident ya no es válida.');
+    }
+    const accessToken = this.signResidentAppAccessToken(session, resident.property_id);
+    return {
+      accessToken,
+      refreshToken,
+      tokenType: 'Bearer',
+      expiresIn: RESIDENT_APP_ACCESS_TTL_SECONDS,
+      refreshExpiresAt: refreshExpiresAt.toISOString(),
+      resident,
+      tenantSlug: session.tenantSlug,
+      clientType: session.clientType,
+      deviceId: session.deviceId || null,
+      deviceName: session.deviceName || null,
+    };
+  }
+
+  async residentAppLogin(dto: ResidentAppLoginDto) {
+    const identifier = dto.identifier.trim();
+    this.assertResidentRateLimit('app-login', `${dto.tenantSlug}:${identifier}`);
+    const resident = await this.authRepo.findResidentByCredentials(dto.tenantSlug, identifier, dto.password);
+    if (!resident || !resident.is_active) throw new UnauthorizedException('Credenciales Resident inválidas.');
+    if (resident.must_change_password) {
+      return { passwordChangeRequired: true, tenantSlug: dto.tenantSlug };
+    }
+
+    const now = Date.now();
+    const refreshToken = randomBytes(32).toString('base64url');
+    const refreshExpiresAt = new Date(now + RESIDENT_APP_REFRESH_IDLE_TTL_MS);
+    const refreshAbsoluteExpiresAt = new Date(now + RESIDENT_APP_REFRESH_ABSOLUTE_TTL_MS);
+    const session = await this.authRepo.createResidentAppSession({
+      jti: randomUUID(),
+      residentId: resident.id,
+      tenantSlug: dto.tenantSlug,
+      clientType: dto.clientType,
+      deviceId: dto.deviceId,
+      deviceName: dto.deviceName,
+      refreshTokenHash: createHash('sha256').update(refreshToken).digest('hex'),
+      refreshExpiresAt,
+      refreshAbsoluteExpiresAt,
+    });
+    await this.authRepo.recordResidentAudit(dto.tenantSlug, 'APP_LOGIN', resident.id, { clientType: dto.clientType });
+    return this.createResidentAppTokenResponse({
+      ...session,
+      residentId: resident.id,
+      tenantSlug: dto.tenantSlug,
+      clientType: dto.clientType,
+      deviceId: dto.deviceId,
+      deviceName: dto.deviceName,
+    }, refreshToken, refreshExpiresAt);
+  }
+
+  async residentAppChangePassword(dto: ResidentAppChangePasswordDto) {
+    this.assertResidentRateLimit('app-password-change', `${dto.tenantSlug}:${dto.identifier}`);
+    this.validateResidentPassword(dto.newPassword);
+    const resident = await this.authRepo.changeResidentPassword(
+      dto.tenantSlug,
+      dto.identifier.trim(),
+      dto.currentPassword,
+      dto.newPassword,
+    );
+    if (!resident) throw new UnauthorizedException('La contraseña temporal o las credenciales no son válidas.');
+    const revokedSessions = await this.authRepo.revokeAllResidentAppSessions(resident.id, dto.tenantSlug);
+    await this.authRepo.recordResidentAudit(dto.tenantSlug, 'APP_PASSWORD_CHANGE', resident.id);
+    return { revokedSessions };
+  }
+
+  async residentAppRefresh(refreshToken: string) {
+    this.assertResidentRateLimit('app-refresh', createHash('sha256').update(refreshToken).digest('hex'));
+    const nextRefreshToken = randomBytes(32).toString('base64url');
+    const result = await this.authRepo.rotateResidentAppRefreshToken(
+      createHash('sha256').update(refreshToken).digest('hex'),
+      createHash('sha256').update(nextRefreshToken).digest('hex'),
+    );
+    if (result.kind === 'REPLAY') {
+      await this.authRepo.recordResidentAudit(result.tenantSlug, 'APP_REFRESH_REUSE_DETECTED', result.residentId, {
+        clientType: result.clientType,
+      });
+    }
+    if (result.kind !== 'ROTATED') {
+      throw new UnauthorizedException('La sesión móvil venció, fue revocada o requiere iniciar sesión de nuevo.');
+    }
+    return this.createResidentAppTokenResponse(result.session, nextRefreshToken, result.refreshExpiresAt);
+  }
+
+  async residentAppResetPassword(dto: ResidentAppPasswordResetDto) {
+    this.assertResidentRateLimit('app-reset', dto.token);
+    this.validateResidentPassword(dto.newPassword);
+    const resident = await this.authRepo.resetResidentPassword(dto.token, dto.newPassword);
+    if (!resident) throw new UnauthorizedException('El enlace de recuperación es inválido, expiró o ya fue utilizado.');
+    const revokedSessions = await this.authRepo.revokeAllResidentAppSessions(resident.id, resident.tenantSlug);
+    await this.authRepo.recordResidentAudit(resident.tenantSlug, 'APP_PASSWORD_RESET', resident.id, { revokedSessions });
+    return {
+      success: true,
+      message: 'Contraseña recuperada correctamente. Inicia sesión nuevamente.',
+      data: { resident, revokedSessions },
+    };
+  }
+
+  async residentAppLogout(jti: string) {
+    await this.authRepo.revokeResidentSession(jti);
+    return { success: true };
+  }
+
+  async listResidentAppSessions(residentId: string, tenantSlug: string, currentJti: string) {
+    return this.authRepo.listResidentAppSessions(residentId, tenantSlug, currentJti);
+  }
+
+  async revokeResidentAppSession(sessionId: string, residentId: string, tenantSlug: string) {
+    const revoked = await this.authRepo.revokeResidentAppSession(sessionId, residentId, tenantSlug);
+    if (!revoked) throw new NotFoundException('La sesión no existe o ya fue revocada.');
+    return { success: true };
+  }
 
   private validateResidentPassword(password: string) {
     const isStrong = password.length >= 10
@@ -50,18 +302,10 @@ export class AuthService {
   }
 
   private assertResidentRateLimit(action: string, identifier: string) {
-    const key = `${action}:${identifier.trim().toLowerCase()}`;
-    const now = Date.now();
-    const current = this.residentRateLimits.get(key);
-    if (!current || current.resetAt <= now) {
-      this.residentRateLimits.set(key, { count: 1, resetAt: now + 15 * 60 * 1000 });
-      return;
-    }
-    if (current.count >= 8) throw new HttpException('Demasiados intentos. Intenta nuevamente más tarde.', HttpStatus.TOO_MANY_REQUESTS);
-    current.count += 1;
+    this.residentRateLimiter.assertAllowed(action, identifier, 8, 15 * 60 * 1000);
   }
 
-  async login(dto: LoginDto): Promise<AuthSession> {
+  async login(dto: LoginDto): Promise<AuthSession | MfaLoginChallenge> {
     const email = dto.email.trim().toLowerCase();
 
     // Verify password through repository
@@ -73,6 +317,29 @@ export class AuthService {
     if (!user.is_active) {
       throw new UnauthorizedException('Tu cuenta se encuentra inactiva. Contacta al administrador.');
     }
+
+    if (user.mfa_enabled) {
+      const expiresAt = Date.now() + 5 * 60 * 1000;
+      const challengeId = await this.authRepo.createMfaChallenge(user.id, new Date(expiresAt));
+      if (!challengeId) throw new HttpException('Demasiados intentos de acceso. Intenta nuevamente en 15 minutos.', HttpStatus.TOO_MANY_REQUESTS);
+      return {
+        mfaRequired: true,
+        challengeToken: this.signClaims({
+          sub: user.id,
+          role: 'MFA_PENDING',
+          purpose: 'mfa_login',
+          challengeId,
+          tenantSlug: dto.tenantSlug || null,
+          exp: expiresAt,
+        }),
+        expiresIn: 300,
+      };
+    }
+
+    return this.createAuthSession(user, dto.tenantSlug);
+  }
+
+  private async createAuthSession(user: any, requestedTenantSlug?: string): Promise<AuthSession> {
 
     let tenantList: TenantInfo[] = [];
 
@@ -108,8 +375,8 @@ export class AuthService {
 
     // Resolve active workspace
     let activeTenant: TenantInfo | null = null;
-    if (dto.tenantSlug) {
-      const match = tenantList.find((t) => t.slug.toLowerCase() === dto.tenantSlug?.toLowerCase());
+    if (requestedTenantSlug) {
+      const match = tenantList.find((t) => t.slug.toLowerCase() === requestedTenantSlug.toLowerCase());
       if (match) {
         activeTenant = match;
       }
@@ -119,18 +386,14 @@ export class AuthService {
       activeTenant = tenantList[0];
     }
 
-    const encodedClaims = Buffer.from(JSON.stringify({
-        sub: user.id,
-        email: user.email,
-        role: activeTenant?.role || user.role,
-        tenantId: activeTenant?.id || null,
-        tenantSlug: activeTenant?.slug || null,
-        exp: Date.now() + 24 * 60 * 60 * 1000,
-      })).toString('base64url');
-    const signature = createHmac('sha256', process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me')
-      .update(encodedClaims)
-      .digest('base64url');
-    const token = `${encodedClaims}.${signature}`;
+    const token = this.signClaims({
+      sub: user.id,
+      email: user.email,
+      role: activeTenant?.role || user.role,
+      tenantId: activeTenant?.id || null,
+      tenantSlug: activeTenant?.slug || null,
+      exp: Date.now() + 24 * 60 * 60 * 1000,
+    });
 
     this.logger.log(
       `Login exitoso: ${user.email} (Comunidades vinculadas: ${tenantList.length}, Activo: ${activeTenant?.slug || 'PENDIENTE_SELECCION'})`,
@@ -148,6 +411,99 @@ export class AuthService {
       activeTenant,
       token,
     };
+  }
+
+  async verifyMfaLogin(challengeToken: string, code: string): Promise<AuthSession> {
+    const claims = this.verifySignedClaims(challengeToken);
+    if (claims.purpose !== 'mfa_login' || claims.role !== 'MFA_PENDING'
+      || typeof claims.sub !== 'string' || typeof claims.challengeId !== 'string') {
+      throw new UnauthorizedException('Desafío MFA inválido o expirado.');
+    }
+
+    const challenge = await this.authRepo.findActiveMfaChallenge(claims.challengeId, claims.sub);
+    const user = await this.authRepo.findUserForMfa(claims.sub);
+    if (!challenge || !user?.is_active || !user.mfa_enabled || !user.mfa_secret_encrypted) {
+      throw new UnauthorizedException('Desafío MFA inválido o expirado.');
+    }
+
+    const step = this.validateTotp(this.decryptSecret(user.mfa_secret_encrypted), code);
+    if (step === null) {
+      await this.authRepo.recordFailedMfaChallenge(claims.challengeId);
+      throw new UnauthorizedException('El código de autenticación no es válido.');
+    }
+    if (!await this.authRepo.consumeMfaChallenge(claims.challengeId, claims.sub)
+      || !await this.authRepo.consumeMfaStep(claims.sub, step)) {
+      throw new UnauthorizedException('El código ya fue utilizado. Solicita un nuevo inicio de sesión.');
+    }
+
+    return this.createAuthSession(user, typeof claims.tenantSlug === 'string' ? claims.tenantSlug : undefined);
+  }
+
+  async getMfaStatus(userId: string) {
+    const settings = await this.authRepo.getMfaSettings(userId);
+    if (!settings) throw new UnauthorizedException('La cuenta no está activa.');
+    return { enabled: Boolean(settings.mfa_enabled), setupPending: Boolean(settings.mfa_pending_secret_encrypted) };
+  }
+
+  async startMfaSetup(userId: string, password: string) {
+    if (!await this.authRepo.verifyUserPassword(userId, password)) {
+      throw new UnauthorizedException('La contraseña actual no es válida.');
+    }
+    const user = await this.authRepo.findUserForMfa(userId);
+    if (!user?.is_active) throw new UnauthorizedException('La cuenta no está activa.');
+    if (user.mfa_enabled) throw new BadRequestException('La autenticación de dos pasos ya está activada.');
+
+    const secret = new OTPAuth.Secret({ size: 20 });
+    const totp = new OTPAuth.TOTP({
+      issuer: 'Dommia',
+      label: user.email,
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    await this.authRepo.savePendingMfaSecret(userId, this.encryptSecret(secret.base32));
+    return {
+      secret: secret.base32,
+      qrCodeDataUrl: await QRCode.toDataURL(totp.toString(), { width: 220, margin: 2 }),
+      expiresIn: 600,
+    };
+  }
+
+  async enableMfa(userId: string, code: string) {
+    const settings = await this.authRepo.getMfaSettings(userId);
+    if (!settings?.mfa_pending_secret_encrypted || !settings.mfa_pending_created_at
+      || Date.now() - new Date(settings.mfa_pending_created_at).getTime() > 10 * 60 * 1000) {
+      throw new BadRequestException('La configuración expiró. Inicia de nuevo el registro del autenticador.');
+    }
+    const step = this.validateTotp(this.decryptSecret(settings.mfa_pending_secret_encrypted), code);
+    if (step === null || !await this.authRepo.enableMfa(userId, step)) {
+      throw new UnauthorizedException('El código no es válido o la configuración expiró.');
+    }
+    return { enabled: true };
+  }
+
+  async disableMfa(userId: string, password: string, code: string) {
+    if (!await this.authRepo.verifyUserPassword(userId, password)) {
+      throw new UnauthorizedException('La contraseña actual no es válida.');
+    }
+    const settings = await this.authRepo.getMfaSettings(userId);
+    if (!settings?.mfa_enabled || !settings.mfa_secret_encrypted) {
+      throw new BadRequestException('La autenticación de dos pasos no está activada.');
+    }
+    const step = this.validateTotp(this.decryptSecret(settings.mfa_secret_encrypted), code);
+    if (step === null || !await this.authRepo.disableMfa(userId, step)) {
+      throw new UnauthorizedException('El código de autenticación no es válido o ya fue utilizado.');
+    }
+    return { enabled: false };
+  }
+
+  async selectTenant(userId: string, tenantSlug: string) {
+    const user = await this.authRepo.findUserForMfa(userId);
+    if (!user?.is_active) throw new UnauthorizedException('La sesión ya no es válida.');
+    const session = await this.createAuthSession(user, tenantSlug);
+    if (!session.activeTenant) throw new ForbiddenException('No tienes acceso al fraccionamiento seleccionado.');
+    return session;
   }
 
   async residentLogin(dto: ResidentLoginDto) {

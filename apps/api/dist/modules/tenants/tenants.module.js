@@ -12,6 +12,8 @@ const database_module_1 = require("../../database/database.module");
 const tenants_controller_1 = require("./controllers/tenants.controller");
 const tenants_service_1 = require("./services/tenants.service");
 const tenants_repository_1 = require("./repositories/tenants.repository");
+const admin_session_guard_1 = require("../auth/guards/admin-session.guard");
+const crm_admin_guard_1 = require("../auth/guards/crm-admin.guard");
 let TenantsModule = class TenantsModule {
 };
 exports.TenantsModule = TenantsModule;
@@ -19,7 +21,7 @@ exports.TenantsModule = TenantsModule = __decorate([
     (0, common_1.Module)({
         imports: [database_module_1.DatabaseModule],
         controllers: [tenants_controller_1.TenantsController],
-        providers: [tenants_service_1.TenantsService, tenants_repository_1.TenantsRepository],
+        providers: [tenants_service_1.TenantsService, tenants_repository_1.TenantsRepository, admin_session_guard_1.AdminSessionGuard, crm_admin_guard_1.CrmAdminGuard],
         exports: [tenants_service_1.TenantsService, tenants_repository_1.TenantsRepository],
     })
 ], TenantsModule);

@@ -12,6 +12,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/init-db:/docker-entrypoint-initdb.d:ro
+      - ./docker/migrations:/docker-entrypoint-migrations:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dommia_admin} -d ${POSTGRES_DB:-dommia_master}"]
       interval: 5s

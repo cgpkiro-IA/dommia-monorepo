@@ -6,16 +6,18 @@
   "scripts": {
     "dev": "next dev -p 3004",
     "build": "next build",
-    "start": "next start -p 3004"
+    "start": "next start",
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
-    "@zxing/browser": "^0.1.5",
     "@dommia/shared-types": "workspace:*",
     "@dommia/ui": "workspace:*",
+    "@zxing/browser": "^0.1.5",
     "lucide-react": "^0.475.0",
     "next": "^15.1.7",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@dommia/config-tailwind": "workspace:*",

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ResidentProfile, ResidentFinancialStatus, ResidentPayment } from '../../../types';
 import { db } from '../../../lib/db';
+import { API_BASE } from '@/lib/api-url';
 
 interface UseResidentFinanceOptions {
   profile: ResidentProfile;
@@ -62,7 +63,7 @@ export function useResidentFinance({ profile, onStatusChange }: UseResidentFinan
     const slug = current.communitySlug || 'valle_real';
 
     try {
-      const tenantRes = await fetch(`http://localhost:4000/api/v1/tenants/${slug}`);
+      const tenantRes = await fetch(`${API_BASE}/tenants/${slug}`);
       if (tenantRes.ok) {
         const tenantJson = await tenantRes.json();
         const modules = tenantJson.data?.modules;
@@ -70,7 +71,7 @@ export function useResidentFinance({ profile, onStatusChange }: UseResidentFinan
           ? modules.some((module: string) => ['STRIPE', 'STRIPE_CONNECT', 'FINANCE_STRIPE'].includes(module))
           : Boolean(modules && Object.entries(modules).some(([key, enabled]) => enabled && ['STRIPE', 'STRIPE_CONNECT', 'FINANCE_STRIPE'].includes(key))));
       }
-      const url = `http://localhost:4000/api/v1/tenants/${slug}/finance/properties/${propertyId}/status`;
+      const url = `${API_BASE}/tenants/${slug}/finance/properties/${propertyId}/status`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
@@ -108,7 +109,7 @@ export function useResidentFinance({ profile, onStatusChange }: UseResidentFinan
     const slug = current.communitySlug;
     if (!propertyId || !slug) return false;
 
-    const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/payments/spei-submissions`, {
+    const res = await fetch(`${API_BASE}/tenants/${slug}/finance/payments/spei-submissions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

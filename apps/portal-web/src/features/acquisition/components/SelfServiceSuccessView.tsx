@@ -3,6 +3,7 @@
 import React from 'react';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { SelfServiceSuccessData } from '../../../types';
+import { CRM_URL } from '@/lib/app-urls';
 
 interface SelfServiceSuccessViewProps {
   data: SelfServiceSuccessData;
@@ -65,7 +66,7 @@ export const SelfServiceSuccessView: React.FC<SelfServiceSuccessViewProps> = ({ 
       </div>
 
       <a
-        href="http://localhost:3001"
+        href={CRM_URL}
         target="_blank"
         rel="noreferrer"
         className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-900/30"

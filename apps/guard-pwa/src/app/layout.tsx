@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   title: 'DOMMIA Guard | Control de acceso',
   description: 'Validación en tiempo real de accesos QR para personal de seguridad DOMMIA.',
   manifest: '/manifest.json',
+  robots: {
+    index: false,
+    follow: false,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

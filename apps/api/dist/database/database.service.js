@@ -16,6 +16,9 @@ const pg_1 = require("pg");
 let DatabaseService = DatabaseService_1 = class DatabaseService {
     pool;
     logger = new common_1.Logger(DatabaseService_1.name);
+    async setTenantSearchPath(client, schemaName) {
+        await client.query("SELECT set_config('search_path', $1, false)", [`${schemaName}, public`]);
+    }
     constructor() {
         this.pool = new pg_1.Pool({
             host: process.env.POSTGRES_HOST || 'localhost',
@@ -29,14 +32,17 @@ let DatabaseService = DatabaseService_1 = class DatabaseService {
         });
     }
     async onModuleInit() {
+        let client;
         try {
-            const client = await this.pool.connect();
+            client = await this.pool.connect();
             const res = await client.query('SELECT current_database(), version()');
             this.logger.log(`Connected to PostgreSQL: ${res.rows[0].current_database}`);
-            client.release();
         }
         catch (err) {
             this.logger.error('Failed to connect to PostgreSQL database', err);
+        }
+        finally {
+            client?.release();
         }
     }
     async onModuleDestroy() {
@@ -49,6 +55,28 @@ let DatabaseService = DatabaseService_1 = class DatabaseService {
         this.logger.debug(`Executed query [${duration}ms]: ${text.substring(0, 80)}`);
         return res;
     }
+    async withTransaction(callback) {
+        const client = await this.pool.connect();
+        let releaseError;
+        try {
+            await client.query('BEGIN');
+            const result = await callback(client);
+            await client.query('COMMIT');
+            return result;
+        }
+        catch (error) {
+            try {
+                await client.query('ROLLBACK');
+            }
+            catch (rollbackError) {
+                releaseError = rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError));
+            }
+            throw error;
+        }
+        finally {
+            client.release(releaseError);
+        }
+    }
     async queryTenant(tenantSlug, text, params) {
         let cleanSlug = tenantSlug.toLowerCase().replace(/-/g, '_').replace(/[^a-z0-9_]/g, '_');
         if (cleanSlug === 'las_palmas' || cleanSlug === 'laspalmas') {
@@ -56,8 +84,9 @@ let DatabaseService = DatabaseService_1 = class DatabaseService {
         }
         const schemaName = `tenant_${cleanSlug}`;
         const client = await this.pool.connect();
+        let releaseError;
         try {
-            await client.query(`SET search_path = "${schemaName}", public;`);
+            await this.setTenantSearchPath(client, schemaName);
             const start = Date.now();
             const res = await client.query(text, params);
             const duration = Date.now() - start;
@@ -65,12 +94,56 @@ let DatabaseService = DatabaseService_1 = class DatabaseService {
             return res;
         }
         finally {
-            await client.query('SET search_path = public;');
-            client.release();
+            try {
+                await client.query('RESET search_path');
+            }
+            catch (error) {
+                releaseError = error instanceof Error ? error : new Error(String(error));
+            }
+            finally {
+                client.release(releaseError);
+            }
+        }
+    }
+    async withTenantTransaction(tenantSlug, callback) {
+        let cleanSlug = tenantSlug.toLowerCase().replace(/-/g, '_').replace(/[^a-z0-9_]/g, '_');
+        if (cleanSlug === 'las_palmas' || cleanSlug === 'laspalmas')
+            cleanSlug = 'demo';
+        const client = await this.pool.connect();
+        let releaseError;
+        try {
+            await this.setTenantSearchPath(client, `tenant_${cleanSlug}`);
+            await client.query('BEGIN');
+            const result = await callback(client);
+            await client.query('COMMIT');
+            return result;
+        }
+        catch (error) {
+            try {
+                await client.query('ROLLBACK');
+            }
+            catch (rollbackError) {
+                releaseError = rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError));
+            }
+            throw error;
+        }
+        finally {
+            if (!releaseError) {
+                try {
+                    await client.query('RESET search_path');
+                }
+                catch (error) {
+                    releaseError = error instanceof Error ? error : new Error(String(error));
+                }
+            }
+            client.release(releaseError);
         }
     }
     async provisionTenant(slug, name, tier = 'STANDARD', maxProperties = 100, contactEmail) {
         const res = await this.query('SELECT public.provision_tenant_schema($1, $2, $3, $4, $5) AS id', [slug, name, tier, maxProperties, contactEmail]);
+        await this.query('SELECT public.ensure_tenant_feature_tables($1)', [slug]);
+        await this.query('SELECT public.ensure_tenant_finance_schema($1)', [slug]);
+        await this.query('SELECT public.ensure_tenant_latest_guard_tables($1)', [slug]);
         const tenantId = res.rows[0].id;
         this.logger.log(`Provisioned tenant ${slug} with ID ${tenantId} and schema tenant_${slug}`);
         return tenantId;

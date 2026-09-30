@@ -17,18 +17,26 @@ const fee_configuration_repository_1 = require("./repositories/fee-configuration
 const billing_engine_controller_1 = require("./controllers/billing-engine.controller");
 const billing_engine_service_1 = require("./services/billing-engine.service");
 const billing_engine_repository_1 = require("./repositories/billing-engine.repository");
+const finance_scheduler_service_1 = require("./services/finance-scheduler.service");
+const finance_admin_guard_1 = require("../auth/guards/finance-admin.guard");
+const auth_module_1 = require("../auth/auth.module");
+const resident_app_finance_controller_1 = require("./controllers/resident-app-finance.controller");
+const resident_app_receipt_storage_service_1 = require("./services/resident-app-receipt-storage.service");
 let FinanceModule = class FinanceModule {
 };
 exports.FinanceModule = FinanceModule;
 exports.FinanceModule = FinanceModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule, notices_module_1.NoticesModule],
-        controllers: [fee_configuration_controller_1.FeeConfigurationController, billing_engine_controller_1.BillingEngineController],
+        imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule, notices_module_1.NoticesModule, auth_module_1.AuthModule],
+        controllers: [fee_configuration_controller_1.FeeConfigurationController, billing_engine_controller_1.BillingEngineController, resident_app_finance_controller_1.ResidentAppFinanceController],
         providers: [
             fee_configuration_service_1.FeeConfigurationService,
             fee_configuration_repository_1.FeeConfigurationRepository,
             billing_engine_service_1.BillingEngineService,
             billing_engine_repository_1.BillingEngineRepository,
+            finance_scheduler_service_1.FinanceSchedulerService,
+            finance_admin_guard_1.FinanceAdminGuard,
+            resident_app_receipt_storage_service_1.ResidentAppReceiptStorageService,
         ],
         exports: [
             fee_configuration_service_1.FeeConfigurationService,

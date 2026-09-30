@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-
-const API = 'http://localhost:4000/api/v1';
+import { API_BASE as API } from '@/lib/api-url';
 
 export interface GuardUser {
   id: string;

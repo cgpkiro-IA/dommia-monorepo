@@ -13,14 +13,17 @@ const tenants_module_1 = require("../tenants/tenants.module");
 const residents_controller_1 = require("./controllers/residents.controller");
 const residents_service_1 = require("./services/residents.service");
 const residents_repository_1 = require("./repositories/residents.repository");
+const auth_module_1 = require("../auth/auth.module");
+const notifications_module_1 = require("../notifications/notifications.module");
+const finance_admin_guard_1 = require("../auth/guards/finance-admin.guard");
 let ResidentsModule = class ResidentsModule {
 };
 exports.ResidentsModule = ResidentsModule;
 exports.ResidentsModule = ResidentsModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule],
+        imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule, auth_module_1.AuthModule, notifications_module_1.NotificationsModule],
         controllers: [residents_controller_1.ResidentsController],
-        providers: [residents_service_1.ResidentsService, residents_repository_1.ResidentsRepository],
+        providers: [residents_service_1.ResidentsService, residents_repository_1.ResidentsRepository, finance_admin_guard_1.FinanceAdminGuard],
         exports: [residents_service_1.ResidentsService, residents_repository_1.ResidentsRepository],
     })
 ], ResidentsModule);

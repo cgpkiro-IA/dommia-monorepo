@@ -9,6 +9,7 @@ import {
   ChargeStatus,
   PaymentMethod,
 } from '@/types';
+import { API_BASE } from '@/lib/api-url';
 
 const INITIAL_PAYMENT_FORM: PaymentFormData = {
   propertyId: '',
@@ -52,7 +53,7 @@ export function useBillingOperations(authToken?: string) {
 
   const loadSummary = useCallback(async (slug: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/summary`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/summary`);
       const json = await res.json();
       if (res.ok && json.success) {
         setSummary(json.data);
@@ -65,7 +66,7 @@ export function useBillingOperations(authToken?: string) {
   const loadCharges = useCallback(async (slug: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/charges`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/charges`);
       const json = await res.json();
       if (res.ok && json.success) {
         setCharges(json.data || []);
@@ -79,7 +80,7 @@ export function useBillingOperations(authToken?: string) {
 
   const loadPayments = useCallback(async (slug: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/payments`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/payments`);
       const json = await res.json();
       if (res.ok && json.success) {
         setPayments(json.data || []);
@@ -115,7 +116,7 @@ export function useBillingOperations(authToken?: string) {
     setFormError(null);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/billing/generate`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/billing/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(cutoffForm),
@@ -161,7 +162,7 @@ export function useBillingOperations(authToken?: string) {
     setFormError(null);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/payments`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/payments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
@@ -206,7 +207,7 @@ export function useBillingOperations(authToken?: string) {
   ) => {
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/payments/${paymentId}/review`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/payments/${paymentId}/review`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({

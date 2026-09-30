@@ -3,10 +3,18 @@ import { CreateNoticeDto, UpdateNoticeDto } from '../dto/notice.dto';
 export declare class NoticesController {
     private readonly noticesService;
     constructor(noticesService: NoticesService);
-    getNotices(slug: string, publishedOnly?: string): Promise<{
+    getNotices(slug: string, publishedOnly?: string, audience?: string): Promise<{
         success: boolean;
         data: any[];
         count: number;
+    }>;
+    acknowledgeNoticeByGuard(slug: string, id: string, body: {
+        guardUserId?: string;
+        guardName?: string;
+    }): Promise<{
+        success: boolean;
+        message: string;
+        data: any;
     }>;
     getNoticeById(slug: string, id: string): Promise<{
         success: boolean;

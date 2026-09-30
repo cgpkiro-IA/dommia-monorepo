@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { PlanFormData } from '../components/PlanModal';
 import { PlanItem } from '../../../types';
+import { crmApiFetch } from '../../auth/api';
 
 const INITIAL_PLAN_FORM: PlanFormData = {
   name: '',
@@ -43,7 +44,7 @@ export function usePlans({ onRefresh, showFeedback }: UsePlansProps) {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/crm/plans/${editingPlan.id}`, {
+      const res = await crmApiFetch(`/crm/plans/${editingPlan.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(planForm),

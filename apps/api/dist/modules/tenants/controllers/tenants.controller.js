@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const tenants_service_1 = require("../services/tenants.service");
 const create_tenant_dto_1 = require("../dto/create-tenant.dto");
 const update_tenant_dto_1 = require("../dto/update-tenant.dto");
+const crm_admin_guard_1 = require("../../auth/guards/crm-admin.guard");
 let TenantsController = class TenantsController {
     tenantsService;
     constructor(tenantsService) {
@@ -65,6 +66,7 @@ let TenantsController = class TenantsController {
 exports.TenantsController = TenantsController;
 __decorate([
     (0, common_1.Get)(),
+    (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
@@ -78,6 +80,7 @@ __decorate([
 ], TenantsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
+    (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -86,6 +89,7 @@ __decorate([
 ], TenantsController.prototype, "create", null);
 __decorate([
     (0, common_1.Put)(':slug'),
+    (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
     __param(0, (0, common_1.Param)('slug')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -94,6 +98,7 @@ __decorate([
 ], TenantsController.prototype, "update", null);
 __decorate([
     (0, common_1.Patch)(':slug'),
+    (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
     __param(0, (0, common_1.Param)('slug')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),

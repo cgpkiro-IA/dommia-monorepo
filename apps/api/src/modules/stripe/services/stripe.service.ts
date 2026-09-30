@@ -1,9 +1,9 @@
 import { ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import Stripe from 'stripe';
-import { DatabaseService } from '../../../database/database.service';
 import { BillingEngineRepository } from '../../finance/repositories/billing-engine.repository';
 import { BillingEngineService } from '../../finance/services/billing-engine.service';
 import { TenantsRepository } from '../../tenants/repositories/tenants.repository';
+import { StripeRepository } from '../repositories/stripe.repository';
 import { CreateStripeCheckoutDto } from '../dto/stripe.dto';
 
 @Injectable()
@@ -11,7 +11,7 @@ export class StripeService {
   private readonly stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
   constructor(
-    private readonly db: DatabaseService,
+    private readonly stripeRepository: StripeRepository,
     private readonly tenantsRepo: TenantsRepository,
     private readonly billingRepo: BillingEngineRepository,
     private readonly billingService: BillingEngineService,
@@ -51,10 +51,9 @@ export class StripeService {
 
   async createConnectOnboarding(slug: string, returnUrl: string, refreshUrl: string) {
     const tenant = await this.tenantOrFail(slug);
-    await this.db.query(`CREATE TABLE IF NOT EXISTS public.stripe_connected_accounts (tenant_id UUID PRIMARY KEY REFERENCES public.tenants(id) ON DELETE CASCADE, account_id VARCHAR(255) UNIQUE NOT NULL, details_submitted BOOLEAN NOT NULL DEFAULT false, charges_enabled BOOLEAN NOT NULL DEFAULT false, payouts_enabled BOOLEAN NOT NULL DEFAULT false, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
-    const existing = await this.db.query('SELECT account_id FROM public.stripe_connected_accounts WHERE tenant_id = $1', [tenant.id]);
-    const accountId = existing.rows[0]?.account_id || (await this.stripe!.accounts.create({ type: 'express', capabilities: { card_payments: { requested: true }, transfers: { requested: true } }, metadata: { tenantSlug: tenant.slug } })).id;
-    if (!existing.rows[0]) await this.db.query('INSERT INTO public.stripe_connected_accounts (tenant_id, account_id) VALUES ($1, $2)', [tenant.id, accountId]);
+    const existingAccountId = await this.stripeRepository.findConnectedAccountId(tenant.id);
+    const accountId = existingAccountId || (await this.stripe!.accounts.create({ type: 'express', capabilities: { card_payments: { requested: true }, transfers: { requested: true } }, metadata: { tenantSlug: tenant.slug } })).id;
+    if (!existingAccountId) await this.stripeRepository.createConnectedAccount(tenant.id, accountId);
     const link = await this.stripe!.accountLinks.create({ account: accountId, refresh_url: refreshUrl, return_url: returnUrl, type: 'account_onboarding' });
     return { accountId, onboardingUrl: link.url };
   }
@@ -62,9 +61,8 @@ export class StripeService {
   async handleWebhook(rawBody: Buffer, signature: string) {
     if (!this.stripe || !process.env.STRIPE_WEBHOOK_SECRET) throw new ForbiddenException('Stripe webhook no configurado.');
     const event = this.stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET);
-    await this.db.query(`CREATE TABLE IF NOT EXISTS public.stripe_events (event_id VARCHAR(255) PRIMARY KEY, event_type VARCHAR(128) NOT NULL, processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
-    const inserted = await this.db.query('INSERT INTO public.stripe_events (event_id, event_type) VALUES ($1, $2) ON CONFLICT (event_id) DO NOTHING RETURNING event_id', [event.id, event.type]);
-    if (!inserted.rows[0]) return { received: true, duplicate: true };
+    const inserted = await this.stripeRepository.registerWebhookEvent(event.id, event.type);
+    if (!inserted) return { received: true, duplicate: true };
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       const metadata = session.metadata || {};

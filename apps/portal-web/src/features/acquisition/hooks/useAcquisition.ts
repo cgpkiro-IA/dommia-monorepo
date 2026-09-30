@@ -10,6 +10,9 @@ import {
   TierKey 
 } from '../../../types';
 
+import { trackEvent } from '../../../lib/analytics';
+import { API_BASE } from '@/lib/api-url';
+
 interface UseAcquisitionProps {
   selectedTier?: string;
   selectedHouses?: number;
@@ -100,8 +103,14 @@ export function useAcquisition({
     setLoading(true);
     setErrorMessage(null);
 
+    trackEvent('submit_demo_lead', {
+      community_name: demoForm.communityName,
+      houses_count: Number(demoForm.estimatedHouses),
+      tier_name: selectedTier,
+    });
+
     try {
-      const response = await fetch('http://localhost:4000/api/v1/crm/prospects', {
+      const response = await fetch(`${API_BASE}/crm/prospects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -137,8 +146,15 @@ export function useAcquisition({
 
     const tierKey = mapTierToKey(selectedTier);
 
+    trackEvent('start_self_service_provision', {
+      community_name: selfServiceForm.communityName,
+      slug: selfServiceForm.slug,
+      tier_name: tierKey,
+      houses_count: Number(selfServiceForm.maxProperties),
+    });
+
     try {
-      const response = await fetch('http://localhost:4000/api/v1/crm/self-service-provision', {
+      const response = await fetch(`${API_BASE}/crm/self-service-provision`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -10,10 +10,13 @@ import { BillingEngineService } from './services/billing-engine.service';
 import { BillingEngineRepository } from './repositories/billing-engine.repository';
 import { FinanceSchedulerService } from './services/finance-scheduler.service';
 import { FinanceAdminGuard } from '../auth/guards/finance-admin.guard';
+import { AuthModule } from '../auth/auth.module';
+import { ResidentAppFinanceController } from './controllers/resident-app-finance.controller';
+import { ResidentAppReceiptStorageService } from './services/resident-app-receipt-storage.service';
 
 @Module({
-  imports: [DatabaseModule, TenantsModule, NoticesModule],
-  controllers: [FeeConfigurationController, BillingEngineController],
+  imports: [DatabaseModule, TenantsModule, NoticesModule, AuthModule],
+  controllers: [FeeConfigurationController, BillingEngineController, ResidentAppFinanceController],
   providers: [
     FeeConfigurationService,
     FeeConfigurationRepository,
@@ -21,6 +24,7 @@ import { FinanceAdminGuard } from '../auth/guards/finance-admin.guard';
     BillingEngineRepository,
     FinanceSchedulerService,
     FinanceAdminGuard,
+    ResidentAppReceiptStorageService,
   ],
   exports: [
     FeeConfigurationService,

@@ -6,6 +6,10 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private pool: Pool;
   private readonly logger = new Logger(DatabaseService.name);
 
+  private async setTenantSearchPath(client: PoolClient, schemaName: string) {
+    await client.query("SELECT set_config('search_path', $1, false)", [`${schemaName}, public`]);
+  }
+
   constructor() {
     this.pool = new Pool({
       host: process.env.POSTGRES_HOST || 'localhost',
@@ -20,13 +24,15 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
+    let client: PoolClient | undefined;
     try {
-      const client = await this.pool.connect();
+      client = await this.pool.connect();
       const res = await client.query('SELECT current_database(), version()');
       this.logger.log(`Connected to PostgreSQL: ${res.rows[0].current_database}`);
-      client.release();
     } catch (err) {
       this.logger.error('Failed to connect to PostgreSQL database', err);
+    } finally {
+      client?.release();
     }
   }
 
@@ -45,6 +51,26 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     return res;
   }
 
+  async withTransaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
+    let releaseError: Error | undefined;
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        releaseError = rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError));
+      }
+      throw error;
+    } finally {
+      client.release(releaseError);
+    }
+  }
+
   /**
    * Execute a query inside a specific tenant's schema in PostgreSQL
    * Dynamically switches search_path = tenant_<slug>, public
@@ -60,19 +86,23 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
     const schemaName = `tenant_${cleanSlug}`;
     const client: PoolClient = await this.pool.connect();
+    let releaseError: Error | undefined;
 
     try {
-      // Set the search path for this connection exclusively
-      await client.query(`SET search_path = "${schemaName}", public;`);
+      await this.setTenantSearchPath(client, schemaName);
       const start = Date.now();
       const res = await client.query<T>(text, params);
       const duration = Date.now() - start;
       this.logger.debug(`Executed tenant query [${schemaName}] [${duration}ms]`);
       return res;
     } finally {
-      // Reset search_path before returning connection to pool
-      await client.query('SET search_path = public;');
-      client.release();
+      try {
+        await client.query('RESET search_path');
+      } catch (error) {
+        releaseError = error instanceof Error ? error : new Error(String(error));
+      } finally {
+        client.release(releaseError);
+      }
     }
   }
 
@@ -80,18 +110,29 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     let cleanSlug = tenantSlug.toLowerCase().replace(/-/g, '_').replace(/[^a-z0-9_]/g, '_');
     if (cleanSlug === 'las_palmas' || cleanSlug === 'laspalmas') cleanSlug = 'demo';
     const client = await this.pool.connect();
+    let releaseError: Error | undefined;
     try {
-      await client.query(`SET search_path = "tenant_${cleanSlug}", public;`);
+      await this.setTenantSearchPath(client, `tenant_${cleanSlug}`);
       await client.query('BEGIN');
       const result = await callback(client);
       await client.query('COMMIT');
       return result;
     } catch (error) {
-      await client.query('ROLLBACK');
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        releaseError = rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError));
+      }
       throw error;
     } finally {
-      await client.query('SET search_path = public;');
-      client.release();
+      if (!releaseError) {
+        try {
+          await client.query('RESET search_path');
+        } catch (error) {
+          releaseError = error instanceof Error ? error : new Error(String(error));
+        }
+      }
+      client.release(releaseError);
     }
   }
 
@@ -109,6 +150,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       'SELECT public.provision_tenant_schema($1, $2, $3, $4, $5) AS id',
       [slug, name, tier, maxProperties, contactEmail],
     );
+    await this.query('SELECT public.ensure_tenant_feature_tables($1)', [slug]);
+    await this.query('SELECT public.ensure_tenant_finance_schema($1)', [slug]);
+    await this.query('SELECT public.ensure_tenant_latest_guard_tables($1)', [slug]);
     const tenantId = res.rows[0].id;
     this.logger.log(`Provisioned tenant ${slug} with ID ${tenantId} and schema tenant_${slug}`);
     return tenantId;

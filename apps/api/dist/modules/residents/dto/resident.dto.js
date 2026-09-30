@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateResidentDto = exports.CreateResidentDto = void 0;
+exports.InviteResidentsDto = exports.UpdateResidentDto = exports.CreateResidentDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateResidentDto {
     propertyId;
@@ -40,7 +40,7 @@ __decorate([
 ], CreateResidentDto.prototype, "lastName", void 0);
 __decorate([
     (0, class_validator_1.IsEmail)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateResidentDto.prototype, "email", void 0);
 __decorate([
@@ -119,4 +119,39 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateResidentDto.prototype, "isActive", void 0);
+class InviteResidentsDto {
+    residentIds;
+    all;
+    createdBy;
+    contactMethod;
+    delivery;
+}
+exports.InviteResidentsDto = InviteResidentsDto;
+__decorate([
+    (0, class_validator_1.ValidateIf)((dto) => dto.residentIds !== 'ALL'),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsUUID)('4', { each: true }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Object)
+], InviteResidentsDto.prototype, "residentIds", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], InviteResidentsDto.prototype, "all", void 0);
+__decorate([
+    (0, class_validator_1.IsUUID)('4'),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], InviteResidentsDto.prototype, "createdBy", void 0);
+__decorate([
+    (0, class_validator_1.IsIn)(['AUTO', 'EMAIL', 'PHONE']),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], InviteResidentsDto.prototype, "contactMethod", void 0);
+__decorate([
+    (0, class_validator_1.IsIn)(['NONE', 'EMAIL', 'WHATSAPP']),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], InviteResidentsDto.prototype, "delivery", void 0);
 //# sourceMappingURL=resident.dto.js.map

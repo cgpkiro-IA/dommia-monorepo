@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ProspectFormData } from '../components/ProspectModal';
+import { crmApiFetch } from '../../auth/api';
 
 const INITIAL_PROSPECT_FORM: ProspectFormData = {
   name: '',
@@ -24,7 +25,7 @@ export function useProspects({ onRefresh, showFeedback }: UseProspectsProps) {
 
   const handleStageChange = async (prospectId: string, newStage: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/crm/prospects/${prospectId}/stage`, {
+      const res = await crmApiFetch(`/crm/prospects/${prospectId}/stage`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stage: newStage }),
@@ -45,7 +46,7 @@ export function useProspects({ onRefresh, showFeedback }: UseProspectsProps) {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('http://localhost:4000/api/v1/crm/prospects', {
+      const res = await crmApiFetch('/crm/prospects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

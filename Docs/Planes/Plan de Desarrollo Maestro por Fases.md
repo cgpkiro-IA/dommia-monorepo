@@ -3,9 +3,9 @@
 **Marca Principal:** DOMMIA  
 **Producto Principal:** Dommia Communities  
 **Tagline:** *El Sistema Operativo de tu Comunidad*  
-**Versión:** 1.9.0
+**Versión:** 1.21.0
 
-**Última Actualización:** 2026-09-27
+**Última Actualización:** 2026-09-29
 
 **Estado:** Activo / En Evolución Continua
 
@@ -22,9 +22,20 @@
 | **1.5.0** | 2026-09-27 | Arquitectura & Pair Programmer | Inicio de Fase 6: emisión y validación API de QR TOTP para residentes y visitas, prevención de replay, pases persistidos y vista pública de invitación. Fase 6 queda desacoplada de Stripe y hardware; Dommia Guard scanner sigue pendiente. |
 | **1.6.0** | 2026-09-27 | Arquitectura & Pair Programmer | Dommia Guard PWA implementada en puerto 3004 con login tenant-scoped GUARD, escaneo QR por cámara/entrada manual y autorización en línea. Communities permite aprovisionar y consultar cuentas de vigilancia para tenants con `ACCESS_QR`. |
 | **1.7.0** | 2026-09-27 | Arquitectura & Pair Programmer | Aviso opcional al anfitrión después de validar visitas: WhatsApp Business con fallback SMTP, estado de entrega visible para Guard y sin modificar la autorización si no hay canal o falla el proveedor. |
-| **1.8.0** | 2026-09-27 | Arquitectura & Pair Programmer | Excepción de acceso por morosidad con ticket HMAC de cinco minutos, ligado a tenant/guardia, justificación obligatoria, consumo único y auditoría actor/motivo. La aprobación independiente de un supervisor queda pendiente. |
-| **1.8.0** | 2026-09-27 | Arquitectura & Pair Programmer | Excepción manual por morosidad con ticket HMAC de cinco minutos ligado al tenant y al guardia, motivo obligatorio, consumo único del pase y auditoría actor/motivo. QR inválido, vencido o revocado no admite override. |
+| **1.8.0** | 2026-09-27 | Arquitectura & Pair Programmer | Excepción manual por morosidad con ticket HMAC de cinco minutos ligado al tenant y guardia, motivo obligatorio, consumo único y auditoría. QR inválido, vencido o revocado no admite override; la aprobación independiente de un supervisor sigue pendiente de decisión. |
 | **1.9.0** | 2026-09-27 | Arquitectura & Pair Programmer | Inicio de implementación P1 en Dommia Guard: consulta tenant-scoped de residentes y placas; registro auditado de paquetería con estados pendiente/entregado y confirmación de retiro. Incidencias e historial operativo siguen pendientes. |
+| **1.10.0** | 2026-09-28 | Arquitectura & Pair Programmer | Aclara alcance MVP: pagos manuales por SPEI o efectivo; Stripe es opcional, requiere entitlement contratado y no bloquea el MVP. Fase 5 queda detenida hasta evaluar la compatibilidad con el hardware de acceso existente en cada caseta. |
+| **1.11.0** | 2026-09-28 | Arquitectura & Pair Programmer | Guard incorpora búsqueda por unidad/domicilio, clasificación por rol y listas de bloqueo/visita frecuente, reporte/triage administrativo de incidencias e historial filtrable. Build y smoke tests locales pasan; cámaras físicas y notificaciones premium reales siguen pendientes. |
+| **1.12.0** | 2026-09-28 | Arquitectura & Pair Programmer | Agrega tres pruebas E2E ejecutables desde `pnpm test` para autorización/aislamiento, búsqueda/pases/clasificación e incidencias/historial. 3/3 pasan en QA local; staging, captura cronometrada y pruebas con dispositivos reales siguen pendientes. |
+| **1.13.0** | 2026-09-28 | Arquitectura & Pair Programmer | MFA TOTP opcional para cuentas administrativas y CRM: enrolamiento con reautenticación, QR/clave manual, desafío posterior a contraseña, protección anti-replay, rate limit y rutas CRM autenticadas; E2E local 4/4. |
+| **1.14.0** | 2026-09-28 | Arquitectura & Pair Programmer | Documenta el pool PostgreSQL compartido, `set_config` parametrizado, limpieza de `search_path`, transacciones y DDL por migración/provisión. Actualiza instrucciones E2E a migraciones 013–015, auth Bearer y resultado 4/4; agrega política de pruebas no destructivas. |
+| **1.15.0** | 2026-09-28 | Arquitectura & Pair Programmer | El helper E2E espera hasta 15 s por readiness del API (configurable con `DOMMIA_TEST_STARTUP_TIMEOUT_MS`) antes de aplicar migraciones y seed; reduce fallos por arranque lento y conserva fallo explícito si el API no responde. Suite local 4/4. |
+| **1.16.0** | 2026-09-28 | Arquitectura & Pair Programmer | Inicia LPR asistido en Guard: foto local, OCR Tesseract en navegador, sugerencia editable y consulta manual del clasificador existente. Clasificación por rol con badges diferenciados y texto accesible. Fixtures sintéticas: QAA-1001 al 90% y `TRT-827-A` al 47% con fondo/ángulo; root tests 6/6 (API 4 + Guard 2); faltan pruebas con placas/cámaras reales. |
+| **1.17.0** | 2026-09-28 | Arquitectura & Pair Programmer | `Compartir QR` ahora exporta una tarjeta PNG vertical con identidad DOMMIA ACCESS, invitado, tipo, vigencia, destino, anfitrión y QR estable al pase; Android/iOS usan Web Share de archivos y escritorio descarga el PNG. Build Resident pasa; hoja nativa física pendiente. |
+| **1.18.0** | 2026-09-28 | Arquitectura & Pair Programmer | Guard permite cancelar el arranque/detener cámara y recupera el control si no inicia en 12 s o no detecta QR en 30 s; validación API se aborta a los 10 s sin conceder acceso. Build Guard pasa; cámara física pendiente. |
+| **1.19.0** | 2026-09-28 | Arquitectura & Pair Programmer | Sustituye entrada manual de payload QR por búsqueda de visita programada, verificación visual de INE y confirmación por llamada; registra `MANUAL_GUARD`, consume pases SINGLE y no almacena datos de INE. E2E API 5/5; falta prueba operacional en caseta. |
+| **1.20.0** | 2026-09-29 | Arquitectura & Pair Programmer | Módulo táctico de Servicios/Proveedores (Comida, Gas, Agua, Paquetería, Taxi, Mantenimiento) con destinos específicos/generales y alertas a residentes/administrador; Bitácora unificada de eventos con filtros temporales; Búsqueda predictiva de calles con destinatario libre en paquetería y ciclo completo de notificación/cierre automático de alerta en Resident PWA al registrar retiro; `CustomSelect` temático uniforme en todas las PWAs. Suite API 8/8. |
+| **1.21.0** | 2026-09-29 | Arquitectura & Pair Programmer | Agrega rutas de sesión móvil Resident bajo `/auth/app/resident/*`: JWT HS256 de acceso de 15 minutos con audiencia propia y `RESIDENT_APP_TOKEN_SECRET`; refresh opaco hasheado, rotación y detección de replay; lista/revocación de sesiones por dispositivo; cambio inicial de contraseña y guard app-only. La PWA conserva su bearer legacy. Migración 021; E2E API 9/9 en DEV. Pendiente GCP/staging y proteger rutas Resident de avisos/finanzas. |
 
 ---
 
@@ -66,7 +77,7 @@
 1. **Dommia Communities:** Portal operativo web principal para el Administrador del Fraccionamiento.
 2. **Dommia CRM:** Backoffice comercial y de soporte exclusivo del operador del negocio SaaS.
 3. **Dommia Resident:** Aplicación web progresiva (PWA Offline-First) para colonos y residentes.
-4. **Dommia Guard:** Aplicación web progresiva (PWA Offline-First) táctica y de alto contraste para tablets y computadoras de caseta de vigilancia.
+4. **Dommia Guard:** Aplicación web progresiva (PWA Offline-First) táctica y de alto contraste para tablet s y computadoras de caseta de vigilancia.
 5. **Dommia Access:** Motor de validación de accesos vehiculares y peatonales (RFID UHF + QR Dinámico TOTP).
 6. **Dommia Finance:** Motor contable de cuotas, recargos, conciliación bancaria y pasarela fintech Stripe.
 7. **Dommia IoT:** Firmware y servicios distribuidos para Gateways en caseta con tolerancia a fallos.
@@ -154,7 +165,7 @@ flowchart TD
 - [x] **Esquema Global PostgreSQL (`public`):**
   - Tablas operativas: `tenants`, `subscriptions`, `crm_prospects`, `gateway_inventory`, `audit_logs`.
 - [x] **Módulo Dynamic Multi-Tenant en NestJS:**
-  - `DatabaseService` con ejecución dinámica de `SET search_path = tenant_<slug>, public`.
+  - `DatabaseService` con pool `pg` compartido (`max: 20`), `set_config('search_path', $1, false)` parametrizado, limpieza del estado por cliente y cierre del pool en shutdown. Ver [Conexión PostgreSQL y Multi-Tenancy](../Arquitectura/Conexion%20PostgreSQL%20y%20Multi-Tenancy.md).
   - Función almacenada `provision_tenant_schema` que crea automáticamente el esquema del tenant y sus 8 tablas hijas (`properties`, `residents`, `vehicles`, `rfid_tags`, `invitations`, `access_logs`, `financial_charges`, `financial_payments`).
   - Endpoints probados y verificados: `GET /api/v1/tenants`, `POST /api/v1/tenants`, `GET /api/v1/tenants/:slug/properties`, `POST /api/v1/tenants/:slug/properties`.
 - [x] **Módulo de Seguridad y RBAC Transversal:**
@@ -188,7 +199,7 @@ flowchart TD
     - Cabeceras de seguridad estrictas (`X-Frame-Options: SAMEORIGIN/DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`).
     - Trampa Honeypot invisible (`website_anti_bot_trap`) que neutraliza bots y scrapers sin almacenar basura ni alertar al atacante.
     - Bloqueo y descarte de correos temporales/desechables (`mailinator`, `tempmail`, etc.) para proteger los entornos demo de reconocimiento anónimo.
-    - Protocolo formal documentado en [Protocolo de Seguridad y Protección de Propiedad Intelectual](file:///Users/cesargarciaperianez/Documents/Curso%20Udemy/SaaS%20Dommia/Docs/Arquitectura/Protocolo%20de%20Seguridad%20y%20Proteccion%20de%20Propiedad%20Intelectual.md).
+    - Protocolo formal documentado en [Protocolo de Seguridad y Protección de Propiedad Intelectual](../Arquitectura/Protocolo%20de%20Seguridad%20y%20Proteccion%20de%20Propiedad%20Intelectual.md).
   - SEO técnico optimizado con Semantic HTML, Open Graph, Twitter Cards y Schema.org JSON-LD.
 - [x] **Dommia CRM - Dashboard Ejecutivo (`apps/crm-admin` - Puerto 3001):**
   - Métricas clave en tiempo real: MRR ($15,960 MXN), ARR ($191,520 MXN), Churn rate (0.0%), Fraccionamientos activos (4), Casas totales administradas (505 viviendas).
@@ -257,13 +268,13 @@ flowchart TD
   - **Orquestadores Raíz Delgados:**
     - `apps/communities-admin/src/app/page.tsx` reducido de ~2,900 líneas a menos de 280 líneas limpias y declarativas.
     - `apps/crm-admin/src/app/page.tsx` reducido de ~1,960 líneas a tan solo 137 líneas declarativas y desacopladas.
-  - **Documento Rector:** [Estandar de Arquitectura Frontend - 3 Capas.md](file:///Users/cesargarciaperianez/Documents/Curso%20Udemy/SaaS%20Dommia/Docs/Arquitectura/Estandar%20de%20Arquitectura%20Frontend%20-%203%20Capas.md) incorporado en la suite de arquitectura oficial.
+  - **Documento Rector:** [Estandar de Arquitectura Frontend - 3 Capas.md](../Arquitectura/Estandar%20de%20Arquitectura%20Frontend%20-%203%20Capas.md) incorporado en la suite de arquitectura oficial.
 - [x] **Adopción del Estándar de Arquitectura Backend en 3 Capas por Dominio:**
   - **Capa 1: Transporte & Controladores (Controllers & DTOs):** Manejo exclusivo de rutas HTTP REST, validación estricta con `class-validator`, códigos de respuesta (`200`, `201`, `400`, `404`). Cero SQL, cero lógica de negocio.
   - **Capa 2: Lógica de Dominio (Services):** Reglas de negocio puras (enforcement de límite duro de casas, validación de correos duplicados, normalización de placas, cálculo financiero MRR/ARR, anti-bot).
   - **Capa 3: Acceso a Datos & Persistencia (Repositories):** Aislamiento de consultas SQL parametrizadas a PostgreSQL y manejo del `search_path` dinámico multi-tenant (`tenant_<slug>`).
   - **Modularización por Dominio:** Descomposición del "God Service" `tenants.service.ts` (>530 líneas) en módulos independientes: `tenants`, `properties`, `residents`, `vehicles`, `auth`, `crm`, `health`.
-  - **Documento Rector:** [Estandar de Arquitectura Backend - 3 Capas.md](file:///Users/cesargarciaperianez/Documents/Curso%20Udemy/SaaS%20Dommia/Docs/Arquitectura/Estandar%20de%20Arquitectura%20Backend%20-%203%20Capas.md) incorporado en la suite de arquitectura oficial.
+  - **Documento Rector:** [Estandar de Arquitectura Backend - 3 Capas.md](../Arquitectura/Estandar%20de%20Arquitectura%20Backend%20-%203%20Capas.md) incorporado en la suite de arquitectura oficial.
 - [x] **Dommia Resident (PWA Offline-First como Aplicación Independiente en Monorepo - `apps/resident-pwa` - Puerto 3003):**
   - **Decisión Arquitectónica:** Creada como aplicación independiente en el monorepo en lugar de una sub-ruta embebida dentro de `communities-admin`. Esto garantiza:
     1. Scope aislado de Service Worker (`/`) sin interferencia de caché con el portal administrativo.
@@ -395,13 +406,17 @@ resident_invitations
 
 ---
 
-### 💳 FASE 4: Dommia Finance (Fintech Stripe & Conciliación Automatizada)
-**Objetivo:** Eliminar la conciliación manual mediante cobros con tarjeta y transferencias bancarias automatizadas con acreditación inmediata.
+### 💳 FASE 4: Stripe Connect Opcional (Post-MVP)
+**Objetivo:** Habilitar cobros automatizados solo para tenants que contraten el módulo Stripe, sin desplazar ni bloquear el flujo manual de pagos del MVP.
 
 **Regla de entitlement:** Stripe solo se muestra y procesa cuando el tenant tiene contratado `STRIPE`, `STRIPE_CONNECT` o `FINANCE_STRIPE` en `public.tenants.modules`. SPEI, efectivo y campañas anuales permanecen disponibles sin ese módulo.
 
-* **Estado:** `[~] En curso (2026-09-27)`
+**Alcance MVP:** Todos los pagos de mantenimiento se reciben por SPEI con comprobante y validación manual del administrador, o en efectivo registrado por el administrador. Stripe no es requisito de aceptación ni prioridad del MVP.
+
+* **Estado:** `[~] Implementación parcial; opcional y fuera de prioridad MVP (2026-09-28)`
 * **Dependencias:** Fase 3
+
+> El código Stripe existente debe permanecer protegido por entitlement. No habilitarlo para clientes hasta completar pruebas sandbox end-to-end, recuperación segura ante fallos de webhooks y definición de liquidación/comisión.
 
 #### Tareas Técnicas:
 - [~] **Stripe Connect / Cuentas Conectadas:**
@@ -425,13 +440,13 @@ resident_invitations
 
 ---
 
-### 📡 FASE 5: Dommia IoT & Dommia Access (RFID & Operación Offline)
-**Objetivo:** Desarrollar el servicio del Gateway de caseta garantizando apertura física vehicular en milisegundos sin depender de la conexión a internet.
+### 📡 FASE 5: Integración con Hardware de Caseta (Detenida / Post-MVP)
+**Objetivo:** Evaluar e integrar Dommia Access con los equipos de acceso y plumas que ya operan en cada caseta, respetando sus protocolos, restricciones y mecanismos de seguridad.
 
-* **Estado:** `[ ] Pendiente post-MVP`
+* **Estado:** `[⏸] Detenida; no iniciar implementación hasta completar descubrimiento de hardware por sitio`
 * **Dependencias:** Fase 0, Fase 2
 
-> **Decisión de alcance:** Esta fase no bloquea la Fase 6 y queda fuera del MVP actual. La integración con plumas, relevadores, lectores RFID/Wiegand, Gateway local, MQTT y autorización física offline se retomará después del MVP.
+> **Decisión de alcance:** Esta fase no bloquea el MVP ni la Fase 6. Antes de diseñar un Gateway o asumir Wiegand/MQTT, se debe inventariar por caseta la marca/modelo de pluma, controladora, lectores, protocolos disponibles, garantías, cableado, controles de seguridad y aprobación del proveedor/administrador. La solución puede variar por sitio; no se presupone compatibilidad universal.
 
 #### Tareas Técnicas:
 - [ ] **Firmware del Gateway Local (`apps/gateway-edge`):**
@@ -489,6 +504,7 @@ resident_invitations
     - Latencia de respuesta visual en pantalla inferior a 200 ms.
   - **Validación de QR & Confirmación Operativa:**
     - [x] Escaneo mediante cámara integrada y entrada manual del contenido completo del QR como alternativa.
+    - [x] Control para cancelar/detener cámara y recuperación temporizada (12 s al iniciar, 30 s sin detección); timeout de validación API seguro a 10 s.
     - [x] Tarjeta de validación con nombre, domicilio, anfitrión y resultado; la vigencia se comprueba en API.
     - Semáforo visual y auditivo de gran visibilidad:
       - **Verde:** Acceso autorizado + confirmación manual del guardia + Registro de log.
@@ -509,6 +525,9 @@ resident_invitations
       - 🟨 **Inquilino Activo:** Con contrato de arrendamiento vigente.
       - 🟧 **Visita Frecuente Pre-registrada:** Personal de mantenimiento, jardinería o proveedores regulares.
       - 🟥 **Vehículo No Registrado / Lista Negra:** Alerta obligatoria de detención e inspección antes de permitir paso.
+    - [x] Captura/selección de imagen con OCR local; la placa sugerida queda editable y requiere acción explícita del guardia para consultar.
+    - [x] La consulta muestra la clasificación existente y contexto tenant-scoped; ni la imagen ni el OCR autorizan o deniegan accesos.
+    - [~] Prototipo comprobado en navegador con fixture sintética `QAA-1001` (90% de confianza OCR, clasificada como Propietario). Pendiente calibración con matrículas reales, tablet/cámara física, iluminación nocturna y medición de latencia en staging.
   - **Canal de Comunicación Bidireccional & Alertas de Caseta:**
     - Visualización destacada en caseta de avisos operativos fijados por el administrador (`is_pinned`) como mudanzas programadas o cortes viales.
     - Botón de Pánico / Reporte de Incidencias desde caseta hacia la administración (fugas, vehículos sospechosos, emergencias vecinales).
@@ -557,20 +576,43 @@ resident_invitations
    - Datos financieros deben ser informativos; nunca autorizan acceso offline ni reemplazan validación en línea.
    - Mostrar mensaje estandarizado: “Propiedad con adeudo, solicitar comunicación con administración”.
 
-**Avance de implementación P1 (2026-09-27)**
-- [x] Validación QR en línea y excepción manual auditada bajo la política de Fase 6.
-- [~] Búsqueda tenant-scoped por nombre, correo y teléfono; falta búsqueda directa por lote/casa y mostrar pases autorizados asociados.
-- [~] Consulta de vehículos por placa y residente; falta clasificación completa por rol, marca/modelo y listas de bloqueo.
-- [~] Registro y retiro de paquetería con destinatario, domicilio, empresa, guía opcional, guardia y timestamps. Falta medir el objetivo de 15 segundos y agregar notificación al residente.
-- [ ] Captura de incidencias con prioridad, alerta a administración y bitácora.
-- [ ] Historial operativo consolidado con filtros de fecha, tipo y propiedad.
+**Avance de implementación P1 (2026-09-29)**
+- [x] Validación QR en línea y excepción manual auditada bajo la política de Fase 6 con auto-apagado de cámara tras conceder/denegar acceso y expiración de 3 minutos de visualización consultiva en pantalla.
+- [x] Flujo de visitante sin QR: localizar pase activo por domicilio/visitante, verificación de INE y llamada confirmada, registro de acceso `MANUAL_GUARD`, consumo de pases SINGLE y notificación inmediata de "Visita en camino" a la PWA del residente con botón de enterado (palomita) y auto-desvanecimiento en 2 minutos.
+- [x] Módulo táctico de Servicios y Proveedores en caseta:
+  - Selector ergonómico de tipo de servicio con íconos dedicados: Comida/Delivery (moto), Gas L.P. (camión), Garrafones de Agua, Paquetería/Mensajería (correo), Taxi/Transporte y Mantenimiento / Otro personalizado.
+  - Registro ágil de proveedor, placas de vehículo y selección de destino:
+    - **Destino específico:** Búsqueda y selección multi-residente con notificación en tiempo real a las PWAs de los domicilios seleccionados.
+    - **Recorrido general:** Notificación directa al Administrador del fraccionamiento para control y supervisión de proveedores circulando en la comunidad.
+  - Panel en tiempo real de servicios activos en caseta y registro de salida auditado (`registerServiceExit`) que elimina automáticamente la alerta activa en la PWA del residente y administrador.
+- [x] Paquetería táctica con Búsqueda Predictiva de Calles y Ciclo Completo de Notificación:
+  - Búsqueda predictiva y autocompletado de calles y números de lote del fraccionamiento con sugerencias de titulares.
+  - Campo libre y abierto para el nombre del destinatario del paquete (familiares, inquilinos o visitantes).
+  - Notificación automática multicanal (Email / WhatsApp) y tarjeta activa en tiempo real (`Paquete en caseta`) en Resident PWA al ingresar el paquete.
+  - Cierre y desaparición automática de la alerta en la PWA del colono tan pronto el guardia confirma el retiro (`status = 'COLLECTED'`).
+  - Corrección ergonómica de paddings interiores (`padding-left: 42px !important;`) en inputs con íconos para evitar colisiones visuales.
+- [x] Bitácora Unificada de Eventos y Accesos (Auditoría Centralizada):
+  - Consulta integral de accesos con/sin QR, servicios de proveedores, paquetería e incidencias de caseta.
+  - Métricas agregadas y filtros temporales rápidos por día, semana, quincena, mes o rango de fechas personalizado.
+- [x] Personalización integral de componentes `CustomSelect`:
+  - Reemplazo de listas desplegables nativas por selectores temáticos accesibles (`#0F172A`, bordes `slate-700`, acentos `blue-500` y estados activos claros) en toda la suite de Guardias y Residentes.
+- [x] Suite de pruebas automatizadas del API en verde: 8/8 suites passing (`node --test test/*.test.mjs`).
+- [~] Búsqueda tenant-scoped por nombre, correo, teléfono, calle, número exterior/interior, manzana y lote; muestra pases vigentes asociados al residente. E2E verifica lookup, revocación y rechazo cross-tenant (`403`).
+- [~] Consulta por placa, propietario y domicilio; clasificación visual de propietarios, inquilinos, familiares, visitas frecuentes y placas bloqueadas con motivo. Se agrega foto→sugerencia OCR local→confirmación manual; fixture sintética funciona, faltan matrículas/cámaras físicas y medición en staging.
+- [~] Reporte de incidencias con prioridad, ubicación/placa opcionales, bandeja tenant-scoped en Communities y resolución auditada. Build y smoke tests locales pasan; queda prueba integrada en dispositivo.
 - [~] Estado de morosidad visible en resultados de búsqueda. La información es consultiva y no sustituye la decisión de autorización QR.
 
 **P2 - Módulos de soporte para operación completa**
-- Registros de visitas sin QR.
-- Avisos operativos del administrador en caseta.
-- Búsqueda avanzada de lotes y mapa de propiedad.
-- Soporte para entregas repetitivas y personal autorizado.
+- [x] **Avisos y Consignas Operativas de Administración a Caseta:**
+  - Segmentación de audiencia en comunicados (`target_audience = 'ALL' | 'RESIDENTS' | 'GUARDS'`) y categorías operativas (`GUARD_CONSIGN`, `SECURITY`).
+  - Panel táctico en `apps/guard-pwa` para lectura de consignas oficiales con botón de confirmación de enterado / leído por guardia (`POST /api/v1/tenants/:slug/notices/:id/acknowledge-guard`).
+  - Selector de audiencia y badges visuales en `apps/communities-admin` (`NoticesTable`, `NoticeModal`).
+- [x] **Botón de Pánico / Alerta de Emergencia en Caseta (`Dommia Panic Alert`):**
+  - Modal táctico en `apps/guard-pwa` con 1-tap dispatch para 4 tipos de emergencia crítica (Intrusión, Emergencia Médica, Incendio, Policía/Seguridad).
+  - Almacenamiento seguro en PostgreSQL (`guard_incidents` con flag `is_panic_alert = TRUE`, prioridad `URGENT` y ordenamiento preferente).
+  - Integración en `apps/communities-admin` con indicador y destaque visual en tiempo real en el panel de supervisión de caseta.
+- [ ] Búsqueda avanzada de lotes y mapa de propiedad.
+- [ ] Soporte para entregas repetitivas y personal autorizado.
 
 **P3 - Futuros / post-MVP**
 - LPR automático y reconocimiento visual de placas.
@@ -637,12 +679,19 @@ resident_invitations
 - [x] Para un QR válido de visita con propiedad morosa, Guard recibe ticket manual de 5 minutos; motivo corto se rechaza, motivo válido autoriza y escribe `MANUAL_GUARD` con usuario/motivo.
 - [x] El ticket de excepción no se puede reutilizar; QR inválido, vencido, revocado o de un tenant/sesión distintos no puede generar una autorización manual.
 - [x] El buscador de lotes y el estatus financiero muestran datos de consulta cacheados; en modo offline estos datos no autorizan accesos ni sustituyen la validación en línea.
+- [x] Regresión automatizada Node E2E: 4 pruebas cubren MFA opcional/enrolamiento/anti-replay, RBAC/aislamiento tenant, búsqueda con pases/clasificación y ciclo de incidencias/historial; `pnpm --filter @dommia/api test` termina 4/4, exit code 0 en QA local.
 - [ ] Prueba física de lectura QR válida en cámaras Android/iOS y medición de latencia en red productiva.
 - [ ] Entrega E2E por WhatsApp Business y fallback SMTP con tenant premium configurado.
 - Dommia Guard se instala como PWA; durante una interrupción muestra el shell/pantalla offline e informa que no puede validar accesos.
 - Una captura de pantalla de un código QR enviada por chat deja de funcionar pasados los 15 segundos y el servidor rechaza códigos vencidos o repetidos.
 - La pantalla de Dommia Guard muestra la lectura y resultado de API; la meta de latencia y notificación al anfitrión requiere medición y prueba pendientes.
 - [ ] El buscador vehicular clasifica visualmente la placa en menos de 100 ms indicando si es propietario, inquilino o desconocido.
+- [ ] En staging, medir al menos 50 búsquedas; p95 de respuesta de búsqueda por placa/domicilio menor a 100 ms.
+- [x] En tenant QA local, 50 búsquedas alternando domicilio/placa: 50/50 respuestas con resultados, p95 20 ms, máximo 36 ms. Esta medición no sustituye la aceptación de staging.
+- [ ] Una incidencia enviada queda visible en la bandeja de administración tras actualizar; resolverla registra usuario y hora, y la retira de pendientes.
+- [ ] El historial ordena eventos del más reciente al más antiguo y aplica conjuntamente filtros de tipo, rango de fecha y coincidencia parcial de domicilio, sin devolver datos de otro tenant.
+- [ ] En cámara física Android e iOS, completar 20 lecturas QR válidas y 20 inválidas; p95 desde lectura hasta resultado visible menor a 2 segundos en una red estable.
+- [ ] Con un tenant que tenga `NOTIFICATIONS_PREMIUM` y credenciales reales, validar WhatsApp y fallback SMTP; en tenant sin entitlement, confirmar `NOT_CONFIGURED` sin alterar la autorización.
 - Una vivienda morosa no autoriza automáticamente; un guardia puede registrar una excepción para un pase de visita válido con motivo auditable. Un QR inválido o vencido no admite excepción.
 - Ningún flujo de Fase 6 requiere pluma, lector RFID, Gateway, MQTT ni accionamiento físico para validar y auditar un acceso.
 
@@ -666,11 +715,16 @@ resident_invitations
   - RPO de 15 minutos y RTO de 2 horas.
   - Respaldo diario incremental y completo semanal en Object Storage secundario.
   - Script validado de restauración individual por Schema de fraccionamiento sin afectar a otros tenants.
-- [ ] **Dommia Analytics & Centro de Alertas:**
-  - Dashboards consolidados para el operador y para el comité de administración.
-  - Alertas automáticas vía Webhook (Slack / Telegram / WhatsApp) ante caída de Gateways, fallos de webhooks Stripe o errores de sincronización.
+- [x] **Dommia Analytics & Centro de Alertas (Exclusivo para CRM Maestro `crm-admin`):**
+  - **Módulo Dommia Analytics (Tablero Global de Salud y Negocio SaaS):**
+    - **KPIs Financieros SaaS:** MRR ($ MXN/mes), ARR anualizado, desglose de ingresos por suscripción (`BASIC`, `STANDARD`, `ENTERPRISE`), addons (`ACCESS_QR`, `NOTIFICATIONS_PREMIUM`, `CUSTOM_DOMAIN`) y ticket promedio (ARPU) por comunidad.
+    - **Métricas de Adopción y Operación en Tiempo Real:** Total de fraccionamientos activos vs totales, volumen censado de viviendas y colonos, tasa de adopción de PWA móvil (% con credenciales), volumen diario de accesos QR validados, paquetes en caseta y servicios en tránsito.
+    - **Telemetría y Rendimiento Técnico:** Conteo de esquemas aislados PostgreSQL por tenant, tamaño de almacenamiento en disco MB, latencia central de API y estado de salud de la base de datos.
+  - **Centro de Alertas de Plataforma & Monitoreo del Operador:**
+    - **Bandeja de Incidentes en Tiempo Real en `crm-admin`:** Monitoreo con filtro por estado (`ALL`, `ACTIVE`, `ACKNOWLEDGED`, `RESOLVED`) y severidad (🔴 Crítica, 🟡 Advertencia, 🔵 Informativo) con acciones de reconocimiento (`Acknowledge`) y resolución con bitácora interna de solución.
+    - **Despacho Directo a Telegram mediante Bot:** Integración con la API de Telegram (`https://api.telegram.org/bot<TOKEN>/sendMessage`), modal interactivo de configuración (Bot Token y Chat ID de grupo/canal de ingenieros) y botón de envío de alerta de prueba inmediata.
 - [ ] **Seguridad & Gobernanza de Datos:**
-  - MFA obligatorio (2FA TOTP con Authenticator) para cuentas de SuperAdmin y Administradores de Fraccionamiento.
+  - [x] MFA TOTP opcional para SuperAdmin, equipo CRM y administradores de fraccionamiento: configuración con Microsoft Authenticator, desafío posterior a contraseña y protección anti-replay. E2E local 4/4; desplegar y verificar `MFA_ENCRYPTION_KEY` y migración 015 en staging.
   - Auditoría de seguridad OWASP y revisión de políticas de privacidad conforme a directrices de marca.
 - [ ] **Pipeline CI/CD y Despliegue:**
   - Automatización con GitHub Actions para testing de contratos, linting, build de contenedores Docker y despliegue a producción.
@@ -688,18 +742,18 @@ resident_invitations
 | **0** | Cimientos, Monorepo & UI Tokens | Sprint 1-2 | 🟢 Completada | Monorepo pnpm, Docker (Postgres/EMQX), @dommia/ui, API NestJS multi-tenant y Dommia CRM operativos |
 | **1** | Landing Comercial & Dommia CRM | Sprint 3-4 | 🟢 Completada | Landing page oficial en portal-web (3000) y CRM ejecutivo desacoplado en 3 capas (3001) |
 | **2** | Dommia Communities & Resident (PWA) | Sprint 5-6 | 🟢 Completada | Padrón multi-tenant (3002), PWA offline independiente (3003) y Módulo de Avisos operativos |
-| **3** | Dommia Finance (Cuotas & Conciliación) | Sprint 7-8 | 🟢 Completada | Stripe Connect y webhooks idempotentes |
-| **4** | Dommia Finance (Stripe & SPEI) | Sprint 9-10 | 🟡 En curso | Sandbox E2E y comisión SaaS |
-| **5** | Dommia IoT & Dommia Access (RFID) | Post-MVP | ⚪ Pospuesta | Gateway Edge, RFID/Wiegand, MQTT TLS y apertura física; no bloquea el MVP |
-| **6** | Dommia Access (QR TOTP) & Dommia Guard (PWA) | En curso | 🟡 En curso | Probar cámara física y entrega premium; decidir si se requiere aprobación independiente de supervisor |
-| **7** | Dommia Analytics, Hardening & Go-Live | Posterior a Fase 6 | ⚪ En espera | Automatización de backups (RPO/RTO) y MFA obligatorio |
+| **3** | Dommia Finance (Cuotas & Conciliación Manual) | Sprint 7-8 | 🟢 Completada | MVP: SPEI con comprobante y aprobación del administrador, o efectivo registrado por el administrador |
+| **4** | Stripe Connect Opcional | Post-MVP / bajo demanda | ⚪ No prioritaria para MVP | Mantener entitlement; antes de habilitar clientes, validar sandbox, reintentos de webhook y modelo de liquidación/comisión |
+| **5** | Integración con Hardware de Caseta | Detenida / Post-MVP | ⏸ Detenida | Inventariar equipo y protocolos por sitio; después definir diseño compatible y seguro |
+| **6** | Dommia Access (QR TOTP) & Dommia Guard (PWA) | En curso | 🟡 En curso | Medir búsqueda <100 ms; validar el ciclo Guard→bandeja→resolución, cámara Android/iOS y notificaciones premium reales |
+| **7** | Dommia Analytics, Hardening & Go-Live | Posterior a Fase 6 | ⚪ En espera | Automatización de backups (RPO/RTO), restauración por tenant y auditoría de seguridad |
 
 ---
 
-## ❓ Decisiones de Arquitectura Abiertas para Fase 0
+## ✅ Decisiones de Arquitectura Registradas en Fase 0
 1. **Estructura del Monorepo:**
    - Se confirma la arquitectura **Turborepo + pnpm workspaces** para compartir el nuevo paquete `@dommia/ui` (Design Tokens corporativos) y `packages/shared-types` entre todas las aplicaciones.
 2. **Estrategia de Conmutación de Esquema en NestJS:**
-   - Implementación de interceptor dinámico `SET search_path = tenant_<slug>, public` con pool de conexiones optimizado en PostgreSQL 16.
+  - Implementación en `DatabaseService`: pool PostgreSQL compartido, selección tenant-scoped mediante `set_config` parametrizado y limpieza del `search_path` antes de liberar cada cliente. Ver el estándar operativo PostgreSQL vigente.
 3. **Punto de Arranque Inmediato:**
    - Creación del `docker-compose.yml` (PostgreSQL 16 + EMQX Broker) y scaffolding del Monorepo con el paquete `@dommia/ui`.

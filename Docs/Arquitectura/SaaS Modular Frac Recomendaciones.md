@@ -119,10 +119,9 @@ Roles mínimos:
 - Residente.
 
 ## MFA
-Obligatorio para:
-- SuperAdmin.
-- Soporte.
-- Administradores.
+La decisión vigente es MFA TOTP opcional por cuenta para SuperAdmin, equipo CRM y administradores de fraccionamiento. El usuario configura Microsoft Authenticator desde Seguridad en CRM o Communities, con reautenticación, QR/clave manual y validación inicial antes de activar. Una vez activo, se solicita después de la contraseña en el siguiente login.
+
+El cifrado de secretos, protección contra replay y requisito de `MFA_ENCRYPTION_KEY` están documentados en [Protocolo de Seguridad](./Protocolo%20de%20Seguridad%20y%20Proteccion%20de%20Propiedad%20Intelectual.md). La versión y validación local se registran en el [Plan de Desarrollo vigente](../Planes/Plan%20de%20Desarrollo%20Maestro%20por%20Fases.md).
 
 ## Auditoría
 Registrar:
@@ -274,9 +273,11 @@ Analítica avanzada.
 
 ---
 
-# Recomendación Final
+# Recomendación para Go-Live
 
-No iniciar desarrollo hasta cerrar formalmente:
+Este documento contiene recomendaciones de arquitectura de la etapa inicial y no es un bloqueo para continuar el desarrollo. El roadmap vigente está en [Plan de Desarrollo Maestro por Fases](../Planes/Plan%20de%20Desarrollo%20Maestro%20por%20Fases.md).
+
+Antes de habilitar clientes en producción, cerrar o aceptar formalmente los riesgos de:
 1. Arquitectura de roles.
 2. Arquitectura CRM Maestro.
 3. Device Management.
@@ -288,4 +289,6 @@ No iniciar desarrollo hasta cerrar formalmente:
 9. SLA.
 10. Gobierno de datos.
 
-Con estos componentes el sistema pasa de una buena arquitectura técnica a una plataforma SaaS empresarial lista para operar múltiples fraccionamientos a gran escala.
+La integración de dispositivos y plumas (Fase 5) permanece detenida hasta verificar compatibilidad por caseta. Stripe es opcional y solo se habilita con entitlement contratado; los pagos del MVP se validan manualmente por SPEI o se registran en efectivo.
+
+Estos controles son criterios de preparación para producción, no requisitos para iniciar o continuar el MVP.

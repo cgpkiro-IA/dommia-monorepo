@@ -6,34 +6,7 @@ import { CreateFeeConfigurationDto, UpdateFeeConfigurationDto } from '../dto/fee
 export class FeeConfigurationRepository {
   constructor(private readonly db: DatabaseService) {}
 
-  async ensureTableExists(slug: string): Promise<void> {
-    const ddl = `
-      CREATE TABLE IF NOT EXISTS fee_configurations (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        name VARCHAR(150) NOT NULL,
-        fee_type VARCHAR(32) NOT NULL DEFAULT 'FIXED_RECURRENT',
-        base_amount NUMERIC(12,2) NOT NULL,
-        frequency VARCHAR(32) NOT NULL DEFAULT 'MONTHLY',
-        due_day INT NOT NULL DEFAULT 10,
-        grace_days INT NOT NULL DEFAULT 5,
-        late_fee_type VARCHAR(32) NOT NULL DEFAULT 'PERCENTAGE',
-        late_fee_amount NUMERIC(12,2) NOT NULL DEFAULT 10.00,
-        early_bird_discount_type VARCHAR(32) NOT NULL DEFAULT 'NONE',
-        early_bird_discount_amount NUMERIC(12,2) NOT NULL DEFAULT 0.00,
-        early_bird_deadline_day INT DEFAULT 5,
-        applies_to_all_properties BOOLEAN NOT NULL DEFAULT true,
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        description TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-    `;
-    await this.db.queryTenant(slug, ddl);
-  }
-
   async findAllByTenant(slug: string, activeOnly: boolean = false) {
-    await this.ensureTableExists(slug);
-
     let query = `
       SELECT 
         id, 
@@ -81,7 +54,6 @@ export class FeeConfigurationRepository {
   }
 
   async findById(slug: string, id: string) {
-    await this.ensureTableExists(slug);
 
     const query = `
       SELECT 
@@ -123,7 +95,6 @@ export class FeeConfigurationRepository {
   }
 
   async create(slug: string, dto: CreateFeeConfigurationDto) {
-    await this.ensureTableExists(slug);
 
     const query = `
       INSERT INTO fee_configurations (
@@ -164,7 +135,6 @@ export class FeeConfigurationRepository {
   }
 
   async update(slug: string, id: string, dto: UpdateFeeConfigurationDto) {
-    await this.ensureTableExists(slug);
 
     const fields: string[] = [];
     const values: any[] = [];
@@ -246,7 +216,6 @@ export class FeeConfigurationRepository {
   }
 
   async delete(slug: string, id: string) {
-    await this.ensureTableExists(slug);
     const query = `DELETE FROM fee_configurations WHERE id = $1 RETURNING id`;
     const res = await this.db.queryTenant(slug, query, [id]);
     return res.rowCount ? res.rowCount > 0 : false;

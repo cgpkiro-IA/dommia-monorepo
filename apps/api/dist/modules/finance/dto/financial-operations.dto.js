@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.QueryPaymentsDto = exports.QueryChargesDto = exports.CreatePaymentDto = exports.GenerateMonthlyChargesDto = void 0;
+exports.QueryPaymentsDto = exports.QueryChargesDto = exports.SubmitAnnualPaymentDto = exports.AnnualCampaignQuoteDto = exports.CreateAnnualCampaignDto = exports.ReviewPaymentDto = exports.SubmitSpeiPaymentDto = exports.CreatePaymentDto = exports.GenerateMonthlyChargesDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class GenerateMonthlyChargesDto {
@@ -134,6 +134,159 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreatePaymentDto.prototype, "receipt_url", void 0);
+class SubmitSpeiPaymentDto {
+    propertyId;
+    chargeId;
+    amount;
+    reference;
+    receiptUrl;
+    payerName;
+    notes;
+}
+exports.SubmitSpeiPaymentDto = SubmitSpeiPaymentDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], SubmitSpeiPaymentDto.prototype, "propertyId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], SubmitSpeiPaymentDto.prototype, "chargeId", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.01, { message: 'El monto transferido debe ser mayor a 0.' }),
+    __metadata("design:type", Number)
+], SubmitSpeiPaymentDto.prototype, "amount", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(128),
+    __metadata("design:type", String)
+], SubmitSpeiPaymentDto.prototype, "reference", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(5_000_000),
+    __metadata("design:type", String)
+], SubmitSpeiPaymentDto.prototype, "receiptUrl", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(120),
+    __metadata("design:type", String)
+], SubmitSpeiPaymentDto.prototype, "payerName", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(500),
+    __metadata("design:type", String)
+], SubmitSpeiPaymentDto.prototype, "notes", void 0);
+class ReviewPaymentDto {
+    status;
+    reviewedByName;
+    notes;
+}
+exports.ReviewPaymentDto = ReviewPaymentDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsIn)(['APPROVED', 'REJECTED']),
+    __metadata("design:type", String)
+], ReviewPaymentDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(120),
+    __metadata("design:type", String)
+], ReviewPaymentDto.prototype, "reviewedByName", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(500),
+    __metadata("design:type", String)
+], ReviewPaymentDto.prototype, "notes", void 0);
+class CreateAnnualCampaignDto {
+    name;
+    discountPercentage;
+    monthsCovered = 12;
+    periodStart;
+    periodEnd;
+}
+exports.CreateAnnualCampaignDto = CreateAnnualCampaignDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(150),
+    __metadata("design:type", String)
+], CreateAnnualCampaignDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.Max)(100),
+    __metadata("design:type", Number)
+], CreateAnnualCampaignDto.prototype, "discountPercentage", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.Max)(12),
+    __metadata("design:type", Number)
+], CreateAnnualCampaignDto.prototype, "monthsCovered", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateAnnualCampaignDto.prototype, "periodStart", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateAnnualCampaignDto.prototype, "periodEnd", void 0);
+class AnnualCampaignQuoteDto {
+    propertyId;
+}
+exports.AnnualCampaignQuoteDto = AnnualCampaignQuoteDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], AnnualCampaignQuoteDto.prototype, "propertyId", void 0);
+class SubmitAnnualPaymentDto {
+    propertyId;
+    amount;
+    reference;
+    receiptUrl;
+    payerName;
+}
+exports.SubmitAnnualPaymentDto = SubmitAnnualPaymentDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], SubmitAnnualPaymentDto.prototype, "propertyId", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.01),
+    __metadata("design:type", Number)
+], SubmitAnnualPaymentDto.prototype, "amount", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(128),
+    __metadata("design:type", String)
+], SubmitAnnualPaymentDto.prototype, "reference", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(5_000_000),
+    __metadata("design:type", String)
+], SubmitAnnualPaymentDto.prototype, "receiptUrl", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(120),
+    __metadata("design:type", String)
+], SubmitAnnualPaymentDto.prototype, "payerName", void 0);
 class QueryChargesDto {
     propertyId;
     status;

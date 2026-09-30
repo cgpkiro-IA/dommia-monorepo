@@ -14,6 +14,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { StripeModule } from './modules/stripe/stripe.module';
 import { AccessModule } from './modules/access/access.module';
 import { DeliveriesModule } from './modules/deliveries/deliveries.module';
+import { GuardOperationsModule } from './modules/guard-operations/guard-operations.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { DeliveriesModule } from './modules/deliveries/deliveries.module';
     StripeModule,
     AccessModule,
     DeliveriesModule,
+    GuardOperationsModule,
   ],
 })
 export class AppModule {}

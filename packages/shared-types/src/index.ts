@@ -43,6 +43,8 @@ export enum SubscriptionTier {
 }
 
 export interface TenantModules {
+  ACCESS_QR?: boolean;
+  NOTIFICATIONS_PREMIUM?: boolean;
   finance: boolean;
   rfid: boolean;
   dynamic_qr: boolean;

@@ -13,6 +13,7 @@ const tenants_module_1 = require("../tenants/tenants.module");
 const properties_controller_1 = require("./controllers/properties.controller");
 const properties_service_1 = require("./services/properties.service");
 const properties_repository_1 = require("./repositories/properties.repository");
+const finance_admin_guard_1 = require("../auth/guards/finance-admin.guard");
 let PropertiesModule = class PropertiesModule {
 };
 exports.PropertiesModule = PropertiesModule;
@@ -20,7 +21,7 @@ exports.PropertiesModule = PropertiesModule = __decorate([
     (0, common_1.Module)({
         imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule],
         controllers: [properties_controller_1.PropertiesController],
-        providers: [properties_service_1.PropertiesService, properties_repository_1.PropertiesRepository],
+        providers: [properties_service_1.PropertiesService, properties_repository_1.PropertiesRepository, finance_admin_guard_1.FinanceAdminGuard],
         exports: [properties_service_1.PropertiesService, properties_repository_1.PropertiesRepository],
     })
 ], PropertiesModule);

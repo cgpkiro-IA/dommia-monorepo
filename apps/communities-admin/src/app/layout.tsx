@@ -4,6 +4,10 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Dommia Communities • Portal Operativo del Fraccionamiento',
   description: 'Sistema Operativo de tu Comunidad. Gestión de propiedades, residentes, accesos y tesorería.',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({

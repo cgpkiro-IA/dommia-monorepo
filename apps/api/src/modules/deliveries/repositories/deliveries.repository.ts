@@ -5,27 +5,7 @@ import { DatabaseService } from '../../../database/database.service';
 export class DeliveriesRepository {
   constructor(private readonly db: DatabaseService) {}
 
-  private async ensureTableExists(slug: string) {
-    await this.db.queryTenant(slug, `
-      CREATE TABLE IF NOT EXISTS guard_deliveries (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        recipient_name VARCHAR(150) NOT NULL,
-        property_address VARCHAR(200) NOT NULL,
-        carrier VARCHAR(100) NOT NULL,
-        tracking_code VARCHAR(100),
-        notes VARCHAR(500),
-        status VARCHAR(16) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'COLLECTED')),
-        received_by UUID NOT NULL,
-        received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        collected_by UUID,
-        collected_by_name VARCHAR(150),
-        collected_at TIMESTAMPTZ
-      )
-    `);
-  }
-
   async findRecent(slug: string, status?: 'PENDING' | 'COLLECTED') {
-    await this.ensureTableExists(slug);
     const result = await this.db.queryTenant(slug, `
       SELECT id, recipient_name, property_address, carrier, tracking_code, notes, status,
              received_by, received_at, collected_by, collected_by_name, collected_at
@@ -44,7 +24,6 @@ export class DeliveriesRepository {
     trackingCode?: string;
     notes?: string;
   }) {
-    await this.ensureTableExists(slug);
     const result = await this.db.queryTenant(slug, `
       INSERT INTO guard_deliveries (recipient_name, property_address, carrier, tracking_code, notes, received_by)
       VALUES ($1, $2, $3, $4, $5, $6)
@@ -61,7 +40,6 @@ export class DeliveriesRepository {
   }
 
   async collect(slug: string, id: string, guardId: string, collectedByName: string) {
-    await this.ensureTableExists(slug);
     const result = await this.db.queryTenant(slug, `
       UPDATE guard_deliveries
       SET status = 'COLLECTED', collected_by = $2, collected_by_name = $3, collected_at = NOW()
@@ -69,5 +47,57 @@ export class DeliveriesRepository {
       RETURNING *
     `, [id, guardId, collectedByName.trim()]);
     return result.rows[0] || null;
+  }
+
+  async findResidentsByAddress(slug: string, propertyAddress: string) {
+    const result = await this.db.queryTenant(slug, `
+      SELECT r.id, r.first_name, r.last_name, r.email, r.phone
+      FROM residents r
+      JOIN properties p ON p.id = r.property_id
+      WHERE r.is_active = TRUE
+        AND (
+          LOWER(TRIM($1)) = LOWER(TRIM(
+            CONCAT(
+              p.street, ' #', p.exterior_number,
+              CASE WHEN p.interior_number IS NOT NULL AND p.interior_number != '' THEN CONCAT(' Int. ', p.interior_number) ELSE '' END,
+              CASE WHEN p.block IS NOT NULL AND p.block != '' THEN CONCAT(' ', p.block) ELSE '' END,
+              CASE WHEN p.lot IS NOT NULL AND p.lot != '' THEN CONCAT(' Lote ', p.lot) ELSE '' END
+            )
+          ))
+          OR (
+            LOWER($1) LIKE LOWER(CONCAT('%', p.street, '%'))
+            AND (p.exterior_number IS NULL OR p.exterior_number = '' OR LOWER($1) LIKE LOWER(CONCAT('%', p.exterior_number, '%')))
+          )
+        )
+      LIMIT 10
+    `, [propertyAddress.trim()]);
+    return result.rows;
+  }
+
+  async findPendingForProperty(slug: string, propertyId: string) {
+    const result = await this.db.queryTenant(slug, `
+      SELECT d.id, d.recipient_name, d.property_address, d.carrier, d.tracking_code, d.notes, d.status,
+             d.received_at
+      FROM guard_deliveries d
+      JOIN properties p ON p.id = $1
+      WHERE d.status = 'PENDING'
+        AND (
+          LOWER(TRIM(d.property_address)) = LOWER(TRIM(
+            CONCAT(
+              p.street, ' #', p.exterior_number,
+              CASE WHEN p.interior_number IS NOT NULL AND p.interior_number != '' THEN CONCAT(' Int. ', p.interior_number) ELSE '' END,
+              CASE WHEN p.block IS NOT NULL AND p.block != '' THEN CONCAT(' ', p.block) ELSE '' END,
+              CASE WHEN p.lot IS NOT NULL AND p.lot != '' THEN CONCAT(' Lote ', p.lot) ELSE '' END
+            )
+          ))
+          OR (
+            LOWER(d.property_address) LIKE LOWER(CONCAT('%', p.street, '%'))
+            AND (p.exterior_number IS NULL OR p.exterior_number = '' OR LOWER(d.property_address) LIKE LOWER(CONCAT('%', p.exterior_number, '%')))
+          )
+        )
+      ORDER BY d.received_at DESC
+      LIMIT 20
+    `, [propertyId]);
+    return result.rows;
   }
 }

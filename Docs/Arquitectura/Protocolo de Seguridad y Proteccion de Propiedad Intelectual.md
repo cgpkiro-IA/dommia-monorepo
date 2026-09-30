@@ -105,12 +105,13 @@ Para evitar que un usuario demo o un atacante pueda deducir o extraer datos de o
 
 1. **Aislamiento Físico por Esquemas (`schema-per-tenant`):**
    - Cada condominio tiene su propio esquema de base de datos (`tenant_<slug>`).
-   - Cada conexión a la base de datos ejecuta:
+   - Cada operación tenant-scoped adquiere un cliente del pool y configura el schema de esa sesión con:
      ```sql
-     SET search_path = tenant_<slug>, public;
+     SELECT set_config('search_path', $1, false);
      ```
-   - El usuario de la sesión demo únicamente tiene permisos `SELECT`/`INSERT` limitados dentro de `tenant_demo`.
-   - Ni siquiera mediante fallos de código es posible acceder a las tablas `tenant_laspalmas`, `tenant_bosques`, etc.
+   - El slug se normaliza y el schema se liga como parámetro. Al terminar se ejecuta `RESET search_path`; si la limpieza falla, el cliente se descarta del pool.
+   - Las rutas API verifican sesión, rol y correspondencia del tenant antes de operar. Las credenciales PostgreSQL permanecen en el backend y nunca se entregan al navegador.
+   - El detalle del pool, las transacciones y las migraciones está en [Conexión PostgreSQL y Multi-Tenancy](./Conexion%20PostgreSQL%20y%20Multi-Tenancy.md).
 
 ---
 
@@ -123,3 +124,13 @@ Para evitar que un usuario demo o un atacante pueda deducir o extraer datos de o
 - [x] Filtro de correos temporales/desechables activo en el endpoint de prospectos.
 - [x] Flujo de Auto-Aprovisionamiento Inmediato validando subdominios únicos y contraseñas cifradas con `bcrypt`.
 - [x] Esquemas de base de datos protegidos con `search_path` estricto y sin acceso cruzado entre tenants.
+
+## 7. Autenticación de Dos Pasos para Administradores
+
+- La autenticación TOTP es opcional y se configura individualmente desde **Seguridad** en Dommia Communities o CRM Maestro.
+- La activación requiere contraseña actual, registro en Microsoft Authenticator mediante QR o clave manual y confirmación de un código válido. El segundo factor se exige desde el siguiente inicio de sesión.
+- El inicio de sesión devuelve un desafío de cinco minutos; el token de desafío no autoriza endpoints administrativos. Hay hasta cinco intentos por desafío, un límite de cinco desafíos por usuario cada 15 minutos y protección contra reutilización del código TOTP.
+- Desactivar requiere contraseña actual y un código de autenticación válido.
+- Los secretos TOTP se cifran con AES-256-GCM. En producción, configurar `MFA_ENCRYPTION_KEY` como exactamente 64 caracteres hexadecimales aleatorios, por ejemplo generados con `openssl rand -hex 32`. Guardar el valor en el gestor de secretos del entorno y conservarlo durante respaldos/restauraciones; cambiarlo sin migrar los secretos existentes impide descifrarlos.
+- Aplicar `docker/migrations/015_admin_mfa.sql` antes de desplegar la versión que usa MFA. Las instalaciones nuevas lo ejecutan desde el script de inicialización de PostgreSQL.
+- Las rutas administrativas de CRM requieren un token de sesión válido. Las rutas públicas de adquisición y consulta pública del tenant permanecen disponibles.

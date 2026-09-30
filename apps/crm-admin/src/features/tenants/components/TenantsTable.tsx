@@ -3,6 +3,7 @@
 import { Button, Badge } from '@dommia/ui';
 import { Building2, Crown, Globe, Edit3, ExternalLink } from 'lucide-react';
 import { TenantItem } from '../../../types';
+import { COMMUNITIES_URL } from '@/lib/app-urls';
 
 interface TenantsTableProps {
   tenants: TenantItem[];
@@ -84,7 +85,7 @@ export function TenantsTable({ tenants, onEditTenant }: TenantsTableProps) {
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => window.open('http://localhost:3002', '_blank')}
+                      onClick={() => window.open(COMMUNITIES_URL, '_blank')}
                       className="text-xs py-1"
                       title={`Abrir portal administrativo para ${t.name}`}
                     >

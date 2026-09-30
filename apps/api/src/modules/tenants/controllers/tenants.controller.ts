@@ -1,13 +1,15 @@
-import { Controller, Get, Post, Put, Patch, Body, Param, HttpStatus, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Param, HttpStatus, HttpCode, UseGuards } from '@nestjs/common';
 import { TenantsService } from '../services/tenants.service';
 import { CreateTenantDto } from '../dto/create-tenant.dto';
 import { UpdateTenantDto } from '../dto/update-tenant.dto';
+import { CrmAdminGuard } from '../../auth/guards/crm-admin.guard';
 
 @Controller('tenants')
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
   @Get()
+  @UseGuards(CrmAdminGuard)
   async findAll() {
     const tenants = await this.tenantsService.findAll();
     return {
@@ -27,6 +29,7 @@ export class TenantsController {
   }
 
   @Post()
+  @UseGuards(CrmAdminGuard)
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateTenantDto) {
     const result = await this.tenantsService.create(dto);
@@ -38,6 +41,7 @@ export class TenantsController {
   }
 
   @Put(':slug')
+  @UseGuards(CrmAdminGuard)
   async update(@Param('slug') slug: string, @Body() dto: UpdateTenantDto) {
     const updated = await this.tenantsService.update(slug, dto);
     return {
@@ -48,6 +52,7 @@ export class TenantsController {
   }
 
   @Patch(':slug')
+  @UseGuards(CrmAdminGuard)
   async patch(@Param('slug') slug: string, @Body() dto: UpdateTenantDto) {
     const updated = await this.tenantsService.update(slug, dto);
     return {

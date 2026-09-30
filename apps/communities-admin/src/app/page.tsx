@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { LoginForm } from '@/features/auth/components/LoginForm';
 import { WorkspacePicker } from '@/features/auth/components/WorkspacePicker';
+import { MfaChallengeForm } from '@/features/auth/components/MfaChallengeForm';
+import { MfaSettingsPanel } from '@/features/auth/components/MfaSettingsPanel';
 
 import { useProperties } from '@/features/properties/hooks/useProperties';
 import { PropertiesTable } from '@/features/properties/components/PropertiesTable';
@@ -27,6 +29,9 @@ import { useFees } from '@/features/finance/hooks/useFees';
 import { ChargesAndPaymentsView } from '@/features/finance/components/ChargesAndPaymentsView';
 import { NotificationsSettings } from '@/features/notifications/components/NotificationsSettings';
 import { GuardUsersPanel } from '@/features/guards/components/GuardUsersPanel';
+import { GuardOperationsPanel } from '@/features/guards/components/GuardOperationsPanel';
+import { AdminProviderLiveAlert } from '@/features/guards/components/AdminProviderLiveAlert';
+import { UnifiedAuditLogView } from '@/features/audit/components/UnifiedAuditLogView';
 
 import { TopNavbar } from '@/features/dashboard/components/TopNavbar';
 import { CapacityHeroBanner } from '@/features/dashboard/components/CapacityHeroBanner';
@@ -37,7 +42,7 @@ import { NotificationToast } from '@/types';
 
 export default function CommunitiesAdminPage() {
   const auth = useAuth();
-  const properties = useProperties();
+  const properties = useProperties(auth.userSession?.token);
   const residents = useResidents(auth.userSession?.token);
   const vehicles = useVehicles();
   const notices = useNotices();
@@ -70,9 +75,13 @@ export default function CommunitiesAdminPage() {
     : Boolean(auth.activeTenant?.modules && auth.activeTenant.modules.NOTIFICATIONS_PREMIUM);
   const accessQrEnabled = Array.isArray(auth.activeTenant?.modules)
     ? auth.activeTenant.modules.includes('ACCESS_QR')
-    : Boolean(auth.activeTenant?.modules && auth.activeTenant.modules.ACCESS_QR);
+    : Boolean(auth.activeTenant?.modules && (auth.activeTenant.modules.ACCESS_QR || auth.activeTenant.modules.dynamic_qr));
 
   // Auth gate 1: Show multi-tenant picker if logged in with multiple workspaces
+  if (auth.mfaChallengeToken) {
+    return <MfaChallengeForm onSubmit={auth.handleMfaVerify} onCancel={auth.cancelMfa} loading={auth.loginLoading} error={auth.loginError} />;
+  }
+
   if (auth.showWorkspacePicker || (!auth.activeTenant && (auth.userSession?.tenants?.length ?? 0) > 1)) {
     return (
       <WorkspacePicker
@@ -113,6 +122,14 @@ export default function CommunitiesAdminPage() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {auth.activeTenant?.slug && auth.userSession?.token && (
+          <AdminProviderLiveAlert
+            tenantSlug={auth.activeTenant.slug}
+            authToken={auth.userSession.token}
+            onNavigateToGuards={accessQrEnabled ? () => setActiveTab('GUARDS') : undefined}
+          />
+        )}
+
         <CapacityHeroBanner
           metrics={properties.metrics}
           activeTenant={auth.activeTenant}
@@ -276,7 +293,21 @@ export default function CommunitiesAdminPage() {
         )}
 
         {activeTab === 'GUARDS' && accessQrEnabled && auth.activeTenant?.slug && (
-          <GuardUsersPanel tenantSlug={auth.activeTenant.slug} authToken={auth.userSession.token} />
+          <div className="space-y-8">
+            <GuardUsersPanel tenantSlug={auth.activeTenant.slug} authToken={auth.userSession.token} />
+            <GuardOperationsPanel tenantSlug={auth.activeTenant.slug} authToken={auth.userSession.token} />
+          </div>
+        )}
+
+        {activeTab === 'AUDIT_LOG' && auth.activeTenant?.slug && auth.userSession && (
+          <UnifiedAuditLogView
+            tenantSlug={auth.activeTenant.slug}
+            authToken={auth.userSession.token}
+          />
+        )}
+
+        {activeTab === 'SECURITY' && auth.userSession && (
+          <MfaSettingsPanel authToken={auth.userSession.token} showToast={showToast} />
         )}
       </main>
 

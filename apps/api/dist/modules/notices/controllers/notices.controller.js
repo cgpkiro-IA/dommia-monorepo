@@ -21,13 +21,21 @@ let NoticesController = class NoticesController {
     constructor(noticesService) {
         this.noticesService = noticesService;
     }
-    async getNotices(slug, publishedOnly) {
+    async getNotices(slug, publishedOnly, audience) {
         const isPublishedOnly = publishedOnly === 'true';
-        const notices = await this.noticesService.getTenantNotices(slug, isPublishedOnly);
+        const notices = await this.noticesService.getTenantNotices(slug, isPublishedOnly, audience);
         return {
             success: true,
             data: notices,
             count: notices.length,
+        };
+    }
+    async acknowledgeNoticeByGuard(slug, id, body) {
+        const notice = await this.noticesService.acknowledgeNoticeByGuard(slug, id, body.guardUserId || 'guard_shift', body.guardName || 'Guardia de Turno');
+        return {
+            success: true,
+            message: 'Consigna marcada como leída y confirmada.',
+            data: notice,
         };
     }
     async getNoticeById(slug, id) {
@@ -66,10 +74,20 @@ __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Param)('slug')),
     __param(1, (0, common_1.Query)('publishedOnly')),
+    __param(2, (0, common_1.Query)('audience')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], NoticesController.prototype, "getNotices", null);
+__decorate([
+    (0, common_1.Post)(':id/acknowledge-guard'),
+    __param(0, (0, common_1.Param)('slug')),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], NoticesController.prototype, "acknowledgeNoticeByGuard", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('slug')),

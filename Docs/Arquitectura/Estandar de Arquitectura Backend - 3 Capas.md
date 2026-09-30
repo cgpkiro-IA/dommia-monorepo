@@ -71,7 +71,7 @@ Para resolver esto de forma definitiva y sostenible, se establece la **Arquitect
 ### Capa 3: Acceso a Datos y Persistencia (`repositories/`)
 - **Responsabilidad Única:** Gestionar la interacción con el motor de base de datos (PostgreSQL 16):
   - Ejecutar consultas parametrizadas contra el esquema global `public` o el esquema dinámico del tenant (`tenant_<slug>`).
-  - Control de aislamiento multi-tenant mediante `SET search_path = tenant_<slug>, public`.
+  - Control de aislamiento multi-tenant mediante `set_config('search_path', $1, false)` con schema normalizado y valor ligado.
   - Manejo de transacciones ACID (`BEGIN`, `COMMIT`, `ROLLBACK`).
 - **Regla Estricta:**
   - ❌ **PROHIBIDO:** Lanzar excepciones HTTP directas (ej. `HttpException`). Debe retornar `null` o lanzar errores de dominio/datos que el servicio traducirá.
@@ -80,6 +80,8 @@ Para resolver esto de forma definitiva y sostenible, se establece la **Arquitect
 ---
 
 ## 📁 3. Organización de Carpetas por Dominio Funcional
+
+El pool, el cambio seguro de schema, la limpieza de la sesión y el uso correcto de transacciones se rigen por [Conexión PostgreSQL y Multi-Tenancy](./Conexion%20PostgreSQL%20y%20Multi-Tenancy.md). La capa de aplicación no ejecuta DDL durante requests.
 
 Cada dominio del negocio vive en `apps/api/src/modules/<dominio>/` y contiene su propia separación en 3 capas:
 

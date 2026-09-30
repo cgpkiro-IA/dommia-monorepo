@@ -2,6 +2,7 @@
 import React from 'react';
 import { Logo } from '@dommia/ui';
 import { ShieldCheck, Heart, ArrowUpRight } from 'lucide-react';
+import { CRM_URL } from '@/lib/app-urls';
 
 export const Footer: React.FC = () => {
   return (
@@ -81,7 +82,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2.5 text-xs">
               <li>
                 <a
-                  href="http://localhost:3001"
+                  href={CRM_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 font-medium"

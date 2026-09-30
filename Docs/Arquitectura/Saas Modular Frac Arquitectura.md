@@ -153,7 +153,7 @@ Se habilitará únicamente cuando el crecimiento lo justifique.
 ## Auth Service
 
 - Login
-- MFA
+- MFA TOTP opcional para cuentas administrativas, con desafío posterior a contraseña cuando está habilitado
 - JWT
 - Refresh Tokens
 - Recuperación de Contraseña
@@ -321,6 +321,7 @@ Nunca almacenar exclusivamente en Redis:
 - **crm_prospects:** Pipeline comercial de ventas consultivas (LEAD -> WON).
 - **gateway_inventory:** Inventario de hardware IoT y monitoreo de heartbeats.
 - **users:** Usuarios de plataforma central (SUPER_ADMIN, COMMERCIAL_EXEC, SUPPORT).
+- **MFA administrativo:** `users.mfa_enabled`, secretos TOTP cifrados y último paso consumido; `auth_mfa_challenges` conserva vencimiento, intentos y consumo del desafío temporal.
 - **audit_logs:** Trazabilidad de operaciones críticas.
 - **billing:** Registros de facturación fiscal (CFDI).
 - **support_tickets:** Gestión de incidencias de soporte técnico.
@@ -349,7 +350,7 @@ Nunca almacenar exclusivamente en Redis:
 
 ## Requerimientos Obligatorios
 
-- MFA para administradores.
+- MFA TOTP opcional por cuenta para administradores. La configuración está en [Protocolo de Seguridad](./Protocolo%20de%20Seguridad%20y%20Proteccion%20de%20Propiedad%20Intelectual.md).
 - JWT firmado.
 - TLS.
 - Rotación de llaves.
@@ -376,6 +377,11 @@ Nunca almacenar exclusivamente en Redis:
 - Replicación Fallida
 
 ---
+
+# Roadmap Arquitectónico
+# Conexión PostgreSQL vigente
+
+El API comparte un `pg.Pool` por proceso. El acceso multi-tenant configura `search_path` con `set_config` parametrizado, limpia la sesión antes de liberar el cliente y centraliza SQL en repositorios. El DDL se gestiona con migraciones y aprovisionamiento, no dentro de requests. Ver [Conexión PostgreSQL y Multi-Tenancy](./Conexion%20PostgreSQL%20y%20Multi-Tenancy.md).
 
 # Roadmap Arquitectónico
 

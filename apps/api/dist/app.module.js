@@ -19,6 +19,11 @@ const crm_module_1 = require("./modules/crm/crm.module");
 const health_module_1 = require("./modules/health/health.module");
 const notices_module_1 = require("./modules/notices/notices.module");
 const finance_module_1 = require("./modules/finance/finance.module");
+const notifications_module_1 = require("./modules/notifications/notifications.module");
+const stripe_module_1 = require("./modules/stripe/stripe.module");
+const access_module_1 = require("./modules/access/access.module");
+const deliveries_module_1 = require("./modules/deliveries/deliveries.module");
+const guard_operations_module_1 = require("./modules/guard-operations/guard-operations.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -39,6 +44,11 @@ exports.AppModule = AppModule = __decorate([
             health_module_1.HealthModule,
             notices_module_1.NoticesModule,
             finance_module_1.FinanceModule,
+            notifications_module_1.NotificationsModule,
+            stripe_module_1.StripeModule,
+            access_module_1.AccessModule,
+            deliveries_module_1.DeliveriesModule,
+            guard_operations_module_1.GuardOperationsModule,
         ],
     })
 ], AppModule);

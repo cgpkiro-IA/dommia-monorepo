@@ -3,7 +3,7 @@
 // DOMMIA SHARED TYPES & DOMAIN CONTRACTS
 // ==============================================================================
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PaymentStatus = exports.PaymentMethod = exports.ChargeStatus = exports.GatewayStatus = exports.InvitationType = exports.AccessType = exports.SubscriptionTier = exports.ResidentClassification = exports.UserRole = void 0;
+exports.PaymentStatus = exports.PaymentMethod = exports.ChargeStatus = exports.GatewayStatus = exports.InvitationType = exports.AccessType = exports.SubscriptionTier = exports.TenantModule = exports.ResidentClassification = exports.UserRole = void 0;
 // ------------------------------------------------------------------------------
 // Roles & Authorization (RBAC)
 // ------------------------------------------------------------------------------
@@ -26,6 +26,17 @@ var ResidentClassification;
 // ------------------------------------------------------------------------------
 // Tiers & Modules
 // ------------------------------------------------------------------------------
+var TenantModule;
+(function (TenantModule) {
+    TenantModule["FINANCE"] = "FINANCE";
+    TenantModule["RESIDENT_APP"] = "RESIDENT_APP";
+    TenantModule["ACCESS_QR"] = "ACCESS_QR";
+    TenantModule["RFID_UHF"] = "RFID_UHF";
+    TenantModule["STRIPE"] = "STRIPE";
+    TenantModule["STRIPE_CONNECT"] = "STRIPE_CONNECT";
+    TenantModule["FINANCE_STRIPE"] = "FINANCE_STRIPE";
+    TenantModule["GUARD_CONSOLE"] = "GUARD_CONSOLE";
+})(TenantModule || (exports.TenantModule = TenantModule = {}));
 var SubscriptionTier;
 (function (SubscriptionTier) {
     SubscriptionTier["BASIC"] = "BASIC";

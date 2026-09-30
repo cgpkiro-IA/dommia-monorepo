@@ -81,13 +81,21 @@ export function NoticeModal({
               </label>
               <select
                 value={form.category}
-                onChange={(e) => onChange('category', e.target.value as NoticeCategory)}
+                onChange={(e) => {
+                  const newCat = e.target.value as NoticeCategory;
+                  onChange('category', newCat);
+                  if (newCat === 'GUARD_CONSIGN') {
+                    onChange('target_audience', 'GUARDS');
+                  }
+                }}
                 className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               >
                 <option value="GENERAL">General</option>
                 <option value="URGENT">Urgente</option>
                 <option value="MAINTENANCE">Mantenimiento</option>
                 <option value="ASSEMBLY">Asamblea</option>
+                <option value="GUARD_CONSIGN">🛡️ Consigna a Caseta / Guardias</option>
+                <option value="SECURITY">🚨 Seguridad y Vigilancia</option>
               </select>
             </div>
 
@@ -105,6 +113,21 @@ export function NoticeModal({
                 <option value="HIGH">Alta</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Audiencia Destino *
+            </label>
+            <select
+              value={form.target_audience || 'ALL'}
+              onChange={(e) => onChange('target_audience', e.target.value)}
+              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+            >
+              <option value="ALL">👥 Toda la Comunidad (Residentes y Caseta)</option>
+              <option value="RESIDENTS">🏠 Solo Residentes (Resident PWA)</option>
+              <option value="GUARDS">🛡️ Solo Caseta y Seguridad (Guard PWA / Consigna)</option>
+            </select>
           </div>
 
           <div>

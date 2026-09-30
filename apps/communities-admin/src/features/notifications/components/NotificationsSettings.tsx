@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Mail, MessageCircle, Save, ShieldCheck } from 'lucide-react';
+import { API_BASE as API } from '@/lib/api-url';
 
 interface Props {
   tenantSlug: string;
@@ -15,8 +16,6 @@ interface ChannelStatus {
   configured: boolean;
   updatedAt: string;
 }
-
-const API = 'http://localhost:4000/api/v1';
 
 export function NotificationsSettings({ tenantSlug, authToken, showToast }: Props) {
   const [channels, setChannels] = useState<ChannelStatus[]>([]);

@@ -2,8 +2,9 @@
 
 import { useState, useMemo } from 'react';
 import { Property, Metrics } from '@/types';
+import { API_BASE } from '@/lib/api-url';
 
-export function useProperties() {
+export function useProperties(authToken?: string) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loadingData, setLoadingData] = useState(false);
@@ -33,7 +34,9 @@ export function useProperties() {
   const loadProperties = async (slug: string) => {
     setLoadingData(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/properties`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/properties`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+      });
       const data = await res.json();
       if (data.success) {
         setProperties(data.data || []);
@@ -59,9 +62,12 @@ export function useProperties() {
     }
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/properties`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/properties`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify(propertyForm),
       });
 
@@ -100,9 +106,12 @@ export function useProperties() {
     setFormError(null);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/properties/${editingProperty.id}`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/properties/${editingProperty.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           street: editingProperty.street,
           exteriorNumber: editingProperty.exterior_number,
@@ -144,8 +153,9 @@ export function useProperties() {
     }
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/properties/${id}`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/properties/${id}`, {
         method: 'DELETE',
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       });
       const result = await res.json();
       if (res.ok && result.success) {

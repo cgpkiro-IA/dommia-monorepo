@@ -19,69 +19,7 @@ const MONTH_NAMES = [
 export class BillingEngineRepository {
   constructor(private readonly db: DatabaseService) {}
 
-  private async ensureAnnualCampaignTables(slug: string) {
-    await this.db.queryTenant(slug, `
-      CREATE TABLE IF NOT EXISTS annual_payment_campaigns (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        name VARCHAR(150) NOT NULL,
-        discount_percentage NUMERIC(5,2) NOT NULL CHECK (discount_percentage >= 0 AND discount_percentage <= 100),
-        months_covered INT NOT NULL DEFAULT 12 CHECK (months_covered BETWEEN 1 AND 12),
-        period_start DATE NOT NULL,
-        period_end DATE NOT NULL,
-        status VARCHAR(24) NOT NULL DEFAULT 'DRAFT',
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS annual_payment_commitments (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        campaign_id UUID NOT NULL REFERENCES annual_payment_campaigns(id) ON DELETE CASCADE,
-        property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
-        gross_amount NUMERIC(12,2) NOT NULL,
-        discount_amount NUMERIC(12,2) NOT NULL,
-        net_amount NUMERIC(12,2) NOT NULL,
-        payment_method VARCHAR(32) NOT NULL,
-        reference VARCHAR(128) NOT NULL,
-        receipt_url TEXT,
-        status VARCHAR(24) NOT NULL DEFAULT 'PENDING_APPROVAL',
-        payer_name VARCHAR(120),
-        reviewed_by_name VARCHAR(120),
-        review_notes TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        reviewed_at TIMESTAMPTZ
-      );
-      CREATE UNIQUE INDEX IF NOT EXISTS annual_commitment_campaign_property
-        ON annual_payment_commitments (campaign_id, property_id);
-      CREATE UNIQUE INDEX IF NOT EXISTS annual_commitment_reference
-        ON annual_payment_commitments (reference);
-      CREATE TABLE IF NOT EXISTS financial_ledger_entries (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        property_id UUID REFERENCES properties(id) ON DELETE CASCADE,
-        source_type VARCHAR(32) NOT NULL,
-        source_id UUID NOT NULL,
-        entry_type VARCHAR(24) NOT NULL,
-        amount NUMERIC(12,2) NOT NULL,
-        description VARCHAR(255) NOT NULL,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-      CREATE UNIQUE INDEX IF NOT EXISTS financial_ledger_source_unique
-        ON financial_ledger_entries (source_type, source_id, entry_type);
-      CREATE TABLE IF NOT EXISTS annual_payment_allocations (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        commitment_id UUID NOT NULL REFERENCES annual_payment_commitments(id) ON DELETE CASCADE,
-        property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
-        period_start DATE NOT NULL,
-        period_end DATE NOT NULL,
-        amount NUMERIC(12,2) NOT NULL,
-        status VARCHAR(24) NOT NULL DEFAULT 'ALLOCATED',
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-      CREATE UNIQUE INDEX IF NOT EXISTS annual_allocation_period_unique
-        ON annual_payment_allocations (commitment_id, period_start);
-    `);
-  }
-
   async listAnnualCampaigns(slug: string) {
-    await this.ensureAnnualCampaignTables(slug);
     const result = await this.db.queryTenant(slug, `
       SELECT c.*, COUNT(ac.id)::int AS commitments_count,
         COUNT(ac.id) FILTER (WHERE ac.status = 'APPROVED')::int AS approved_count,
@@ -96,7 +34,6 @@ export class BillingEngineRepository {
   }
 
   async createAnnualCampaign(slug: string, data: CreateAnnualCampaignDto) {
-    await this.ensureAnnualCampaignTables(slug);
     const result = await this.db.queryTenant(slug, `
       INSERT INTO annual_payment_campaigns
         (name, discount_percentage, months_covered, period_start, period_end, status)
@@ -106,7 +43,6 @@ export class BillingEngineRepository {
   }
 
   async getAnnualCampaignQuote(slug: string, campaignId: string, data: AnnualCampaignQuoteDto) {
-    await this.ensureAnnualCampaignTables(slug);
     const campaignRes = await this.db.queryTenant(slug, `SELECT * FROM annual_payment_campaigns WHERE id = $1 AND status = 'ACTIVE'`, [campaignId]);
     const campaign = campaignRes.rows[0];
     if (!campaign) return null;
@@ -137,39 +73,49 @@ export class BillingEngineRepository {
   }
 
   async listAnnualCommitments(slug: string, campaignId: string) {
-    await this.ensureAnnualCampaignTables(slug);
     const result = await this.db.queryTenant(slug, `
-      SELECT ac.*, p.street, p.exterior_number, c.name AS campaign_name, c.period_start, c.period_end,
-        (SELECT COUNT(*)::int FROM annual_payment_allocations aa WHERE aa.commitment_id = ac.id) AS allocation_count,
-        EXISTS (SELECT 1 FROM financial_ledger_entries le WHERE le.source_id = ac.id AND le.source_type = 'ANNUAL_CAMPAIGN' AND le.entry_type = 'PAYMENT') AS ledger_recorded
+      SELECT ac.*, p.street, p.exterior_number, c.period_start, c.period_end, c.months_covered,
+             (SELECT COUNT(*)::int FROM annual_payment_allocations aa WHERE aa.commitment_id = ac.id) AS allocation_count,
+             EXISTS (
+               SELECT 1 FROM financial_ledger_entries le
+               WHERE le.source_id = ac.id AND le.source_type = 'ANNUAL_CAMPAIGN' AND le.entry_type = 'PAYMENT'
+             ) AS ledger_recorded
       FROM annual_payment_commitments ac
       JOIN properties p ON p.id = ac.property_id
       JOIN annual_payment_campaigns c ON c.id = ac.campaign_id
-      WHERE ac.campaign_id = $1 ORDER BY ac.created_at DESC
+      WHERE ac.campaign_id = $1
+      ORDER BY ac.created_at DESC
     `, [campaignId]);
     return result.rows;
   }
 
   async reviewAnnualCommitment(slug: string, id: string, status: 'APPROVED' | 'REJECTED', reviewedByName: string, notes?: string) {
-    await this.ensureAnnualCampaignTables(slug);
+    const pendingResult = await this.db.queryTenant(slug, `
+      SELECT ac.*, c.period_start, c.months_covered
+      FROM annual_payment_commitments ac
+      JOIN annual_payment_campaigns c ON c.id = ac.campaign_id
+      WHERE ac.id = $1 AND ac.status = 'PENDING_APPROVAL'
+    `, [id]);
+    const pending = pendingResult.rows[0];
+    if (!pending) return null;
+
     const result = await this.db.queryTenant(slug, `
       UPDATE annual_payment_commitments
-      SET status = $1, reviewed_by_name = $2, review_notes = $3, reviewed_at = NOW()
-      WHERE id = $4 AND status = 'PENDING_APPROVAL' RETURNING *
+      SET status = $1, reviewed_by_name = $2, review_notes = COALESCE($3, review_notes), reviewed_at = NOW()
+      WHERE id = $4 AND status = 'PENDING_APPROVAL'
+      RETURNING *
     `, [status, reviewedByName, notes || null, id]);
     const commitment = result.rows[0];
     if (!commitment || status !== 'APPROVED') return commitment || null;
 
-    const campaignRes = await this.db.queryTenant(slug, `SELECT period_start, period_end, months_covered FROM annual_payment_campaigns WHERE id = $1`, [commitment.campaign_id]);
-    const campaign = campaignRes.rows[0];
     await this.db.queryTenant(slug, `
       INSERT INTO financial_ledger_entries (property_id, source_type, source_id, entry_type, amount, description)
       VALUES ($1, 'ANNUAL_CAMPAIGN', $2, 'PAYMENT', $3, 'Pago anual aprobado por campaña')
       ON CONFLICT DO NOTHING
     `, [commitment.property_id, commitment.id, commitment.net_amount]);
 
-    const months = Number(campaign?.months_covered || 12);
-    const start = new Date(campaign?.period_start);
+    const months = Number(pending.months_covered || 12);
+    const start = new Date(pending.period_start);
     if (Number.isNaN(start.getTime())) throw new Error('La campaña anual tiene un periodo inicial inválido.');
     const monthlyAmount = Math.floor((Number(commitment.net_amount) / months) * 100) / 100;
     for (let index = 0; index < months; index += 1) {
@@ -186,23 +132,12 @@ export class BillingEngineRepository {
     return commitment;
   }
 
-  private async ensureBillingConstraints(slug: string) {
-    await this.db.queryTenant(
-      slug,
-      `CREATE UNIQUE INDEX IF NOT EXISTS financial_charges_period_unique
-       ON financial_charges (property_id, fee_config_id, period_year, period_month)
-       WHERE fee_config_id IS NOT NULL AND period_year IS NOT NULL AND period_month IS NOT NULL`,
-    );
-  }
-
   async generateMonthlyCharges(
     slug: string,
     year: number,
     month: number,
     dryRun: boolean = false,
   ) {
-    await this.ensureBillingConstraints(slug);
-
     const monthName = MONTH_NAMES[month - 1] || `Mes ${month}`;
 
     // 1. Fetch active fee configurations

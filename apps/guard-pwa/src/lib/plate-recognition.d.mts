@@ -1,0 +1,1 @@
+export function extractPlateCandidate(text: string): string | null;

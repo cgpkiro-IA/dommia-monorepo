@@ -16,6 +16,8 @@ exports.ResidentsController = void 0;
 const common_1 = require("@nestjs/common");
 const residents_service_1 = require("../services/residents.service");
 const resident_dto_1 = require("../dto/resident.dto");
+const finance_admin_guard_1 = require("../../auth/guards/finance-admin.guard");
+const common_2 = require("@nestjs/common");
 let ResidentsController = class ResidentsController {
     residentsService;
     constructor(residentsService) {
@@ -50,6 +52,20 @@ let ResidentsController = class ResidentsController {
         return {
             success: true,
             message: result.message,
+        };
+    }
+    async inviteResident(slug, id, body) {
+        return {
+            success: true,
+            message: 'Invitación Resident generada. Comparte el enlace antes de que expire.',
+            data: await this.residentsService.inviteTenantResident(slug, id, body.createdBy, body.contactMethod || 'AUTO', body.delivery || 'NONE'),
+        };
+    }
+    async inviteResidents(slug, dto) {
+        return {
+            success: true,
+            message: 'Invitaciones Resident generadas.',
+            data: await this.residentsService.inviteTenantResidents(slug, dto),
         };
     }
 };
@@ -88,8 +104,28 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], ResidentsController.prototype, "deleteResident", null);
+__decorate([
+    (0, common_1.Post)(':id/invite'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    __param(0, (0, common_1.Param)('slug')),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], ResidentsController.prototype, "inviteResident", null);
+__decorate([
+    (0, common_1.Post)('invite'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    __param(0, (0, common_1.Param)('slug')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, resident_dto_1.InviteResidentsDto]),
+    __metadata("design:returntype", Promise)
+], ResidentsController.prototype, "inviteResidents", null);
 exports.ResidentsController = ResidentsController = __decorate([
     (0, common_1.Controller)('tenants/:slug/residents'),
+    (0, common_2.UseGuards)(finance_admin_guard_1.FinanceAdminGuard),
     __metadata("design:paramtypes", [residents_service_1.ResidentsService])
 ], ResidentsController);
 //# sourceMappingURL=residents.controller.js.map

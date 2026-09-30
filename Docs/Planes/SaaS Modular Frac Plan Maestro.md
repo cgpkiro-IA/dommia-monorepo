@@ -1,5 +1,9 @@
 # 🗺️ Plan de Trabajo Maestro: SaaS Modular para Fraccionamientos (v3 - Producción)
 
+> **Documento histórico de referencia; no es el roadmap vigente.** Para alcance, prioridades y criterios actuales prevalece [Plan de Desarrollo Maestro por Fases](./Plan%20de%20Desarrollo%20Maestro%20por%20Fases.md). El MVP cobra por SPEI validado manualmente por el administrador o en efectivo; Stripe es optativo por entitlement y no es prioridad. La Fase 5 de hardware está detenida hasta evaluar los equipos existentes en cada caseta. Los flujos offline/físicos descritos aquí no autorizan implementación del MVP.
+>
+> **Seguridad y persistencia:** las referencias a MFA obligatorio y configuración PostgreSQL de este documento son propuestas históricas. La decisión vigente es MFA TOTP opcional por usuario administrativo. El pool, `search_path` parametrizado, transacciones, migraciones y comandos E2E actuales están descritos en [Conexión PostgreSQL y Multi-Tenancy](../Arquitectura/Conexion%20PostgreSQL%20y%20Multi-Tenancy.md) y [Testing](../../Testing/README.md).
+
 Este documento detalla las especificaciones técnicas, arquitectura y fases de desarrollo necesarias para construir un software como servicio (SaaS) multi-tenant acoplado a hardware IoT (Internet de las Cosas) de control de accesos, incorporando flujos comerciales y de tolerancia a fallos.
 
 ---
@@ -69,7 +73,7 @@ El SaaS no se adaptará al hardware antiguo de los fraccionamientos; se establec
 ### Fase 5: Módulo de Invitaciones por QR Dinámico (Mes 8)
 *   **Objetivo:** Desplegar el sistema de accesos seguros y controlados para visitas.
 *   **Entregables:**
-    *   **Lógica de QR Dinámico (TOTP):** La PWA/App del residente generará códigos QR encriptados mediante AES-256 que cambiarán automáticamente cada 15 segundos basándose en algoritmos de tiempo (como Google Authenticator). Esto anula por completo la posibilidad de usar capturas de pantalla viejas compartidas por mensajería.
+    *   **Lógica de QR Dinámico (TOTP):** El flujo vigente emite y valida QR TOTP HMAC en el servidor con ventana de 15 segundos. La autorización requiere conexión; no se usa el flujo AES-256/Gateway offline descrito en borradores anteriores.
     *   **Módulo del Guardia de Caseta:** Interfaz web responsiva ultraligera para la tablet o computadora de caseta que muestra alertas visuales inmediatas cuando el escáner físico de QR procesa y valida un acceso de forma exitosa.
 
 ### Adenda de Prioridad Vigente (2026-09-27)

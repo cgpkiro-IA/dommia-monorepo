@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PropertiesController = void 0;
 const common_1 = require("@nestjs/common");
+const finance_admin_guard_1 = require("../../auth/guards/finance-admin.guard");
 const properties_service_1 = require("../services/properties.service");
 const property_dto_1 = require("../dto/property.dto");
 let PropertiesController = class PropertiesController {
@@ -91,6 +92,7 @@ __decorate([
 ], PropertiesController.prototype, "deleteProperty", null);
 exports.PropertiesController = PropertiesController = __decorate([
     (0, common_1.Controller)('tenants/:slug/properties'),
+    (0, common_1.UseGuards)(finance_admin_guard_1.FinanceAdminGuard),
     __metadata("design:paramtypes", [properties_service_1.PropertiesService])
 ], PropertiesController);
 //# sourceMappingURL=properties.controller.js.map

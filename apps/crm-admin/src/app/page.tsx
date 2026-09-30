@@ -13,15 +13,25 @@ import { GatewaysView } from '../features/gateways/components/GatewaysView';
 import { GatewayModal } from '../features/gateways/components/GatewayModal';
 import { PlansView } from '../features/plans/components/PlansView';
 import { PlanModal } from '../features/plans/components/PlanModal';
+import { AnalyticsView } from '../features/analytics/components/AnalyticsView';
+import { AlertsCenterView } from '../features/alerts/components/AlertsCenterView';
+import { CrmLogin, CrmMfaChallenge } from '../features/auth/components/CrmLogin';
+import { useCrmAuth } from '../features/auth/hooks/useCrmAuth';
+import { MfaSettingsPanel } from '../features/auth/components/MfaSettingsPanel';
 
 import { useCrmDashboard } from '../features/dashboard/hooks/useCrmDashboard';
 import { useProspects } from '../features/pipeline/hooks/useProspects';
 import { useTenants } from '../features/tenants/hooks/useTenants';
 import { useGateways } from '../features/gateways/hooks/useGateways';
 import { usePlans } from '../features/plans/hooks/usePlans';
+import { useCrmAnalytics } from '../features/analytics/hooks/useCrmAnalytics';
+import { useCrmAlerts } from '../features/alerts/hooks/useCrmAlerts';
 
 export default function CrmDashboardPage() {
-  const dashboard = useCrmDashboard();
+  const auth = useCrmAuth();
+  const dashboard = useCrmDashboard(auth.session?.token || null);
+  const analytics = useCrmAnalytics(auth.session?.token || null);
+  const alerts = useCrmAlerts(auth.session?.token || null);
 
   const feedbackProps = {
     onRefresh: dashboard.fetchAllData,
@@ -33,13 +43,28 @@ export default function CrmDashboardPage() {
   const gateways = useGateways(feedbackProps);
   const plans = usePlans(feedbackProps);
 
+  if (!auth.isHydrated) return <main className="min-h-screen bg-[#0F172A]" aria-busy="true" />;
+
+  if (!auth.session) {
+    if (auth.challengeToken) {
+      return <CrmMfaChallenge onSubmit={auth.verifyMfa} onCancel={auth.cancelMfa} loading={auth.loading} error={auth.error} />;
+    }
+    return <CrmLogin onSubmit={auth.handleLogin} loading={auth.loading} error={auth.error} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
       {/* Top Navbar */}
       <TopHeader
         isLoading={dashboard.isLoading}
-        onRefresh={dashboard.fetchAllData}
+        onRefresh={() => {
+          dashboard.fetchAllData();
+          analytics.refresh();
+          alerts.refresh();
+        }}
         onOpenNewTenant={() => tenants.setIsTenantModalOpen(true)}
+        userEmail={auth.session.user.email}
+        onLogout={auth.logout}
       />
 
       {/* Navigation Sub-header / Tabs */}
@@ -49,6 +74,7 @@ export default function CrmDashboardPage() {
         prospectsCount={dashboard.prospects.length}
         tenantsCount={dashboard.tenants.length}
         gatewaysCount={dashboard.gateways.length}
+        activeAlertsCount={alerts.summary?.active_count}
       />
 
       {/* Main Content Area */}
@@ -59,6 +85,21 @@ export default function CrmDashboardPage() {
           <DashboardView
             metrics={dashboard.metrics}
             onViewPipeline={() => dashboard.setActiveTab('pipeline')}
+          />
+        )}
+
+        {dashboard.activeTab === 'analytics' && (
+          <AnalyticsView
+            analytics={analytics.analytics}
+            loading={analytics.loading}
+            error={analytics.error}
+            onRefresh={analytics.refresh}
+          />
+        )}
+
+        {dashboard.activeTab === 'alerts' && (
+          <AlertsCenterView
+            alertsState={alerts}
           />
         )}
 
@@ -93,6 +134,8 @@ export default function CrmDashboardPage() {
             onEditPlan={plans.handleEditPlan}
           />
         )}
+
+        {dashboard.activeTab === 'security' && <MfaSettingsPanel />}
       </main>
 
       {/* Modals */}

@@ -3,7 +3,6 @@ import { CreateFeeConfigurationDto, UpdateFeeConfigurationDto } from '../dto/fee
 export declare class FeeConfigurationRepository {
     private readonly db;
     constructor(db: DatabaseService);
-    ensureTableExists(slug: string): Promise<void>;
     findAllByTenant(slug: string, activeOnly?: boolean): Promise<any[]>;
     findById(slug: string, id: string): Promise<any>;
     create(slug: string, dto: CreateFeeConfigurationDto): Promise<any>;

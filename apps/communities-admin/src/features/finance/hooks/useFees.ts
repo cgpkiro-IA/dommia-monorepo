@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { FeeConfiguration, FeeFormData, FeeType, FeeSimulationResult } from '@/types';
+import { API_BASE } from '@/lib/api-url';
 
 const INITIAL_FORM: FeeFormData = {
   name: '',
@@ -42,7 +43,7 @@ export function useFees() {
   const loadFees = async (slug: string) => {
     setLoadingFees(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/fees`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees`);
       const data = await res.json();
       if (data.success) {
         setFees(data.data || []);
@@ -95,7 +96,7 @@ export function useFees() {
     setActionLoading(true);
     setFormError(null);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/fees`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(feeForm),
@@ -128,7 +129,7 @@ export function useFees() {
     setActionLoading(true);
     setFormError(null);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/fees/${editingFee.id}`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees/${editingFee.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(feeForm),
@@ -154,7 +155,7 @@ export function useFees() {
 
   const handleToggleActive = async (slug: string, fee: FeeConfiguration, showToast: (msg: string, type?: 'success' | 'error') => void) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/fees/${fee.id}`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees/${fee.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !fee.is_active }),
@@ -173,7 +174,7 @@ export function useFees() {
   const handleDeleteFee = async (slug: string, feeId: string, showToast: (msg: string, type?: 'success' | 'error') => void) => {
     if (!confirm('¿Estás seguro de eliminar esta estructura de cuota?')) return;
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/fees/${feeId}`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees/${feeId}`, {
         method: 'DELETE',
       });
       const data = await res.json();
@@ -192,7 +193,7 @@ export function useFees() {
   const handleSimulateFee = async (slug: string, feeId: string, showToast: (msg: string, type?: 'success' | 'error') => void) => {
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/finance/fees/${feeId}/simulate`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees/${feeId}/simulate`, {
         method: 'POST',
       });
       const data = await res.json();

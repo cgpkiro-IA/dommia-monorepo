@@ -61,6 +61,31 @@ CREATE TABLE IF NOT EXISTS public.user_tenants (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.resident_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    jti UUID UNIQUE NOT NULL,
+    resident_id UUID NOT NULL,
+    tenant_slug VARCHAR(150) NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.stripe_connected_accounts (
+    tenant_id UUID PRIMARY KEY REFERENCES public.tenants(id) ON DELETE CASCADE,
+    account_id VARCHAR(255) UNIQUE NOT NULL,
+    details_submitted BOOLEAN NOT NULL DEFAULT false,
+    charges_enabled BOOLEAN NOT NULL DEFAULT false,
+    payouts_enabled BOOLEAN NOT NULL DEFAULT false,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.stripe_events (
+    event_id VARCHAR(255) PRIMARY KEY,
+    event_type VARCHAR(128) NOT NULL,
+    processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- CRM Prospects (Pipeline comercial del operador)
 CREATE TABLE IF NOT EXISTS public.crm_prospects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -267,6 +292,49 @@ BEGIN
         'guard_user_id UUID, ' ||
         'gateway_uuid VARCHAR(64), ' ||
         'timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()' ||
+    ')';
+
+    EXECUTE 'CREATE TABLE IF NOT EXISTS ' || quote_ident(v_schema_name) || '.guard_deliveries (' ||
+        'id UUID PRIMARY KEY DEFAULT gen_random_uuid(), ' ||
+        'recipient_name VARCHAR(150) NOT NULL, ' ||
+        'property_address VARCHAR(200) NOT NULL, ' ||
+        'carrier VARCHAR(100) NOT NULL, ' ||
+        'tracking_code VARCHAR(100), ' ||
+        'notes VARCHAR(500), ' ||
+        'status VARCHAR(16) NOT NULL DEFAULT ''PENDING'' CHECK (status IN (''PENDING'', ''COLLECTED'')), ' ||
+        'received_by UUID NOT NULL, ' ||
+        'received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), ' ||
+        'collected_by UUID, ' ||
+        'collected_by_name VARCHAR(150), ' ||
+        'collected_at TIMESTAMPTZ' ||
+    ')';
+
+    EXECUTE 'CREATE TABLE IF NOT EXISTS ' || quote_ident(v_schema_name) || '.guard_incidents (' ||
+        'id UUID PRIMARY KEY DEFAULT gen_random_uuid(), ' ||
+        'incident_type VARCHAR(32) NOT NULL, ' ||
+        'priority VARCHAR(16) NOT NULL CHECK (priority IN (''LOW'', ''MEDIUM'', ''HIGH'', ''URGENT'')), ' ||
+        'description VARCHAR(1000) NOT NULL, ' ||
+        'property_address VARCHAR(200), ' ||
+        'vehicle_plates VARCHAR(15), ' ||
+        'status VARCHAR(16) NOT NULL DEFAULT ''OPEN'' CHECK (status IN (''OPEN'', ''RESOLVED'')), ' ||
+        'created_by UUID NOT NULL, ' ||
+        'created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), ' ||
+        'resolved_by UUID, ' ||
+        'resolved_at TIMESTAMPTZ' ||
+    ')';
+    EXECUTE 'CREATE INDEX IF NOT EXISTS guard_incidents_status_created_idx ON ' || quote_ident(v_schema_name) || '.guard_incidents (status, created_at DESC)';
+
+    EXECUTE 'CREATE TABLE IF NOT EXISTS ' || quote_ident(v_schema_name) || '.guard_vehicle_flags (' ||
+        'id UUID PRIMARY KEY DEFAULT gen_random_uuid(), ' ||
+        'plates VARCHAR(15) NOT NULL, ' ||
+        'normalized_plates VARCHAR(15) UNIQUE NOT NULL, ' ||
+        'flag_type VARCHAR(24) NOT NULL CHECK (flag_type IN (''BLOCKED'', ''FREQUENT_VISITOR'')), ' ||
+        'reason VARCHAR(300) NOT NULL, ' ||
+        'is_active BOOLEAN NOT NULL DEFAULT TRUE, ' ||
+        'created_by UUID NOT NULL, ' ||
+        'created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), ' ||
+        'removed_by UUID, ' ||
+        'removed_at TIMESTAMPTZ' ||
     ')';
 
     -- 9. Fee Configurations (Estructura de Cuotas Ordinarias, Metraje y Extraordinarias)

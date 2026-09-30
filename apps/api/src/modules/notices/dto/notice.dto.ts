@@ -11,13 +11,30 @@ export class CreateNoticeDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL'])
+  @IsIn(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL', 'GUARD_CONSIGN', 'SECURITY'])
   category?: string = 'GENERAL';
 
   @IsString()
   @IsOptional()
-  @IsIn(['HIGH', 'MEDIUM', 'LOW'])
+  @IsIn(['HIGH', 'MEDIUM', 'LOW', 'URGENT'])
   priority?: string = 'MEDIUM';
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['ALL', 'RESIDENTS', 'GUARDS'])
+  targetAudience?: string = 'ALL';
+
+  @IsString()
+  @IsOptional()
+  target_audience?: string;
+
+  @IsString()
+  @IsOptional()
+  expiresAt?: string;
+
+  @IsString()
+  @IsOptional()
+  expires_at?: string;
 
   @IsString()
   @IsOptional()
@@ -55,13 +72,30 @@ export class UpdateNoticeDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL'])
+  @IsIn(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL', 'GUARD_CONSIGN', 'SECURITY'])
   category?: string;
 
   @IsString()
   @IsOptional()
-  @IsIn(['HIGH', 'MEDIUM', 'LOW'])
+  @IsIn(['HIGH', 'MEDIUM', 'LOW', 'URGENT'])
   priority?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['ALL', 'RESIDENTS', 'GUARDS'])
+  targetAudience?: string;
+
+  @IsString()
+  @IsOptional()
+  target_audience?: string;
+
+  @IsString()
+  @IsOptional()
+  expiresAt?: string;
+
+  @IsString()
+  @IsOptional()
+  expires_at?: string;
 
   @IsString()
   @IsOptional()
@@ -87,3 +121,4 @@ export class UpdateNoticeDto {
   @IsOptional()
   is_published?: boolean;
 }
+

@@ -2,12 +2,14 @@
 
 import { useState, useMemo } from 'react';
 import { CommunityNotice, NoticeFormData, NoticeCategory } from '@/types';
+import { API_BASE } from '@/lib/api-url';
 
 const INITIAL_FORM: NoticeFormData = {
   title: '',
   content: '',
   category: 'GENERAL',
   priority: 'MEDIUM',
+  target_audience: 'ALL',
   author_name: 'Administración',
   is_pinned: false,
   is_published: true,
@@ -32,7 +34,7 @@ export function useNotices() {
   const loadNotices = async (slug: string) => {
     setLoadingNotices(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/notices`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/notices`);
       const data = await res.json();
       if (data.success) {
         setNotices(data.data || []);
@@ -57,6 +59,7 @@ export function useNotices() {
       content: notice.content,
       category: notice.category,
       priority: notice.priority,
+      target_audience: notice.target_audience || 'ALL',
       author_name: notice.author_name,
       is_pinned: notice.is_pinned,
       is_published: notice.is_published,
@@ -75,7 +78,7 @@ export function useNotices() {
     setFormError(null);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/notices`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/notices`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(noticeForm),
@@ -109,7 +112,7 @@ export function useNotices() {
     setFormError(null);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/notices/${editingNotice.id}`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/notices/${editingNotice.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(noticeForm),
@@ -136,7 +139,7 @@ export function useNotices() {
     if (!confirm(`¿Estás seguro de eliminar el comunicado "${title}"?`)) return;
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/notices/${id}`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/notices/${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();

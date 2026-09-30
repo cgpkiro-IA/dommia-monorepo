@@ -16,6 +16,10 @@ class CreateNoticeDto {
     content;
     category = 'GENERAL';
     priority = 'MEDIUM';
+    targetAudience = 'ALL';
+    target_audience;
+    expiresAt;
+    expires_at;
     authorName;
     author_name;
     isPinned;
@@ -37,15 +41,36 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL']),
+    (0, class_validator_1.IsIn)(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL', 'GUARD_CONSIGN', 'SECURITY']),
     __metadata("design:type", String)
 ], CreateNoticeDto.prototype, "category", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['HIGH', 'MEDIUM', 'LOW']),
+    (0, class_validator_1.IsIn)(['HIGH', 'MEDIUM', 'LOW', 'URGENT']),
     __metadata("design:type", String)
 ], CreateNoticeDto.prototype, "priority", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['ALL', 'RESIDENTS', 'GUARDS']),
+    __metadata("design:type", String)
+], CreateNoticeDto.prototype, "targetAudience", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateNoticeDto.prototype, "target_audience", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateNoticeDto.prototype, "expiresAt", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateNoticeDto.prototype, "expires_at", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -81,6 +106,10 @@ class UpdateNoticeDto {
     content;
     category;
     priority;
+    targetAudience;
+    target_audience;
+    expiresAt;
+    expires_at;
     authorName;
     author_name;
     isPinned;
@@ -102,15 +131,36 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL']),
+    (0, class_validator_1.IsIn)(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL', 'GUARD_CONSIGN', 'SECURITY']),
     __metadata("design:type", String)
 ], UpdateNoticeDto.prototype, "category", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['HIGH', 'MEDIUM', 'LOW']),
+    (0, class_validator_1.IsIn)(['HIGH', 'MEDIUM', 'LOW', 'URGENT']),
     __metadata("design:type", String)
 ], UpdateNoticeDto.prototype, "priority", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['ALL', 'RESIDENTS', 'GUARDS']),
+    __metadata("design:type", String)
+], UpdateNoticeDto.prototype, "targetAudience", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateNoticeDto.prototype, "target_audience", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateNoticeDto.prototype, "expiresAt", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateNoticeDto.prototype, "expires_at", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),

@@ -3,6 +3,10 @@ export declare class CreateNoticeDto {
     content: string;
     category?: string;
     priority?: string;
+    targetAudience?: string;
+    target_audience?: string;
+    expiresAt?: string;
+    expires_at?: string;
     authorName?: string;
     author_name?: string;
     isPinned?: boolean;
@@ -15,6 +19,10 @@ export declare class UpdateNoticeDto {
     content?: string;
     category?: string;
     priority?: string;
+    targetAudience?: string;
+    target_audience?: string;
+    expiresAt?: string;
+    expires_at?: string;
     authorName?: string;
     author_name?: string;
     isPinned?: boolean;

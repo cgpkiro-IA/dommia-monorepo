@@ -10,8 +10,9 @@ import {
   FeedbackNotification,
 } from '../../../types';
 import { CrmTab } from '../components/TabNav';
+import { crmApiFetch } from '../../auth/api';
 
-export function useCrmDashboard() {
+export function useCrmDashboard(token: string | null) {
   const [activeTab, setActiveTab] = useState<CrmTab>('dashboard');
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [tenants, setTenants] = useState<TenantItem[]>([]);
@@ -29,14 +30,18 @@ export function useCrmDashboard() {
   }, []);
 
   const fetchAllData = useCallback(async () => {
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const [resMetrics, resTenants, resProspects, resGateways, resPlans] = await Promise.all([
-        fetch('http://localhost:4000/api/v1/crm/metrics').then((r) => r.json()),
-        fetch('http://localhost:4000/api/v1/tenants').then((r) => r.json()),
-        fetch('http://localhost:4000/api/v1/crm/prospects').then((r) => r.json()),
-        fetch('http://localhost:4000/api/v1/crm/gateways').then((r) => r.json()),
-        fetch('http://localhost:4000/api/v1/crm/plans').then((r) => r.json()),
+        crmApiFetch('/crm/metrics').then((r) => r.json()),
+        crmApiFetch('/tenants').then((r) => r.json()),
+        crmApiFetch('/crm/prospects').then((r) => r.json()),
+        crmApiFetch('/crm/gateways').then((r) => r.json()),
+        crmApiFetch('/crm/plans').then((r) => r.json()),
       ]);
 
       if (resMetrics.success) setMetrics(resMetrics.data);
@@ -49,14 +54,18 @@ export function useCrmDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
     fetchAllData();
     // Poll every 30s for live gateway heartbeats and prospects
     const interval = setInterval(fetchAllData, 30000);
     return () => clearInterval(interval);
-  }, [fetchAllData]);
+  }, [fetchAllData, token]);
 
   return {
     activeTab,

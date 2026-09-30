@@ -10,13 +10,33 @@ export class NoticesController {
   async getNotices(
     @Param('slug') slug: string,
     @Query('publishedOnly') publishedOnly?: string,
+    @Query('audience') audience?: string,
   ) {
     const isPublishedOnly = publishedOnly === 'true';
-    const notices = await this.noticesService.getTenantNotices(slug, isPublishedOnly);
+    const notices = await this.noticesService.getTenantNotices(slug, isPublishedOnly, audience);
     return {
       success: true,
       data: notices,
       count: notices.length,
+    };
+  }
+
+  @Post(':id/acknowledge-guard')
+  async acknowledgeNoticeByGuard(
+    @Param('slug') slug: string,
+    @Param('id') id: string,
+    @Body() body: { guardUserId?: string; guardName?: string },
+  ) {
+    const notice = await this.noticesService.acknowledgeNoticeByGuard(
+      slug,
+      id,
+      body.guardUserId || 'guard_shift',
+      body.guardName || 'Guardia de Turno',
+    );
+    return {
+      success: true,
+      message: 'Consigna marcada como leída y confirmada.',
+      data: notice,
     };
   }
 

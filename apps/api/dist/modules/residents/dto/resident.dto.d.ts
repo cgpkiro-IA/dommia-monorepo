@@ -2,7 +2,7 @@ export declare class CreateResidentDto {
     propertyId: string;
     firstName: string;
     lastName: string;
-    email: string;
+    email?: string;
     phone?: string;
     role?: string;
     isPrimary?: boolean;
@@ -18,4 +18,11 @@ export declare class UpdateResidentDto {
     role?: string;
     isPrimary?: boolean;
     isActive?: boolean;
+}
+export declare class InviteResidentsDto {
+    residentIds?: string[] | 'ALL';
+    all?: boolean;
+    createdBy?: string;
+    contactMethod?: 'AUTO' | 'EMAIL' | 'PHONE';
+    delivery?: 'NONE' | 'EMAIL' | 'WHATSAPP';
 }

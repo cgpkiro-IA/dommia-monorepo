@@ -70,7 +70,8 @@ export interface VisitorPass {
   accessCount: number;
   qrPayload: string;
   notes?: string;
-  status: 'ACTIVE' | 'EXPIRED' | 'REVOKED';
+  status: 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'USED';
+  usedAt?: string;
   synced: boolean;
   createdAt: string;
 }
@@ -92,3 +93,27 @@ export interface OfflineSyncQueueItem {
   timestamp: number;
   attempts: number;
 }
+
+export interface ResidentServiceItem {
+  id: string;
+  service_type: string;
+  custom_service_name?: string;
+  supplier_name?: string;
+  vehicle_plates?: string;
+  destination_type: 'SPECIFIC' | 'GENERAL';
+  status: 'IN_TRANSIT' | 'COMPLETED';
+  notes?: string;
+  entered_at: string;
+}
+
+export interface ResidentDeliveryItem {
+  id: string;
+  recipient_name: string;
+  property_address: string;
+  carrier: string;
+  tracking_code?: string;
+  notes?: string;
+  status: 'PENDING' | 'COLLECTED';
+  received_at: string;
+}
+

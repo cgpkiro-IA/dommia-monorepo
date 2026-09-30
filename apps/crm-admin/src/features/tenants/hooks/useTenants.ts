@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { TenantFormData } from '../components/TenantModal';
 import { ProspectItem, TenantItem } from '../../../types';
+import { crmApiFetch } from '../../auth/api';
 
 const INITIAL_TENANT_FORM: TenantFormData = {
   slug: '',
@@ -86,7 +87,7 @@ export function useTenants({ onRefresh, showFeedback }: UseTenantsProps) {
     try {
       if (editingTenant) {
         // UPDATE existing tenant
-        const res = await fetch(`http://localhost:4000/api/v1/tenants/${editingTenant.slug}`, {
+        const res = await crmApiFetch(`/tenants/${editingTenant.slug}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -105,7 +106,7 @@ export function useTenants({ onRefresh, showFeedback }: UseTenantsProps) {
         showFeedback('success', `¡Fraccionamiento "${tenantForm.name}" actualizado correctamente!`);
       } else {
         // CREATE new tenant
-        const res = await fetch('http://localhost:4000/api/v1/tenants', {
+        const res = await crmApiFetch('/tenants', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

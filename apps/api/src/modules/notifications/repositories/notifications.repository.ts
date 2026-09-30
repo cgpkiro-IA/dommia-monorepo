@@ -5,24 +5,7 @@ import { DatabaseService } from '../../../database/database.service';
 export class NotificationsRepository {
   constructor(private readonly db: DatabaseService) {}
 
-  async ensureTable() {
-    await this.db.query(`
-      CREATE TABLE IF NOT EXISTS public.notification_channel_configs (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-        channel VARCHAR(32) NOT NULL CHECK (channel IN ('SMTP', 'WHATSAPP_BUSINESS')),
-        enabled BOOLEAN NOT NULL DEFAULT false,
-        config_encrypted TEXT NOT NULL,
-        updated_by UUID,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        UNIQUE (tenant_id, channel)
-      )
-    `);
-  }
-
   async findChannels(tenantId: string) {
-    await this.ensureTable();
     const result = await this.db.query(
       `SELECT channel, enabled, updated_at FROM public.notification_channel_configs WHERE tenant_id = $1 ORDER BY channel`,
       [tenantId],
@@ -31,7 +14,6 @@ export class NotificationsRepository {
   }
 
   async findChannelConfig(tenantId: string, channel: string) {
-    await this.ensureTable();
     const encryptionKey = process.env.NOTIFICATIONS_ENCRYPTION_KEY || (process.env.NODE_ENV === 'production' ? null : 'dommia-local-notifications-key-change-me');
     if (!encryptionKey) throw new Error('NOTIFICATIONS_ENCRYPTION_KEY es obligatoria en producción.');
     const result = await this.db.query(
@@ -44,7 +26,6 @@ export class NotificationsRepository {
   }
 
   async upsert(tenantId: string, channel: string, enabled: boolean, config: Record<string, unknown>, updatedBy?: string) {
-    await this.ensureTable();
     const encryptionKey = process.env.NOTIFICATIONS_ENCRYPTION_KEY || (process.env.NODE_ENV === 'production' ? null : 'dommia-local-notifications-key-change-me');
     if (!encryptionKey) {
       throw new Error('NOTIFICATIONS_ENCRYPTION_KEY es obligatoria en producción.');
@@ -61,7 +42,6 @@ export class NotificationsRepository {
   }
 
   async remove(tenantId: string, channel: string) {
-    await this.ensureTable();
     await this.db.query('DELETE FROM public.notification_channel_configs WHERE tenant_id = $1 AND channel = $2', [tenantId, channel]);
   }
 }

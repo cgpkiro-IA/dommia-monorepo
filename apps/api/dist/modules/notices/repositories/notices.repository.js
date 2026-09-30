@@ -17,26 +17,7 @@ let NoticesRepository = class NoticesRepository {
     constructor(db) {
         this.db = db;
     }
-    async ensureTableExists(slug) {
-        const ddl = `
-      CREATE TABLE IF NOT EXISTS notices (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        title VARCHAR(200) NOT NULL,
-        content TEXT NOT NULL,
-        category VARCHAR(32) NOT NULL DEFAULT 'GENERAL',
-        priority VARCHAR(32) NOT NULL DEFAULT 'MEDIUM',
-        author_name VARCHAR(100) NOT NULL DEFAULT 'Administración',
-        is_pinned BOOLEAN NOT NULL DEFAULT false,
-        is_published BOOLEAN NOT NULL DEFAULT true,
-        published_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-    `;
-        await this.db.queryTenant(slug, ddl);
-    }
-    async findAllByTenant(slug, publishedOnly = false) {
-        await this.ensureTableExists(slug);
+    async findAllByTenant(slug, publishedOnly = false, audience) {
         let query = `
       SELECT 
         id, 
@@ -48,29 +29,48 @@ let NoticesRepository = class NoticesRepository {
         is_pinned, 
         is_published, 
         published_at, 
+        target_audience,
+        COALESCE(acknowledged_guards, '[]'::jsonb) as acknowledged_guards,
+        expires_at,
         created_at, 
         updated_at
       FROM notices
     `;
+        const conditions = [];
         const params = [];
         if (publishedOnly) {
-            query += ` WHERE is_published = true`;
+            conditions.push('is_published = true');
+        }
+        if (audience) {
+            if (audience === 'GUARDS') {
+                conditions.push("(target_audience IN ('GUARDS', 'ALL') OR category IN ('GUARD_CONSIGN', 'SECURITY'))");
+            }
+            else if (audience === 'RESIDENTS') {
+                conditions.push("(target_audience IN ('RESIDENTS', 'ALL'))");
+            }
+            else if (audience !== 'ALL') {
+                params.push(audience);
+                conditions.push(`target_audience = $${params.length}`);
+            }
+        }
+        if (conditions.length > 0) {
+            query += ` WHERE ${conditions.join(' AND ')}`;
         }
         query += ` ORDER BY is_pinned DESC, published_at DESC, created_at DESC`;
         const res = await this.db.queryTenant(slug, query, params);
         return res.rows;
     }
     async findById(slug, id) {
-        await this.ensureTableExists(slug);
         const res = await this.db.queryTenant(slug, 'SELECT * FROM notices WHERE id = $1', [id]);
         return res.rows[0] || null;
     }
     async create(slug, data) {
-        await this.ensureTableExists(slug);
+        const audience = data.targetAudience || data.target_audience || (data.category === 'GUARD_CONSIGN' ? 'GUARDS' : 'ALL');
+        const expires = data.expiresAt || data.expires_at || null;
         const query = `
       INSERT INTO notices (
-        title, content, category, priority, author_name, is_pinned, is_published, published_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        title, content, category, priority, target_audience, expires_at, author_name, is_pinned, is_published, published_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
       RETURNING *;
     `;
         const res = await this.db.queryTenant(slug, query, [
@@ -78,6 +78,8 @@ let NoticesRepository = class NoticesRepository {
             data.content.trim(),
             data.category || 'GENERAL',
             data.priority || 'MEDIUM',
+            audience,
+            expires,
             data.authorName?.trim() || 'Administración',
             data.isPinned ?? false,
             data.isPublished ?? true,
@@ -85,7 +87,6 @@ let NoticesRepository = class NoticesRepository {
         return res.rows[0];
     }
     async update(slug, id, data) {
-        await this.ensureTableExists(slug);
         const fields = [];
         const values = [];
         let idx = 1;
@@ -104,6 +105,14 @@ let NoticesRepository = class NoticesRepository {
         if (data.priority !== undefined) {
             fields.push(`priority = $${idx++}`);
             values.push(data.priority);
+        }
+        if (data.targetAudience !== undefined || data.target_audience !== undefined) {
+            fields.push(`target_audience = $${idx++}`);
+            values.push(data.targetAudience || data.target_audience);
+        }
+        if (data.expiresAt !== undefined || data.expires_at !== undefined) {
+            fields.push(`expires_at = $${idx++}`);
+            values.push(data.expiresAt || data.expires_at);
         }
         if (data.authorName !== undefined) {
             fields.push(`author_name = $${idx++}`);
@@ -128,8 +137,25 @@ let NoticesRepository = class NoticesRepository {
         const res = await this.db.queryTenant(slug, query, values);
         return res.rows[0] || null;
     }
+    async acknowledgeByGuard(slug, noticeId, guardUserId, guardName) {
+        const ackEntry = JSON.stringify({
+            guard_id: guardUserId,
+            guard_name: guardName,
+            acknowledged_at: new Date().toISOString(),
+        });
+        const query = `
+      UPDATE notices
+      SET acknowledged_guards = CASE 
+        WHEN acknowledged_guards @> jsonb_build_array(jsonb_build_object('guard_id', $2::text)) THEN acknowledged_guards
+        ELSE COALESCE(acknowledged_guards, '[]'::jsonb) || $3::jsonb
+      END
+      WHERE id = $1
+      RETURNING *;
+    `;
+        const res = await this.db.queryTenant(slug, query, [noticeId, guardUserId, ackEntry]);
+        return res.rows[0] || null;
+    }
     async delete(slug, id) {
-        await this.ensureTableExists(slug);
         const res = await this.db.queryTenant(slug, 'DELETE FROM notices WHERE id = $1 RETURNING id', [id]);
         return res.rows.length > 0;
     }

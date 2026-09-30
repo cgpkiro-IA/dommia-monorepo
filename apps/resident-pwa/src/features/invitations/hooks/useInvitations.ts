@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { VisitorPass, PassType } from '../../../types';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+import { API_BASE as API } from '@/lib/api-url';
 
 export function useInvitations(token: string | null, tenantSlug: string | null, enabled: boolean) {
   const [passes, setPasses] = useState<VisitorPass[]>([]);
@@ -37,6 +36,13 @@ export function useInvitations(token: string | null, tenantSlug: string | null, 
 
   useEffect(() => {
     loadPasses();
+    const handleFocus = () => { loadPasses(); };
+    window.addEventListener('focus', handleFocus);
+    const interval = setInterval(loadPasses, 15_000);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
   }, [loadPasses]);
 
   const createPass = async (data: {

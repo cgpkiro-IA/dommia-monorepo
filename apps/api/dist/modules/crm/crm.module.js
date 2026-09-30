@@ -13,15 +13,31 @@ const tenants_module_1 = require("../tenants/tenants.module");
 const crm_controller_1 = require("./controllers/crm.controller");
 const crm_service_1 = require("./services/crm.service");
 const crm_repository_1 = require("./repositories/crm.repository");
+const telegram_alert_service_1 = require("./services/telegram-alert.service");
+const crm_alerts_service_1 = require("./services/crm-alerts.service");
+const crm_analytics_service_1 = require("./services/crm-analytics.service");
+const auth_module_1 = require("../auth/auth.module");
 let CrmModule = class CrmModule {
 };
 exports.CrmModule = CrmModule;
 exports.CrmModule = CrmModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule],
+        imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule, auth_module_1.AuthModule],
         controllers: [crm_controller_1.CrmController],
-        providers: [crm_service_1.CrmService, crm_repository_1.CrmRepository],
-        exports: [crm_service_1.CrmService, crm_repository_1.CrmRepository],
+        providers: [
+            crm_service_1.CrmService,
+            crm_repository_1.CrmRepository,
+            telegram_alert_service_1.TelegramAlertService,
+            crm_alerts_service_1.CrmAlertsService,
+            crm_analytics_service_1.CrmAnalyticsService,
+        ],
+        exports: [
+            crm_service_1.CrmService,
+            crm_repository_1.CrmRepository,
+            telegram_alert_service_1.TelegramAlertService,
+            crm_alerts_service_1.CrmAlertsService,
+            crm_analytics_service_1.CrmAnalyticsService,
+        ],
     })
 ], CrmModule);
 //# sourceMappingURL=crm.module.js.map

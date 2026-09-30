@@ -20,6 +20,37 @@ export declare class CreatePaymentDto {
     receiptUrl?: string;
     receipt_url?: string;
 }
+export declare class SubmitSpeiPaymentDto {
+    propertyId: string;
+    chargeId?: string;
+    amount: number;
+    reference: string;
+    receiptUrl: string;
+    payerName?: string;
+    notes?: string;
+}
+export declare class ReviewPaymentDto {
+    status: 'APPROVED' | 'REJECTED';
+    reviewedByName: string;
+    notes?: string;
+}
+export declare class CreateAnnualCampaignDto {
+    name: string;
+    discountPercentage: number;
+    monthsCovered: number;
+    periodStart: string;
+    periodEnd: string;
+}
+export declare class AnnualCampaignQuoteDto {
+    propertyId: string;
+}
+export declare class SubmitAnnualPaymentDto {
+    propertyId: string;
+    amount: number;
+    reference: string;
+    receiptUrl?: string;
+    payerName?: string;
+}
 export declare class QueryChargesDto {
     propertyId?: string;
     status?: string;

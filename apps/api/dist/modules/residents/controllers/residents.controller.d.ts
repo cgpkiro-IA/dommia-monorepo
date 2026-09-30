@@ -1,5 +1,5 @@
 import { ResidentsService } from '../services/residents.service';
-import { CreateResidentDto, UpdateResidentDto } from '../dto/resident.dto';
+import { CreateResidentDto, InviteResidentsDto, UpdateResidentDto } from '../dto/resident.dto';
 export declare class ResidentsController {
     private readonly residentsService;
     constructor(residentsService: ResidentsService);
@@ -21,5 +21,40 @@ export declare class ResidentsController {
     deleteResident(slug: string, id: string): Promise<{
         success: boolean;
         message: string;
+    }>;
+    inviteResident(slug: string, id: string, body: {
+        createdBy?: string;
+        contactMethod?: 'AUTO' | 'EMAIL' | 'PHONE';
+        delivery?: 'NONE' | 'EMAIL' | 'WHATSAPP';
+    }): Promise<{
+        success: boolean;
+        message: string;
+        data: {
+            residentId: string;
+            activationToken: any;
+            expiresAt: any;
+            contactMethod: string;
+            loginIdentifier: any;
+            tenantSlug: string;
+            activationPath: string;
+            delivery: "EMAIL" | "NONE" | "WHATSAPP";
+        };
+    }>;
+    inviteResidents(slug: string, dto: InviteResidentsDto): Promise<{
+        success: boolean;
+        message: string;
+        data: {
+            residentId: any;
+            residentName: string;
+            email: any;
+            phone: any;
+            contactMethod: string;
+            loginIdentifier: any;
+            tenantSlug: string;
+            activationToken: any;
+            expiresAt: any;
+            activationPath: any;
+            delivery: any;
+        }[];
     }>;
 }

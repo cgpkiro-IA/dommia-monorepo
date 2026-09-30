@@ -11,6 +11,8 @@ const common_1 = require("@nestjs/common");
 const database_module_1 = require("../../database/database.module");
 const tenants_module_1 = require("../tenants/tenants.module");
 const notices_controller_1 = require("./controllers/notices.controller");
+const resident_app_notices_controller_1 = require("./controllers/resident-app-notices.controller");
+const auth_module_1 = require("../auth/auth.module");
 const notices_service_1 = require("./services/notices.service");
 const notices_repository_1 = require("./repositories/notices.repository");
 let NoticesModule = class NoticesModule {
@@ -18,8 +20,8 @@ let NoticesModule = class NoticesModule {
 exports.NoticesModule = NoticesModule;
 exports.NoticesModule = NoticesModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule],
-        controllers: [notices_controller_1.NoticesController],
+        imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule, auth_module_1.AuthModule],
+        controllers: [notices_controller_1.NoticesController, resident_app_notices_controller_1.ResidentAppNoticesController],
         providers: [notices_service_1.NoticesService, notices_repository_1.NoticesRepository],
         exports: [notices_service_1.NoticesService, notices_repository_1.NoticesRepository],
     })

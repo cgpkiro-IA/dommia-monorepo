@@ -1,4 +1,5 @@
-import { IsEmail, IsIn, IsInt, IsOptional, IsString, IsStrongPassword, Length, Max, MaxLength, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsEmail, IsIn, IsInt, IsOptional, IsString, IsStrongPassword, Length, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateVisitorInvitationDto {
   @IsString()
@@ -35,6 +36,14 @@ export class ManualAccessOverrideDto {
   justification!: string;
 }
 
+export class ManualVisitAccessDto {
+  @IsBoolean()
+  identityVerified!: boolean;
+
+  @IsBoolean()
+  callConfirmed!: boolean;
+}
+
 export class CreateGuardUserDto {
   @IsEmail()
   email!: string;
@@ -49,4 +58,136 @@ export class CreateGuardUserDto {
 
   @IsStrongPassword({ minLength: 10, minLowercase: 1, minUppercase: 1, minNumbers: 1, minSymbols: 1 })
   password!: string;
+}
+
+export type GuardServiceType =
+  | 'FOOD_DELIVERY'
+  | 'GAS_SUPPLY'
+  | 'WATER_SUPPLY'
+  | 'PARCEL_COURIER'
+  | 'TAXI_RIDE'
+  | 'MAINTENANCE'
+  | 'OTHER';
+
+export class ServiceDestinationItemDto {
+  @IsString()
+  propertyId!: string;
+
+  @IsString()
+  propertyAddress!: string;
+
+  @IsOptional()
+  @IsString()
+  residentId?: string;
+
+  @IsOptional()
+  @IsString()
+  residentName?: string;
+
+  @IsOptional()
+  @IsString()
+  residentPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  residentEmail?: string;
+}
+
+export class CreateGuardServiceDto {
+  @IsIn(['FOOD_DELIVERY', 'GAS_SUPPLY', 'WATER_SUPPLY', 'PARCEL_COURIER', 'TAXI_RIDE', 'MAINTENANCE', 'OTHER'])
+  serviceType!: GuardServiceType;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  customServiceName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  supplierName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  vehiclePlates?: string;
+
+  @IsIn(['SPECIFIC', 'GENERAL'])
+  destinationType!: 'SPECIFIC' | 'GENERAL';
+
+  @IsOptional()
+  destinations?: ServiceDestinationItemDto[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+}
+
+export class RegisterServiceExitDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+}
+
+export class UnifiedAuditLogQueryDto {
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: 'ALL' | 'ACCESS' | 'SERVICE' | 'INCIDENT' | 'DELIVERY' | 'NOTICE';
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(500)
+  limit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  offset?: number;
+}
+
+export interface UnifiedAuditLogItem {
+  id: string;
+  eventType: string;
+  category: 'ACCESS' | 'SERVICE' | 'INCIDENT' | 'DELIVERY' | 'NOTICE';
+  title: string;
+  description: string;
+  propertyAddress?: string;
+  vehiclePlates?: string;
+  isGranted: boolean;
+  status: string;
+  rejectionReason?: string;
+  notes?: string;
+  actorName?: string;
+  createdAt: string;
+}
+
+export interface UnifiedAuditLogSummary {
+  totalEvents: number;
+  grantedAccessCount: number;
+  rejectedAccessCount: number;
+  servicesCount: number;
+  incidentsCount: number;
+  deliveriesCount: number;
+  noticesCount: number;
 }

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Vehicle, Property } from '@/types';
+import { API_BASE } from '@/lib/api-url';
 
 export function useVehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -31,7 +32,7 @@ export function useVehicles() {
   const loadVehicles = async (slug: string) => {
     setLoadingVehicles(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/vehicles`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/vehicles`);
       const data = await res.json();
       if (data.success) {
         setVehicles(data.data || []);
@@ -77,7 +78,7 @@ export function useVehicles() {
     setFormError(null);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/vehicles`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/vehicles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(vehicleForm),
@@ -105,7 +106,7 @@ export function useVehicles() {
     setFormError(null);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/vehicles/${editingVehicle.id}`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/vehicles/${editingVehicle.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(vehicleForm),
@@ -138,7 +139,7 @@ export function useVehicles() {
     }
 
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/tenants/${slug}/vehicles/${id}`, {
+      const res = await fetch(`${API_BASE}/tenants/${slug}/vehicles/${id}`, {
         method: 'DELETE',
       });
       const result = await res.json();

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Logo } from '@dommia/ui';
 import { ShieldCheck, ChevronRight, Menu, X, ArrowUpRight } from 'lucide-react';
+import { CRM_URL } from '@/lib/app-urls';
 
 export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -49,7 +50,7 @@ export const Navbar: React.FC = () => {
           {/* Action CTAs */}
           <div className="hidden md:flex items-center space-x-4">
             <a
-              href="http://localhost:3001"
+              href={CRM_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-all border border-slate-700/60"
@@ -112,7 +113,7 @@ export const Navbar: React.FC = () => {
             </a>
             <div className="pt-2 border-t border-slate-800 space-y-2">
               <a
-                href="http://localhost:3001"
+                href={CRM_URL}
                 className="block text-center w-full py-2.5 text-xs font-semibold text-slate-300 border border-slate-700 rounded-lg uppercase tracking-wider"
               >
                 Acceso a Clientes

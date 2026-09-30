@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, HttpStatus, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, HttpStatus, HttpCode, UseGuards } from '@nestjs/common';
+import { FinanceAdminGuard } from '../../auth/guards/finance-admin.guard';
 import { PropertiesService } from '../services/properties.service';
 import { CreatePropertyDto, UpdatePropertyDto } from '../dto/property.dto';
 
 @Controller('tenants/:slug/properties')
+@UseGuards(FinanceAdminGuard)
 export class PropertiesController {
   constructor(private readonly propertiesService: PropertiesService) {}
 

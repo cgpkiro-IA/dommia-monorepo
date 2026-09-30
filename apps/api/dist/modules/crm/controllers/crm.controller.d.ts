@@ -1,4 +1,7 @@
 import { CrmService } from '../services/crm.service';
+import { CrmAnalyticsService } from '../services/crm-analytics.service';
+import { CrmAlertsService, CreateAlertDto } from '../services/crm-alerts.service';
+import { TelegramAlertService } from '../services/telegram-alert.service';
 import { CreateProspectDto } from '../dto/create-prospect.dto';
 import { UpdateStageDto } from '../dto/update-stage.dto';
 import { CreateGatewayDto } from '../dto/create-gateway.dto';
@@ -6,7 +9,10 @@ import { SelfServiceProvisionDto } from '../dto/self-service-provision.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
 export declare class CrmController {
     private readonly crmService;
-    constructor(crmService: CrmService);
+    private readonly crmAnalyticsService;
+    private readonly crmAlertsService;
+    private readonly telegramAlertService;
+    constructor(crmService: CrmService, crmAnalyticsService: CrmAnalyticsService, crmAlertsService: CrmAlertsService, telegramAlertService: TelegramAlertService);
     getPlans(): Promise<{
         success: boolean;
         data: any[];
@@ -117,5 +123,60 @@ export declare class CrmController {
         success: boolean;
         message: string;
         data: any;
+    }>;
+    getAnalytics(): Promise<{
+        success: boolean;
+        data: import("../services/crm-analytics.service").CrmAnalyticsPayload;
+    }>;
+    getAlerts(status?: string, severity?: string): Promise<{
+        success: boolean;
+        data: import("../services/crm-alerts.service").CrmPlatformAlert[];
+        summary: any;
+    }>;
+    createAlert(dto: CreateAlertDto): Promise<{
+        success: boolean;
+        message: string;
+        data: import("../services/crm-alerts.service").CrmPlatformAlert;
+    }>;
+    acknowledgeAlert(id: string, request: {
+        user?: {
+            email: string;
+        };
+    }): Promise<{
+        success: boolean;
+        message: string;
+        data: import("../services/crm-alerts.service").CrmPlatformAlert;
+    }>;
+    resolveAlert(id: string, body: {
+        notes?: string;
+    }, request: {
+        user?: {
+            email: string;
+        };
+    }): Promise<{
+        success: boolean;
+        message: string;
+        data: import("../services/crm-alerts.service").CrmPlatformAlert;
+    }>;
+    getTelegramConfig(): Promise<{
+        success: boolean;
+        data: import("../services/telegram-alert.service").TelegramConfig;
+    }>;
+    updateTelegramConfig(body: {
+        enabled: boolean;
+        botToken?: string;
+        chatId?: string;
+        botUsername?: string;
+    }): Promise<{
+        success: boolean;
+        message: string;
+        data: import("../services/telegram-alert.service").TelegramConfig;
+    }>;
+    testTelegramNotification(body: {
+        botToken?: string;
+        chatId?: string;
+    }): Promise<{
+        success: boolean;
+        message: string;
     }>;
 }

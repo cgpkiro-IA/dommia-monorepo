@@ -16,6 +16,7 @@ import { PaymentsHistoryTable } from './PaymentsHistoryTable';
 import { Property } from '@/types';
 import { AnnualCampaignPanel } from './AnnualCampaignPanel';
 import { useAnnualCampaigns } from '../hooks/useAnnualCampaigns';
+import { MonthlyAccountabilityPanel } from './MonthlyAccountabilityPanel';
 
 interface ChargesAndPaymentsViewProps {
   tenantSlug: string;
@@ -25,7 +26,7 @@ interface ChargesAndPaymentsViewProps {
   authToken?: string;
 }
 
-type FinanceSubTab = 'STRUCTURES' | 'CHARGES' | 'PAYMENTS';
+type FinanceSubTab = 'STRUCTURES' | 'CHARGES' | 'PAYMENTS' | 'REPORTS';
 
 export function ChargesAndPaymentsView({
   tenantSlug,
@@ -34,7 +35,7 @@ export function ChargesAndPaymentsView({
   stripeEnabled = false,
   authToken,
 }: ChargesAndPaymentsViewProps) {
-  const feesHook = useFees();
+  const feesHook = useFees(authToken);
   const opsHook = useBillingOperations(authToken);
   const annualHook = useAnnualCampaigns(authToken);
   const [activeSubTab, setActiveSubTab] = useState<FinanceSubTab>('STRUCTURES');
@@ -115,7 +116,7 @@ export function ChargesAndPaymentsView({
         </button>
       )}
 
-      <AnnualCampaignPanel tenantSlug={tenantSlug} properties={properties} {...annualHook} />
+      <AnnualCampaignPanel tenantSlug={tenantSlug} properties={properties} authToken={authToken} {...annualHook} />
 
       {/* KPI Summary Cards */}
       <FinanceMetricsHeader
@@ -132,6 +133,7 @@ export function ChargesAndPaymentsView({
               { key: 'STRUCTURES', label: `1. Catálogo de Cuotas (${feesHook.fees.length})` },
               { key: 'CHARGES', label: `2. Cargos Emitidos (${opsHook.charges.length})` },
               { key: 'PAYMENTS', label: `3. Pagos Ventanilla / SPEI (${opsHook.payments.length})` },
+              { key: 'REPORTS', label: '4. Rendición Mensual' },
             ] as const
           ).map((tab) => (
             <button
@@ -208,6 +210,14 @@ export function ChargesAndPaymentsView({
           filterMethod={opsHook.filterPaymentMethod}
           onMethodChange={opsHook.setFilterPaymentMethod}
           onReview={(paymentId, status) => opsHook.reviewPayment(tenantSlug, paymentId, status, showToast)}
+        />
+      )}
+
+      {activeSubTab === 'REPORTS' && (
+        <MonthlyAccountabilityPanel
+          tenantSlug={tenantSlug}
+          authToken={authToken}
+          showToast={showToast}
         />
       )}
 

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule } from '../../database/database.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { CrmController } from './controllers/crm.controller';
@@ -10,7 +11,7 @@ import { CrmAnalyticsService } from './services/crm-analytics.service';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [DatabaseModule, TenantsModule, AuthModule],
+  imports: [DatabaseModule, TenantsModule, AuthModule, ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }])],
   controllers: [CrmController],
   providers: [
     CrmService,

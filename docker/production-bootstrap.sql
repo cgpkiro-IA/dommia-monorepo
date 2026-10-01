@@ -35,6 +35,8 @@ $$;
 \ir migrations/019_tenant_guard_schema_completion.sql
 \ir migrations/020_tenant_finance_schema_completion.sql
 \ir migrations/021_resident_app_refresh_sessions.sql
+\ir migrations/022_resident_push_tokens.sql
+\ir migrations/023_tenant_monthly_financial_reports.sql
 
 DELETE FROM public.gateway_inventory
 WHERE uuid = 'gw-caseta-norte-laspalmas-01';
@@ -68,6 +70,8 @@ INSERT INTO public.schema_migrations (version, filename) VALUES
   ('018', 'migrations/018_guard_consigns_and_panic.sql'),
   ('019', 'migrations/019_tenant_guard_schema_completion.sql'),
   ('020', 'migrations/020_tenant_finance_schema_completion.sql'),
-  ('021', 'migrations/021_resident_app_refresh_sessions.sql');
+  ('021', 'migrations/021_resident_app_refresh_sessions.sql'),
+  ('022', 'migrations/022_resident_push_tokens.sql'),
+  ('023', 'migrations/023_tenant_monthly_financial_reports.sql');
 
 COMMIT;

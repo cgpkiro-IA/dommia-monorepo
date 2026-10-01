@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { ResidentSessionClaims } from '../../auth/guards/resident-auth.guard';
 import { AccessNotificationStatus, NotificationDeliveryService } from '../../notifications/services/notification-delivery.service';
@@ -10,18 +11,18 @@ const ACCESS_STEP_SECONDS = 15;
 const MANUAL_OVERRIDE_TTL_MS = 5 * 60 * 1000;
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
-function signManualOverrideToken(claims: ManualOverrideClaims) {
+function signManualOverrideToken(claims: ManualOverrideClaims, secret: string) {
   const encoded = Buffer.from(JSON.stringify(claims)).toString('base64url');
-  const signature = createHmac('sha256', process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me')
+  const signature = createHmac('sha256', secret)
     .update(encoded)
     .digest('base64url');
   return `${encoded}.${signature}`;
 }
 
-function verifyManualOverrideToken(token: string): ManualOverrideClaims {
+function verifyManualOverrideToken(token: string, secret: string): ManualOverrideClaims {
   const [encoded, signature] = token.split('.');
   if (!encoded || !signature) throw new UnauthorizedException('La autorización supervisada expiró o no es válida.');
-  const expected = Buffer.from(createHmac('sha256', process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me').update(encoded).digest('base64url'));
+  const expected = Buffer.from(createHmac('sha256', secret).update(encoded).digest('base64url'));
   const actual = Buffer.from(signature);
   if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
     throw new UnauthorizedException('La autorización supervisada expiró o no es válida.');
@@ -95,6 +96,7 @@ export class AccessService {
   private readonly logger = new Logger(AccessService.name);
 
   constructor(
+    private readonly config: ConfigService,
     private readonly accessRepository: AccessRepository,
     private readonly tenants: TenantsRepository,
     private readonly notificationDelivery: NotificationDeliveryService,
@@ -239,7 +241,7 @@ export class AccessService {
             invitationId: invitation.id,
             step: currentStep,
             exp: Date.now() + MANUAL_OVERRIDE_TTL_MS,
-          })
+            }, this.config.getOrThrow<string>('AUTH_TOKEN_SECRET'))
           : undefined,
         requiresManualReview: validation.reason === 'PROPERTY_DELINQUENT',
         validatedBy: operatorId,
@@ -308,7 +310,7 @@ export class AccessService {
           invitationId: invitation.id,
           step: payload.step,
           exp: Date.now() + MANUAL_OVERRIDE_TTL_MS,
-        })
+          }, this.config.getOrThrow<string>('AUTH_TOKEN_SECRET'))
         : undefined,
       requiresManualReview: validation.reason === 'PROPERTY_DELINQUENT',
       validatedBy: operatorId,
@@ -489,7 +491,7 @@ export class AccessService {
 
   async manualOverride(slug: string, guardId: string, dto: ManualAccessOverrideDto) {
     await this.assertAccessEnabled(slug);
-    const claims = verifyManualOverrideToken(dto.overrideToken);
+    const claims = verifyManualOverrideToken(dto.overrideToken, this.config.getOrThrow<string>('AUTH_TOKEN_SECRET'));
     if (claims.tenant !== slug || claims.guardId !== guardId) {
       throw new ForbiddenException('La excepción pertenece a otra sesión o fraccionamiento.');
     }

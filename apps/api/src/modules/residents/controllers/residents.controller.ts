@@ -1,11 +1,13 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpStatus, HttpCode } from '@nestjs/common';
 import { ResidentsService } from '../services/residents.service';
-import { CreateResidentDto, InviteResidentsDto, UpdateResidentDto } from '../dto/resident.dto';
+import { CreateResidentDto, InviteResidentDto, InviteResidentsDto, UpdateResidentDto } from '../dto/resident.dto';
 import { FinanceAdminGuard } from '../../auth/guards/finance-admin.guard';
 import { UseGuards } from '@nestjs/common';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 
 @Controller('tenants/:slug/residents')
 @UseGuards(FinanceAdminGuard)
+@Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR')
 export class ResidentsController {
   constructor(private readonly residentsService: ResidentsService) {}
 
@@ -67,7 +69,7 @@ export class ResidentsController {
   async inviteResident(
     @Param('slug') slug: string,
     @Param('id') id: string,
-    @Body() body: { createdBy?: string; contactMethod?: 'AUTO' | 'EMAIL' | 'PHONE'; delivery?: 'NONE' | 'EMAIL' | 'WHATSAPP' },
+    @Body() body: InviteResidentDto,
   ) {
     return {
       success: true,

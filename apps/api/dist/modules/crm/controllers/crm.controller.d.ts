@@ -1,12 +1,13 @@
 import { CrmService } from '../services/crm.service';
 import { CrmAnalyticsService } from '../services/crm-analytics.service';
-import { CrmAlertsService, CreateAlertDto } from '../services/crm-alerts.service';
+import { CrmAlertsService } from '../services/crm-alerts.service';
 import { TelegramAlertService } from '../services/telegram-alert.service';
 import { CreateProspectDto } from '../dto/create-prospect.dto';
 import { UpdateStageDto } from '../dto/update-stage.dto';
 import { CreateGatewayDto } from '../dto/create-gateway.dto';
 import { SelfServiceProvisionDto } from '../dto/self-service-provision.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
+import { CreateCrmAlertDto, GatewayHeartbeatDto, ResolveCrmAlertDto, TestTelegramNotificationDto, UpdateGatewayDto, UpdateTelegramConfigDto } from '../dto/crm.dto';
 export declare class CrmController {
     private readonly crmService;
     private readonly crmAnalyticsService;
@@ -107,19 +108,12 @@ export declare class CrmController {
         message: string;
         data: any;
     }>;
-    recordHeartbeat(uuid: string, body: {
-        ipLocal?: string;
-    }): Promise<{
+    recordHeartbeat(uuid: string, body: GatewayHeartbeatDto): Promise<{
         success: boolean;
         message: string;
         data: any;
     }>;
-    updateGateway(uuid: string, body: {
-        name?: string;
-        tenantId?: string;
-        firmwareVersion?: string;
-        notes?: string;
-    }): Promise<{
+    updateGateway(uuid: string, body: UpdateGatewayDto): Promise<{
         success: boolean;
         message: string;
         data: any;
@@ -133,7 +127,7 @@ export declare class CrmController {
         data: import("../services/crm-alerts.service").CrmPlatformAlert[];
         summary: any;
     }>;
-    createAlert(dto: CreateAlertDto): Promise<{
+    createAlert(dto: CreateCrmAlertDto): Promise<{
         success: boolean;
         message: string;
         data: import("../services/crm-alerts.service").CrmPlatformAlert;
@@ -147,9 +141,7 @@ export declare class CrmController {
         message: string;
         data: import("../services/crm-alerts.service").CrmPlatformAlert;
     }>;
-    resolveAlert(id: string, body: {
-        notes?: string;
-    }, request: {
+    resolveAlert(id: string, body: ResolveCrmAlertDto, request: {
         user?: {
             email: string;
         };
@@ -162,20 +154,12 @@ export declare class CrmController {
         success: boolean;
         data: import("../services/telegram-alert.service").TelegramConfig;
     }>;
-    updateTelegramConfig(body: {
-        enabled: boolean;
-        botToken?: string;
-        chatId?: string;
-        botUsername?: string;
-    }): Promise<{
+    updateTelegramConfig(body: UpdateTelegramConfigDto): Promise<{
         success: boolean;
         message: string;
         data: import("../services/telegram-alert.service").TelegramConfig;
     }>;
-    testTelegramNotification(body: {
-        botToken?: string;
-        chatId?: string;
-    }): Promise<{
+    testTelegramNotification(body: TestTelegramNotificationDto): Promise<{
         success: boolean;
         message: string;
     }>;

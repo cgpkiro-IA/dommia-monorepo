@@ -9,11 +9,16 @@ import {
   Query,
   HttpStatus,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import { FeeConfigurationService } from '../services/fee-configuration.service';
 import { CreateFeeConfigurationDto, UpdateFeeConfigurationDto } from '../dto/fee-configuration.dto';
+import { FinanceAdminGuard } from '../../auth/guards/finance-admin.guard';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 
 @Controller('tenants/:slug/finance/fees')
+@UseGuards(FinanceAdminGuard)
+@Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR')
 export class FeeConfigurationController {
   constructor(private readonly feeService: FeeConfigurationService) {}
 

@@ -22,7 +22,7 @@ interface Quote {
   existingCommitment?: { status: string } | null;
 }
 
-export function useAnnualCampaign(profile: ResidentProfile) {
+export function useAnnualCampaign(profile: ResidentProfile, token: string | null) {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +31,7 @@ export function useAnnualCampaign(profile: ResidentProfile) {
 
   const loadCampaign = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/tenants/${profile.communitySlug}/finance/annual-campaigns`);
+      const res = await fetch(`${API_BASE}/tenants/${profile.communitySlug}/finance/annual-campaigns`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       const json = await res.json();
       if (res.ok && json.success) {
         const active = (json.data || []).find((item: Campaign) => item.status === 'ACTIVE');
@@ -42,20 +42,20 @@ export function useAnnualCampaign(profile: ResidentProfile) {
     } finally {
       setIsLoading(false);
     }
-  }, [profile.communitySlug]);
+  }, [profile.communitySlug, token]);
 
   useEffect(() => { loadCampaign(); }, [loadCampaign]);
 
   const loadQuote = useCallback(async () => {
     if (!campaign || !profile.propertyId) return;
     const res = await fetch(`${API_BASE}/tenants/${profile.communitySlug}/finance/annual-campaigns/${campaign.id}/quote`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ propertyId: profile.propertyId }),
     });
     const json = await res.json();
     if (!res.ok || !json.success) throw new Error(json.message || 'No se pudo calcular la campaña.');
     setQuote(json.data);
-  }, [campaign, profile.communitySlug, profile.propertyId]);
+  }, [campaign, profile.communitySlug, profile.propertyId, token]);
 
   const submit = useCallback(async (reference: string, receiptUrl: string) => {
     if (!campaign || !quote || !profile.propertyId) return;
@@ -63,7 +63,7 @@ export function useAnnualCampaign(profile: ResidentProfile) {
     setError(null);
     try {
       const res = await fetch(`${API_BASE}/tenants/${profile.communitySlug}/finance/annual-campaigns/${campaign.id}/submissions`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ propertyId: profile.propertyId, amount: quote.netAmount, reference, receiptUrl, payerName: profile.name }),
       });
       const json = await res.json();
@@ -72,7 +72,7 @@ export function useAnnualCampaign(profile: ResidentProfile) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [campaign, profile, quote]);
+  }, [campaign, profile, quote, token]);
 
   return { campaign, quote, isLoading, isSubmitting, error, loadQuote, submit };
 }

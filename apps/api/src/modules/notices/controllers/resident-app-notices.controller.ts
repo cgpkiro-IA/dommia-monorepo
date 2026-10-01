@@ -1,11 +1,13 @@
 import { Controller, Get, Header, Req, UseFilters, UseGuards } from '@nestjs/common';
 import { ResidentAppExceptionFilter } from '../../auth/filters/resident-app-exception.filter';
-import { ResidentAppAuthGuard, ResidentSessionClaims } from '../../auth/guards/resident-auth.guard';
+import { ResidentAuthGuard, ResidentSessionClaims } from '../../auth/guards/resident-auth.guard';
 import { NoticesService } from '../services/notices.service';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 
 @Controller('auth/app/resident')
 @UseFilters(ResidentAppExceptionFilter)
-@UseGuards(ResidentAppAuthGuard)
+@UseGuards(ResidentAuthGuard)
+@Roles('RESIDENT')
 export class ResidentAppNoticesController {
   constructor(private readonly noticesService: NoticesService) {}
 

@@ -3,9 +3,11 @@ import { AccessOperatorClaims, AccessOperatorGuard } from '../../access/guards/a
 import { FinanceAdminGuard } from '../../auth/guards/finance-admin.guard';
 import { CreateGuardIncidentDto, CreatePanicAlertDto, CreateVehicleFlagDto, GuardHistoryQueryDto } from '../dto/guard-operations.dto';
 import { GuardOperationsService } from '../services/guard-operations.service';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 
 @Controller('tenants/:slug/guard')
 @UseGuards(AccessOperatorGuard)
+@Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'GUARD')
 export class GuardOperationsController {
   constructor(private readonly guardOperations: GuardOperationsService) {}
 
@@ -28,12 +30,14 @@ export class GuardOperationsController {
   }
 
   @Get('incidents')
+  @Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR')
   @UseGuards(FinanceAdminGuard)
   async listIncidents(@Param('slug') slug: string, @Query('status') status?: string) {
     return { success: true, data: await this.guardOperations.listIncidents(slug, status) };
   }
 
   @Patch('incidents/:id/resolve')
+  @Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR')
   @UseGuards(FinanceAdminGuard)
   async resolveIncident(
     @Param('slug') slug: string,
@@ -49,12 +53,14 @@ export class GuardOperationsController {
   }
 
   @Get('vehicle-flags')
+  @Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR')
   @UseGuards(FinanceAdminGuard)
   async listVehicleFlags(@Param('slug') slug: string) {
     return { success: true, data: await this.guardOperations.listVehicleFlags(slug) };
   }
 
   @Post('vehicle-flags')
+  @Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR')
   @UseGuards(FinanceAdminGuard)
   async createVehicleFlag(
     @Param('slug') slug: string,
@@ -65,6 +71,7 @@ export class GuardOperationsController {
   }
 
   @Delete('vehicle-flags/:id')
+  @Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR')
   @UseGuards(FinanceAdminGuard)
   async removeVehicleFlag(@Param('slug') slug: string, @Param('id') id: string, @Req() request: { user: AccessOperatorClaims }) {
     return { success: true, data: await this.guardOperations.removeVehicleFlag(slug, id, request.user.sub) };

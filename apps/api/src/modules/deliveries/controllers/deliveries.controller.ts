@@ -2,9 +2,11 @@ import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from
 import { AccessOperatorClaims, AccessOperatorGuard } from '../../access/guards/access-operator.guard';
 import { CollectDeliveryDto, CreateDeliveryDto } from '../dto/delivery.dto';
 import { DeliveriesService } from '../services/deliveries.service';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 
 @Controller('tenants/:slug/guard/deliveries')
 @UseGuards(AccessOperatorGuard)
+@Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'GUARD')
 export class DeliveriesController {
   constructor(private readonly deliveriesService: DeliveriesService) {}
 

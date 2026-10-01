@@ -1,9 +1,11 @@
 import { Controller, Get, Header, Req, UseGuards } from '@nestjs/common';
 import { ResidentAuthGuard, ResidentSessionClaims } from '../../auth/guards/resident-auth.guard';
 import { AccessService } from '../services/access.service';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 
 @Controller('auth/resident/access-credential')
 @UseGuards(ResidentAuthGuard)
+@Roles('RESIDENT')
 export class ResidentAccessController {
   constructor(private readonly accessService: AccessService) {}
 

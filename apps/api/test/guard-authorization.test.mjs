@@ -17,6 +17,17 @@ test('protege incidencias administrativas y mantiene aislamiento tenant', async 
   const anonymous = await request('/tenants/guard-qa/guard/history');
   assert.equal(anonymous.status, 401);
 
+  for (const path of [
+    '/tenants/guard-qa/finance/fees',
+    '/tenants/guard-qa/notices',
+    '/tenants/guard-qa/vehicles',
+  ]) {
+    const response = await request(path);
+    assert.equal(response.status, 401, `${path} debe exigir autenticación.`);
+  }
+  const unavailableGuestPass = await request('/tenants/guard-qa/access/invitations/00000000-0000-4000-8000-000000000001/pass');
+  assert.equal(unavailableGuestPass.status, 404, 'El enlace compartible mantiene acceso público sin devolver pases inexistentes.');
+
   const publicTenantMetadata = await request('/tenants/guard-qa');
   assert.equal(publicTenantMetadata.status, 200, 'Resident puede consultar metadatos públicos del tenant.');
 
@@ -32,6 +43,11 @@ test('protege incidencias administrativas y mantiene aislamiento tenant', async 
   const ownLookup = await request('/tenants/guard-qa/access/lookup?query=QAA-1001', { token: guardToken });
   assert.equal(ownLookup.status, 200);
   assert.equal((await responseData(ownLookup)).vehicles[0].plates, 'QAA-1001');
+
+  const guardConsigns = await request('/tenants/guard-qa/notices?audience=GUARDS', { token: guardToken });
+  assert.equal(guardConsigns.status, 200);
+  const restrictedNotices = await request('/tenants/guard-qa/notices', { token: guardToken });
+  assert.equal(restrictedNotices.status, 403);
 
   const crossTenantLookup = await request('/tenants/demo/access/lookup?query=101', { token: guardToken });
   assert.equal(crossTenantLookup.status, 403);

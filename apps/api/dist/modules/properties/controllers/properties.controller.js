@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PropertiesController = void 0;
 const common_1 = require("@nestjs/common");
 const finance_admin_guard_1 = require("../../auth/guards/finance-admin.guard");
+const auth_metadata_decorator_1 = require("../../auth/decorators/auth-metadata.decorator");
 const properties_service_1 = require("../services/properties.service");
 const property_dto_1 = require("../dto/property.dto");
 let PropertiesController = class PropertiesController {
@@ -93,6 +94,7 @@ __decorate([
 exports.PropertiesController = PropertiesController = __decorate([
     (0, common_1.Controller)('tenants/:slug/properties'),
     (0, common_1.UseGuards)(finance_admin_guard_1.FinanceAdminGuard),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR'),
     __metadata("design:paramtypes", [properties_service_1.PropertiesService])
 ], PropertiesController);
 //# sourceMappingURL=properties.controller.js.map

@@ -174,7 +174,7 @@ El backend mantiene dos contratos de autenticación durante la transición:
 
 - Ruta: `POST /api/v1/auth/resident/login`
 - Body: `identifier`, `password`, `tenantSlug`
-- Token: bearer legacy de 24 horas
+- Token actual: JWT HS256 de 24 horas firmado con `AUTH_TOKEN_SECRET`. Los bearer HMAC de dos segmentos ya emitidos se aceptan solo hasta expirar.
 - Se mantiene para la PWA actual
 
 ### 5.2 App nativa (Android/iOS)
@@ -223,6 +223,7 @@ Si la contraseña es temporal, el login no entrega tokens. Devuelve `data.passwo
 - `kid`: `resident-hs256-v1`
 - Expira en 15 minutos.
 - El cliente no debe usar el contenido del JWT para decisiones de negocio.
+- El JWT móvil tiene header `kid=resident-hs256-v1`; issuer `dommia-api`, audience `dommia-resident-api`, `clientType`, tenant, vivienda y sesión son validados exclusivamente en servidor.
 - El refresh token es opaco, generado por el backend, guardado con hash en PostgreSQL.
 - El refresh token rota al usarse.
 - Si se reutiliza un refresh token ya rotado, el backend revoca la familia de sesión y registra auditoría.
@@ -273,7 +274,8 @@ La cuenta del residente no se crea desde la app. El residente es provisionado po
 - Ruta: `POST /api/v1/auth/app/resident/change-password`
 - Debe usarse si el backend exige contraseña temporal o si el usuario la cambia desde settings.
 - Debe requerir validación local de fuerza de contraseña y confirmación.
-- Después del cambio, limpiar tokens viejos si el backend así lo exige.
+- La ruta móvil revoca todas las sesiones nativas activas después de cambiar la contraseña y devuelve `revokedSessions`.
+- Limpiar access y refresh tokens y volver a login; no dejar la sesión anterior activa.
 
 ---
 
@@ -495,9 +497,8 @@ Responsabilidades:
 
 ### 10.3 Avisos
 
-- El endpoint debe validarse del lado del backend.
-- El cliente no debe asume que una ruta pública es segura.
-- Si la ruta no exige sesión auténtica, no se debe consumir en producción.
+- Consumir `GET /api/v1/auth/app/resident/notices` con Bearer Resident válido.
+- El API exige rol `RESIDENT`, deriva tenant de la sesión y filtra audiencia Resident; no consultar el endpoint administrativo `tenants/:slug/notices` desde la app.
 
 ### 10.4 Invitaciones y pases
 
@@ -507,9 +508,10 @@ Responsabilidades:
 
 ### 10.5 Finance
 
-- Los endpoints financieros deben protegerse con sesión Resident válida y validación del tenant/propiedad.
-- La app no debe construir `propertyId` localmente si el backend debe derivarlo del token.
-- No enviar pagos o comprobantes sin idempotencia y validación del servidor.
+- Consumir `GET /api/v1/auth/app/resident/finance/status` y `/campaigns` con JWT móvil; el API deriva tenant y vivienda.
+- El estado actual del servicio iOS implementa estado, campañas y `POST /finance/receipts`. El upload guarda en local y devuelve `storage=LOCAL_DEV`; no usarlo ni enviar `local://` en PROD.
+- No se implementa envío de pago en iOS. No enviar pagos ni comprobantes productivos hasta que exista storage privado e idempotencia del lado servidor.
+- `FinanceService.monthlyReports()` consulta rendiciones publicadas del tenant; `markMonthlyReportReviewed(id:)` registra revisión opcional. La app no puede crear gastos ni publicar cierres.
 
 ---
 
@@ -590,7 +592,7 @@ No se deben usar mocks para validar comportamiento de sesión en lugar de valida
 
 ### Producción
 
-- La API debe estar desplegada con `RESIDENT_APP_TOKEN_SECRET` y con la migración 021 aplicada.
+- La API debe tener `RESIDENT_APP_TOKEN_SECRET`, `AUTH_TOKEN_SECRET` y `MFA_ENCRYPTION_KEY` configurados; aplicar y validar migraciones 020–022 según el bootstrap vigente.
 - La app no debe incluir secretos ni rutas internas.
 - La gestión de refresh tokens debe estar protegida con rotación y auditoría.
 
@@ -607,7 +609,7 @@ La app está lista para release cuando:
 - La app no expone tokens, secretos ni información sensible en logs o crash reports.
 - Las rutas protegidas se consumen con `Authorization: Bearer ...`.
 - La app mantiene compatibilidad con la transición de PWA + app nativa.
-- Los endpoints financieros y avisos están protegidos por backend antes de su uso en la app.
+- Los endpoints de avisos, acceso e información financiera móvil exigen sesión Resident y aislamiento tenant/vivienda. Los envíos de pago/recibo en PROD siguen bloqueados por storage/idempotencia.
 
 ---
 
@@ -640,7 +642,8 @@ La app está lista para release cuando:
 - [ ] Avisos.
 - [ ] Invitaciones y pases.
 - [ ] QR de acceso.
-- [ ] Finance y comprobantes, solo bajo backend protegido.
+- [ ] Finance: estado/campañas están disponibles; integración de upload local solo en DEV, sin mostrarla como confirmación de pago.
+- [ ] No habilitar envío de pago hasta integrar storage privado e idempotencia aprobados.
 
 ### Fase 5: polish y seguridad
 

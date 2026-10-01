@@ -21,7 +21,7 @@ const INITIAL_FORM: FeeFormData = {
   description: '',
 };
 
-export function useFees() {
+export function useFees(authToken?: string) {
   const [fees, setFees] = useState<FeeConfiguration[]>([]);
   const [loadingFees, setLoadingFees] = useState(false);
 
@@ -43,7 +43,7 @@ export function useFees() {
   const loadFees = async (slug: string) => {
     setLoadingFees(true);
     try {
-      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees`, { headers: authToken ? { Authorization: `Bearer ${authToken}` } : {} });
       const data = await res.json();
       if (data.success) {
         setFees(data.data || []);
@@ -98,7 +98,7 @@ export function useFees() {
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
         body: JSON.stringify(feeForm),
       });
       const data = await res.json();
@@ -131,7 +131,7 @@ export function useFees() {
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees/${editingFee.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
         body: JSON.stringify(feeForm),
       });
       const data = await res.json();
@@ -157,7 +157,7 @@ export function useFees() {
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees/${fee.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
         body: JSON.stringify({ isActive: !fee.is_active }),
       });
       const data = await res.json();
@@ -176,6 +176,7 @@ export function useFees() {
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees/${feeId}`, {
         method: 'DELETE',
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       });
       const data = await res.json();
       if (data.success) {
@@ -195,6 +196,7 @@ export function useFees() {
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees/${feeId}/simulate`, {
         method: 'POST',
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       });
       const data = await res.json();
       if (data.success) {

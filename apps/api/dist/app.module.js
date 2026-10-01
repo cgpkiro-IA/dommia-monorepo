@@ -8,7 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const core_1 = require("@nestjs/core");
 const config_1 = require("@nestjs/config");
+const env_validation_1 = require("./config/env.validation");
 const database_module_1 = require("./database/database.module");
 const tenants_module_1 = require("./modules/tenants/tenants.module");
 const properties_module_1 = require("./modules/properties/properties.module");
@@ -24,6 +26,8 @@ const stripe_module_1 = require("./modules/stripe/stripe.module");
 const access_module_1 = require("./modules/access/access.module");
 const deliveries_module_1 = require("./modules/deliveries/deliveries.module");
 const guard_operations_module_1 = require("./modules/guard-operations/guard-operations.module");
+const api_auth_guard_1 = require("./modules/auth/guards/api-auth.guard");
+const roles_guard_1 = require("./modules/auth/guards/roles.guard");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -33,6 +37,8 @@ exports.AppModule = AppModule = __decorate([
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
                 envFilePath: ['.env.local', '.env'],
+                validationSchema: env_validation_1.envValidationSchema,
+                validationOptions: { abortEarly: false },
             }),
             database_module_1.DatabaseModule,
             tenants_module_1.TenantsModule,
@@ -49,6 +55,10 @@ exports.AppModule = AppModule = __decorate([
             access_module_1.AccessModule,
             deliveries_module_1.DeliveriesModule,
             guard_operations_module_1.GuardOperationsModule,
+        ],
+        providers: [
+            { provide: core_1.APP_GUARD, useExisting: api_auth_guard_1.ApiAuthGuard },
+            { provide: core_1.APP_GUARD, useExisting: roles_guard_1.RolesGuard },
         ],
     })
 ], AppModule);

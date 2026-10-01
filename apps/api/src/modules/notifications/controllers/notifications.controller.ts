@@ -1,10 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { FinanceAdminGuard } from '../../auth/guards/finance-admin.guard';
 import { NotificationConfigDto } from '../dto/notification-config.dto';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 import { NotificationsService } from '../services/notifications.service';
 
 @Controller('tenants/:slug/notifications')
 @UseGuards(FinanceAdminGuard)
+@Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 

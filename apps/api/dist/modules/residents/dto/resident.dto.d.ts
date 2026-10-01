@@ -26,3 +26,8 @@ export declare class InviteResidentsDto {
     contactMethod?: 'AUTO' | 'EMAIL' | 'PHONE';
     delivery?: 'NONE' | 'EMAIL' | 'WHATSAPP';
 }
+export declare class InviteResidentDto {
+    createdBy?: string;
+    contactMethod?: 'AUTO' | 'EMAIL' | 'PHONE';
+    delivery?: 'NONE' | 'EMAIL' | 'WHATSAPP';
+}

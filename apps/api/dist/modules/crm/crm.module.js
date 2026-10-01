@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CrmModule = void 0;
 const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
 const database_module_1 = require("../../database/database.module");
 const tenants_module_1 = require("../tenants/tenants.module");
 const crm_controller_1 = require("./controllers/crm.controller");
@@ -22,7 +23,7 @@ let CrmModule = class CrmModule {
 exports.CrmModule = CrmModule;
 exports.CrmModule = CrmModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule, auth_module_1.AuthModule],
+        imports: [database_module_1.DatabaseModule, tenants_module_1.TenantsModule, auth_module_1.AuthModule, throttler_1.ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }])],
         controllers: [crm_controller_1.CrmController],
         providers: [
             crm_service_1.CrmService,

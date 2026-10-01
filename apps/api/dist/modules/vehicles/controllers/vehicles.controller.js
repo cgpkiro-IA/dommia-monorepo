@@ -16,6 +16,8 @@ exports.VehiclesController = void 0;
 const common_1 = require("@nestjs/common");
 const vehicles_service_1 = require("../services/vehicles.service");
 const vehicle_dto_1 = require("../dto/vehicle.dto");
+const finance_admin_guard_1 = require("../../auth/guards/finance-admin.guard");
+const auth_metadata_decorator_1 = require("../../auth/decorators/auth-metadata.decorator");
 let VehiclesController = class VehiclesController {
     vehiclesService;
     constructor(vehiclesService) {
@@ -90,6 +92,8 @@ __decorate([
 ], VehiclesController.prototype, "deleteVehicle", null);
 exports.VehiclesController = VehiclesController = __decorate([
     (0, common_1.Controller)('tenants/:slug/vehicles'),
+    (0, common_1.UseGuards)(finance_admin_guard_1.FinanceAdminGuard),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR'),
     __metadata("design:paramtypes", [vehicles_service_1.VehiclesService])
 ], VehiclesController);
 //# sourceMappingURL=vehicles.controller.js.map

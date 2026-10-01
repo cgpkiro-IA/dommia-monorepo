@@ -2,14 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@nestjs/core");
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const express_1 = require("express");
+const helmet_1 = require("helmet");
 const app_module_1 = require("./app.module");
-function getCorsOrigins() {
-    const configuredOrigins = process.env.CORS_ORIGINS
+function getCorsOrigins(config) {
+    const configuredOrigins = config.get('CORS_ORIGINS')
         ?.split(',')
         .map((origin) => origin.trim())
         .filter(Boolean);
-    if (process.env.NODE_ENV === 'production') {
+    if (config.get('NODE_ENV') === 'production') {
         if (!configuredOrigins?.length || configuredOrigins.includes('*')) {
             throw new Error('CORS_ORIGINS debe definir una allowlist explícita en producción.');
         }
@@ -31,36 +33,11 @@ function getCorsOrigins() {
         ? configuredOrigins
         : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004'];
 }
-function validateProductionConfiguration() {
-    if (process.env.NODE_ENV !== 'production')
-        return;
-    const required = ['POSTGRES_HOST', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_DB', 'RESIDENT_APP_URL'];
-    const missing = required.filter((name) => !process.env[name]?.trim());
-    if (!process.env.AUTH_TOKEN_SECRET || process.env.AUTH_TOKEN_SECRET.length < 32) {
-        missing.push('AUTH_TOKEN_SECRET (mínimo 32 caracteres)');
-    }
-    if (!process.env.RESIDENT_APP_TOKEN_SECRET || process.env.RESIDENT_APP_TOKEN_SECRET.length < 32) {
-        missing.push('RESIDENT_APP_TOKEN_SECRET (mínimo 32 caracteres)');
-    }
-    if (missing.length) {
-        throw new Error(`Configuración de producción incompleta: ${missing.join(', ')}.`);
-    }
-    try {
-        if (new URL(process.env.RESIDENT_APP_URL).protocol !== 'https:') {
-            throw new Error('RESIDENT_APP_URL debe usar HTTPS en producción.');
-        }
-    }
-    catch (error) {
-        if (error instanceof TypeError)
-            throw new Error('RESIDENT_APP_URL debe ser una URL HTTPS válida.');
-        throw error;
-    }
-}
 async function bootstrap() {
-    validateProductionConfiguration();
-    const corsOrigins = getCorsOrigins();
     const logger = new common_1.Logger('DommiaAPI');
     const app = await core_1.NestFactory.create(app_module_1.AppModule, { rawBody: true });
+    const corsOrigins = getCorsOrigins(app.get(config_1.ConfigService));
+    app.use((0, helmet_1.default)());
     app.use((0, express_1.json)({ limit: '6mb' }));
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(new common_1.ValidationPipe({
@@ -69,7 +46,7 @@ async function bootstrap() {
         forbidNonWhitelisted: true,
     }));
     app.enableCors({
-        origin: (origin, callback) => callback(null, !origin || corsOrigins.includes(origin)),
+        origin: (origin, callback) => callback(null, Boolean(origin && corsOrigins.includes(origin))),
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
         credentials: true,
     });

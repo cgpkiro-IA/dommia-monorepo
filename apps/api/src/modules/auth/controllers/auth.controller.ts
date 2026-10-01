@@ -5,12 +5,17 @@ import { DisableMfaDto, MfaCodeDto, SelectTenantDto, StartMfaSetupDto, VerifyMfa
 import { ResidentActivateDto, ResidentChangePasswordDto, ResidentLoginDto, ResidentPasswordRecoveryRequestDto, ResidentPasswordResetDto } from '../dto/resident-auth.dto';
 import { ResidentAuthGuard, ResidentSessionClaims } from '../guards/resident-auth.guard';
 import { AdminSessionGuard, AdminSessionClaims } from '../guards/admin-session.guard';
+import { Public, Roles } from '../decorators/auth-metadata.decorator';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
+  @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto) {
     const session = await this.authService.login(dto);
@@ -22,6 +27,7 @@ export class AuthController {
   }
 
   @Post('mfa/verify')
+  @Public()
   @HttpCode(HttpStatus.OK)
   async verifyMfaLogin(@Body() dto: VerifyMfaLoginDto) {
     return {
@@ -32,12 +38,14 @@ export class AuthController {
   }
 
   @Get('mfa/status')
+  @Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'COMMERCIAL_EXEC', 'SUPPORT')
   @UseGuards(AdminSessionGuard)
   async mfaStatus(@Req() request: { user: AdminSessionClaims }) {
     return { success: true, data: await this.authService.getMfaStatus(request.user.sub) };
   }
 
   @Post('mfa/setup')
+  @Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'COMMERCIAL_EXEC', 'SUPPORT')
   @UseGuards(AdminSessionGuard)
   @HttpCode(HttpStatus.OK)
   async startMfaSetup(@Req() request: { user: AdminSessionClaims }, @Body() dto: StartMfaSetupDto) {
@@ -45,6 +53,7 @@ export class AuthController {
   }
 
   @Post('mfa/enable')
+  @Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'COMMERCIAL_EXEC', 'SUPPORT')
   @UseGuards(AdminSessionGuard)
   @HttpCode(HttpStatus.OK)
   async enableMfa(@Req() request: { user: AdminSessionClaims }, @Body() dto: MfaCodeDto) {
@@ -52,6 +61,7 @@ export class AuthController {
   }
 
   @Post('mfa/disable')
+  @Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'COMMERCIAL_EXEC', 'SUPPORT')
   @UseGuards(AdminSessionGuard)
   @HttpCode(HttpStatus.OK)
   async disableMfa(@Req() request: { user: AdminSessionClaims }, @Body() dto: DisableMfaDto) {
@@ -59,6 +69,7 @@ export class AuthController {
   }
 
   @Post('select-tenant')
+  @Roles('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'COMMERCIAL_EXEC', 'SUPPORT')
   @UseGuards(AdminSessionGuard)
   @HttpCode(HttpStatus.OK)
   async selectTenant(@Req() request: { user: AdminSessionClaims }, @Body() dto: SelectTenantDto) {
@@ -66,24 +77,28 @@ export class AuthController {
   }
 
   @Post('resident/login')
+  @Public()
   @HttpCode(HttpStatus.OK)
   async residentLogin(@Body() dto: ResidentLoginDto) {
     return { success: true, message: 'Autenticación Resident exitosa', data: await this.authService.residentLogin(dto) };
   }
 
   @Post('resident/activate')
+  @Public()
   @HttpCode(HttpStatus.OK)
   async residentActivate(@Body() dto: ResidentActivateDto) {
     return this.authService.activateResident(dto);
   }
 
   @Get('resident/me')
+  @Roles('RESIDENT')
   @UseGuards(ResidentAuthGuard)
   async residentProfile(@Req() request: { user: ResidentSessionClaims }) {
     return { success: true, data: await this.authService.residentProfile(request.user.tenantSlug, request.user.sub) };
   }
 
   @Post('resident/logout')
+  @Roles('RESIDENT')
   @UseGuards(ResidentAuthGuard)
   @HttpCode(HttpStatus.OK)
   async residentLogout(@Req() request: { user: ResidentSessionClaims }) {
@@ -91,18 +106,21 @@ export class AuthController {
   }
 
   @Post('resident/change-password')
+  @Public()
   @HttpCode(HttpStatus.OK)
   async residentChangePassword(@Body() dto: ResidentChangePasswordDto) {
     return this.authService.changeResidentPassword(dto);
   }
 
   @Post('resident/password-recovery')
+  @Public()
   @HttpCode(HttpStatus.OK)
   async residentPasswordRecovery(@Body() dto: ResidentPasswordRecoveryRequestDto) {
     return this.authService.requestResidentPasswordRecovery(dto);
   }
 
   @Post('resident/password-reset')
+  @Public()
   @HttpCode(HttpStatus.OK)
   async residentPasswordReset(@Body() dto: ResidentPasswordResetDto) {
     return this.authService.resetResidentPassword(dto);

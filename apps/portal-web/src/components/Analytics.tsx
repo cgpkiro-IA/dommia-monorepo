@@ -3,7 +3,7 @@
 import React from 'react';
 import Script from 'next/script';
 
-export const Analytics: React.FC = () => {
+export const Analytics: React.FC<{ nonce?: string }> = ({ nonce }) => {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
 
@@ -15,8 +15,9 @@ export const Analytics: React.FC = () => {
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
             strategy="afterInteractive"
+            nonce={nonce}
           />
-          <Script id="google-analytics" strategy="afterInteractive">
+          <Script id="google-analytics" strategy="afterInteractive" nonce={nonce}>
             {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
@@ -32,7 +33,7 @@ export const Analytics: React.FC = () => {
 
       {/* Google Tag Manager (GTM) */}
       {gtmId && (
-        <Script id="google-tag-manager" strategy="afterInteractive">
+        <Script id="google-tag-manager" strategy="afterInteractive" nonce={nonce}>
           {`
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],

@@ -120,7 +120,7 @@ test('las apps rotan sesiones por dispositivo y conservan el bearer Resident leg
     SELECT 1 FROM public.audit_logs a
     JOIN public.tenants t ON t.id = a.tenant_id
     WHERE a.entity_id = $1 AND a.action = 'APP_REFRESH_REUSE_DETECTED'
-      AND t.slug = $2
+      AND lower(replace(t.slug, '-', '_')) = $2
     ORDER BY a.created_at DESC LIMIT 1
   `, [androidClaims.sub, tenantSlug.replace(/-/g, '_')]);
   assert.equal(replayAudit.rowCount, 1, 'El replay queda auditado sin incluir el token.');
@@ -143,7 +143,7 @@ test('las apps rotan sesiones por dispositivo y conservan el bearer Resident leg
   });
   assert.equal(legacyLogin.status, 200);
   const legacy = (await legacyLogin.json()).data;
-  assert.equal(legacy.token.split('.').length, 2, 'La PWA conserva el formato bearer legacy durante la transición.');
+  assert.equal(legacy.token.split('.').length, 3, 'El login Resident emite un JWT estándar compatible con la PWA.');
   assert.equal((await request('/auth/resident/me', { token: legacy.token })).status, 200);
   assert.equal((await request('/auth/app/resident/sessions', { token: legacy.token })).status, 401);
   assert.equal((await request('/auth/app/resident/me', { token: legacy.token })).status, 401);

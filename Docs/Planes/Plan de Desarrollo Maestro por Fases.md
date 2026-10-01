@@ -3,9 +3,9 @@
 **Marca Principal:** DOMMIA  
 **Producto Principal:** Dommia Communities  
 **Tagline:** *El Sistema Operativo de tu Comunidad*  
-**Versión:** 1.21.0
+**Versión:** 1.23.0
 
-**Última Actualización:** 2026-09-29
+**Última Actualización:** 2026-09-30
 
 **Estado:** Activo / En Evolución Continua
 
@@ -35,9 +35,18 @@
 | **1.18.0** | 2026-09-28 | Arquitectura & Pair Programmer | Guard permite cancelar el arranque/detener cámara y recupera el control si no inicia en 12 s o no detecta QR en 30 s; validación API se aborta a los 10 s sin conceder acceso. Build Guard pasa; cámara física pendiente. |
 | **1.19.0** | 2026-09-28 | Arquitectura & Pair Programmer | Sustituye entrada manual de payload QR por búsqueda de visita programada, verificación visual de INE y confirmación por llamada; registra `MANUAL_GUARD`, consume pases SINGLE y no almacena datos de INE. E2E API 5/5; falta prueba operacional en caseta. |
 | **1.20.0** | 2026-09-29 | Arquitectura & Pair Programmer | Módulo táctico de Servicios/Proveedores (Comida, Gas, Agua, Paquetería, Taxi, Mantenimiento) con destinos específicos/generales y alertas a residentes/administrador; Bitácora unificada de eventos con filtros temporales; Búsqueda predictiva de calles con destinatario libre en paquetería y ciclo completo de notificación/cierre automático de alerta en Resident PWA al registrar retiro; `CustomSelect` temático uniforme en todas las PWAs. Suite API 8/8. |
-| **1.21.0** | 2026-09-29 | Arquitectura & Pair Programmer | Agrega rutas de sesión móvil Resident bajo `/auth/app/resident/*`: JWT HS256 de acceso de 15 minutos con audiencia propia y `RESIDENT_APP_TOKEN_SECRET`; refresh opaco hasheado, rotación y detección de replay; lista/revocación de sesiones por dispositivo; cambio inicial de contraseña y guard app-only. La PWA conserva su bearer legacy. Migración 021; E2E API 9/9 en DEV. Pendiente GCP/staging y proteger rutas Resident de avisos/finanzas. |
+| **1.21.0** | 2026-09-29 | Arquitectura & Pair Programmer | Corte histórico del contrato móvil: JWT HS256 de acceso de 15 minutos, refresh opaco hasheado/rotatorio, sesiones por dispositivo y migración 021. En esa fecha E2E API 9/9; los guards Resident de avisos/finanzas y la verificación de producción se cerraron posteriormente en 1.22.0. |
+| **1.22.0** | 2026-09-30 | Arquitectura & Pair Programmer | Cierra hardening backend: Passport/JWT y guard global con rutas públicas explícitas, roles globales, guards tenant-scoped para Resident/Guard/admin, DTOs estrictos, Helmet, CORS allowlist y validación Joi fail-fast; JWT estándar para nuevas sesiones y compatibilidad temporal HMAC existente. Protege avisos/finanzas móviles, acota pagos a tenant/vivienda, limita endpoints públicos, corrige migración 020 (`fee_config_id`) y documenta push 022. Suite API E2E local 15/15; staging/producción siguen pendientes. |
+| **1.23.0** | 2026-09-30 | Arquitectura & Pair Programmer | Implementa rendición mensual en base caja: ingresos derivados sin duplicar pagos, egresos categorizados, evidencias privadas GCS/redactadas, conciliación, snapshot versionado e inmutable y revisión Resident opcional. `reporting_start_month` por tenant lista periodos faltantes. Escritura exclusiva `TENANT_ADMIN`; lectura Resident solo de publicados y evidencia redactada. Migración 023; E2E API 16/16. |
 
 ---
+
+## Autoridad de contratos de integración
+
+- Para Android e iOS, [Contrato Resident Mobile v1](Contrato%20Resident%20Mobile%20v1.md) es la única fuente normativa de rutas, DTOs, autenticación, envelopes, errores, tenant/vivienda y compatibilidad.
+- Las guías [Android](Desarrollo%20app%20Android.md) e [iOS](Desarrollo%20app%20iOS.md) solo describen almacenamiento, navegación y estado de cada cliente; no redefinen el contrato HTTP.
+- La implementación se verifica contra `apps/api` y sus pruebas E2E. Toda modificación de API consumida por clientes debe actualizar contrato, DTOs y pruebas en el mismo cambio.
+- El resultado 15/15 es local contra PostgreSQL Docker; no equivale a aceptación de staging ni de proveedores/dispositivos productivos.
 
 ## 🧭 Visión Global del Sistema: Ecosistema DOMMIA
 
@@ -113,7 +122,7 @@ Todas las aplicaciones del ecosistema deberán consumir tokens centralizados de 
 1. **PostgreSQL es la Única Fuente de Verdad:** Ninguna base de datos periférica (IndexedDB en navegador o SQLite en caseta) dictamina estados contables o de acceso definitivos.
 2. **Multi-Tenancy por Schemas:** El aislamiento entre fraccionamientos se realiza mediante Schemas independientes de PostgreSQL (`tenant_<slug>`), mientras que el esquema `public` almacena catálogos maestros y datos globales del SaaS.
 3. **Offline-First sin Redis en MVP (ADR-001):** La tolerancia a fallos de internet recae en **SQLite** (en caseta) e **IndexedDB + Service Workers** (en la PWA). Redis queda reservado para la etapa de escalamiento masivo (>50 fraccionamientos o >1000 usuarios concurrentes).
-4. **Idempotencia Universal:** Todo registro generado en modo desconectado o webhook transaccional de Stripe viaja con un `UUID` inmutable para prevenir duplicados.
+4. **Idempotencia explícita por operación:** La idempotencia existe solo donde está implementada y probada (por ejemplo, replay QR/webhooks Stripe); los envíos de pagos/comprobantes Resident aún no tienen clave idempotente persistida y no deben reintentarse automáticamente.
 5. **Límites Duros por Nivel de Suscripción:** El sistema bloquea a nivel de API (`403 Forbidden`) cualquier intento de crear propiedades o habilitar módulos que excedan el paquete contratado.
 6. **Consistencia de Marca & Experiencia Unificada:** Todo módulo del sistema debe reflejar simplicidad, seguridad, rapidez y modernidad visual sin tecnicismos innecesarios para el usuario final.
 
@@ -170,6 +179,10 @@ flowchart TD
   - Endpoints probados y verificados: `GET /api/v1/tenants`, `POST /api/v1/tenants`, `GET /api/v1/tenants/:slug/properties`, `POST /api/v1/tenants/:slug/properties`.
 - [x] **Módulo de Seguridad y RBAC Transversal:**
   - Definición de los 7 roles en `@dommia/shared-types`: `SUPER_ADMIN`, `COMMERCIAL_EXEC`, `SUPPORT`, `TENANT_ADMIN`, `OPERATOR`, `GUARD`, `RESIDENT`.
+  - Passport JWT HS256 con `ApiAuthGuard` global; `@Public()` declara excepciones y `@Roles()` + `RolesGuard` aplica RBAC por handler/clase.
+  - Guards de dominio validan audiencia móvil y relación tenant/vivienda; los tokens Resident nativos usan `RESIDENT_APP_TOKEN_SECRET`, issuer/audience propios y sesiones revocables.
+  - `ValidationPipe` global (`transform`, `whitelist`, `forbidNonWhitelisted`), DTOs con `class-validator`, Helmet, CORS allowlist y `ConfigModule` validado con Joi.
+  - MFA TOTP, login/public endpoints rate-limited; límites Resident en memoria son locales y requieren backend distribuido antes de escalar.
 - [x] **Criterios de Aceptación Verificados:**
   - `docker compose up -d` levanta y mantiene saludables PostgreSQL y EMQX.
   - Se probó el aprovisionamiento dinámico de `tenant_valle_real` en menos de 100 milisegundos con aislamiento total respecto a `tenant_demo`.
@@ -351,6 +364,13 @@ flowchart TD
   - Cálculo de saldo consolidado, desglose de adeudos por concepto y saldo a favor por vivienda.
   - Emisión de recibos digitales con folio interno.
   - Clasificación de estado de cuenta: Al corriente vs Moroso (bandera consumida por Dommia Access / Casetas).
+- [x] **Rendición mensual de ingresos y egresos:**
+  - Ingresos de caja derivados de pagos aprobados, anticipos y campañas anuales, sin recaptura ni doble conteo.
+  - Periodos requeridos desde el mes de rollout/provisión, con faltantes visibles al administrador.
+  - Egresos asociados a revisión y categoría; evidencia general (estado bancario) y por gasto, privada en GCS para PROD.
+  - Conciliación de banco/efectivo, justificación de diferencias y snapshot publicado inmutable por revisión.
+  - Gestión exclusiva del `TENANT_ADMIN` de la comunidad; Resident consulta publicaciones, evidencia redactada y puede marcar lectura opcional.
+  - Especificación completa en [PT Rendición Financiera Mensual](PT%20Rendicion%20Financiera%20Mensual.md).
 
 ### 🔐 UNIDAD PRE-F4: Onboarding y Acceso Seguro de Residentes
 **Objetivo:** Permitir que cada residente tenga una cuenta propia en Dommia Resident antes de utilizar pagos, estados de cuenta, invitaciones y accesos digitales.

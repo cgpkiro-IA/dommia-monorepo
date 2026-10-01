@@ -18,6 +18,7 @@ const residents_service_1 = require("../services/residents.service");
 const resident_dto_1 = require("../dto/resident.dto");
 const finance_admin_guard_1 = require("../../auth/guards/finance-admin.guard");
 const common_2 = require("@nestjs/common");
+const auth_metadata_decorator_1 = require("../../auth/decorators/auth-metadata.decorator");
 let ResidentsController = class ResidentsController {
     residentsService;
     constructor(residentsService) {
@@ -111,7 +112,7 @@ __decorate([
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:paramtypes", [String, String, resident_dto_1.InviteResidentDto]),
     __metadata("design:returntype", Promise)
 ], ResidentsController.prototype, "inviteResident", null);
 __decorate([
@@ -126,6 +127,7 @@ __decorate([
 exports.ResidentsController = ResidentsController = __decorate([
     (0, common_1.Controller)('tenants/:slug/residents'),
     (0, common_2.UseGuards)(finance_admin_guard_1.FinanceAdminGuard),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR'),
     __metadata("design:paramtypes", [residents_service_1.ResidentsService])
 ], ResidentsController);
 //# sourceMappingURL=residents.controller.js.map

@@ -7,6 +7,7 @@ import { API_BASE } from '@/lib/api-url';
 
 interface UseResidentFinanceOptions {
   profile: ResidentProfile;
+  token: string | null;
   onStatusChange?: (newStatus: 'UP_TO_DATE' | 'OVERDUE') => void;
 }
 
@@ -16,7 +17,7 @@ interface SpeiSubmission {
   receiptUrl: string;
 }
 
-export function useResidentFinance({ profile, onStatusChange }: UseResidentFinanceOptions) {
+export function useResidentFinance({ profile, token, onStatusChange }: UseResidentFinanceOptions) {
   const [financialStatus, setFinancialStatus] = useState<ResidentFinancialStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +53,7 @@ export function useResidentFinance({ profile, onStatusChange }: UseResidentFinan
       localStorage.setItem('dommia_seen_payment_ids', JSON.stringify(Array.from(seen)));
     } catch {}
     setLatestPaymentAlert(null);
-  }, [getSeenPaymentIds]);
+  }, [getSeenPaymentIds, token]);
 
   const fetchStatus = useCallback(async () => {
     if (isFetchingRef.current || !navigator.onLine) return;
@@ -72,7 +73,7 @@ export function useResidentFinance({ profile, onStatusChange }: UseResidentFinan
           : Boolean(modules && Object.entries(modules).some(([key, enabled]) => enabled && ['STRIPE', 'STRIPE_CONNECT', 'FINANCE_STRIPE'].includes(key))));
       }
       const url = `${API_BASE}/tenants/${slug}/finance/properties/${propertyId}/status`;
-      const res = await fetch(url);
+      const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (json.success && json.data) {
@@ -111,7 +112,7 @@ export function useResidentFinance({ profile, onStatusChange }: UseResidentFinan
 
     const res = await fetch(`${API_BASE}/tenants/${slug}/finance/payments/spei-submissions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({
         propertyId,
         amount: submission.amount,
@@ -126,7 +127,7 @@ export function useResidentFinance({ profile, onStatusChange }: UseResidentFinan
     }
     await fetchStatus();
     return true;
-  }, [fetchStatus]);
+  }, [fetchStatus, token]);
 
   useEffect(() => {
     setIsLoading(true);

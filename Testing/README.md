@@ -1,7 +1,7 @@
 # 🧪 Guía Operativa de Testing y Servicios - DOMMIA
 **Proyecto:** SaaS Modular para Fraccionamientos (DOMMIA)  
-**Versión:** 1.6.0  
-**Fecha:** 2026-09-28  
+**Versión:** 1.7.0
+**Fecha:** 2026-09-30
 **Propósito:** Servir como manual rápido y de referencia para cualquier desarrollador o agente que necesite levantar, reiniciar, probar o simular flujos en el ecosistema DOMMIA.
 
 ---
@@ -347,14 +347,14 @@ curl -s -X POST http://localhost:4000/api/v1/tenants/demo/properties \
 `pnpm test` ejecuta ahora regresiones E2E del API con PostgreSQL real y el tenant QA. Las pruebas no certifican cámara física, proveedores externos ni rendimiento de staging; esos huecos se registran por separado.
 
 ### Regresión automatizada de API (MFA, Guard y sesiones Resident móviles)
-El paquete API ejecuta pruebas E2E con `node:test` contra PostgreSQL real y la API local. El setup de pruebas aplica 003–021 y ejecuta el seed QA de manera idempotente. La cobertura Resident móvil comprueba login Android/iOS, rotación y replay de refresh, revocación por dispositivo y compatibilidad del bearer legacy PWA. Solo hay que levantar PostgreSQL y el API:
+El paquete API ejecuta pruebas E2E con `node:test` contra PostgreSQL real y la API local. El setup aplica 003–023 y ejecuta el seed QA idempotentemente. La cobertura incluye MFA, roles/aislamiento, Guards, avisos de caseta, migraciones financieras, sesiones Android/iOS, rotación/replay, revocación por contraseña/dispositivo, avisos, finanzas, rendición mensual y compatibilidad PWA. Configura credenciales locales en `apps/api/.env.local`; API y runner deben compartir `AUTH_TOKEN_SECRET` de prueba (mínimo 32 caracteres). Nunca reutilices secretos de PROD. Levanta PostgreSQL y el API:
 ```bash
 pnpm --filter @dommia/api dev
 ```
 
 Ejecuta desde otra terminal `pnpm test` (monorepo) o `pnpm --filter @dommia/api test`. El helper espera hasta 15 segundos a que `http://localhost:4000/api/v1/health` responda 200, configurable con `DOMMIA_TEST_STARTUP_TIMEOUT_MS`. Las pruebas comprueban que el token MFA pendiente no accede a rutas CRM, que los códigos/desafíos no se reutilizan, que TENANT_ADMIN no entra al CRM y que una visita sin QR solo se registra después de marcar INE/llamada; el log identifica al guardia y consume pases SINGLE. El seed `guard-qa` es idempotente; la invitación temporal del test se elimina al terminar. Se puede configurar `DOMMIA_TEST_API_BASE` para apuntar a otro API QA; nunca producción.
 
-**Último resultado DEV:** 2026-09-29, `pnpm --filter @dommia/api test`: API 9/9 contra PostgreSQL Docker 16.15. Incluye MFA, aislamiento tenant, operaciones Guard y sesiones móviles con rotación, replay, revocación por dispositivo y compatibilidad PWA legacy.
+**Último resultado DEV:** 2026-09-30, `pnpm --filter @dommia/api test`: API 16/16 contra PostgreSQL Docker 16.15. Incluye 401/403 por rol/tenant/vivienda, lectura Guard, MFA, sesiones móviles y rendición mensual: escritura exclusiva `TENANT_ADMIN`, evidencia Resident redactada, publicación inmutable, revisión opcional/idempotente e ingresos del mismo día separados por categoría y método de pago. Migración 023 usa almacenamiento local de evidencia en DEV; GCS se valida en staging/PROD.
 
 **Prueba visual del flujo sin QR (2026-09-28):** en Guard con `guard-qa`, busqué `Circuito del Roble 101`, seleccioné una invitación SINGLE vigente, marqué INE verificada y llamada confirmada, y la interfaz mostró “Acceso manual autorizado por llamada” con visitante, propiedad, anfitrión y método. La invitación y su log temporal de navegador se eliminaron al terminar; no se capturó ni almacenó número/foto de INE.
 

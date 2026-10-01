@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.HealthController = void 0;
 const common_1 = require("@nestjs/common");
 const database_service_1 = require("../../../database/database.service");
+const auth_metadata_decorator_1 = require("../../auth/decorators/auth-metadata.decorator");
 let HealthController = class HealthController {
     db;
     constructor(db) {
@@ -39,6 +40,7 @@ __decorate([
 ], HealthController.prototype, "check", null);
 exports.HealthController = HealthController = __decorate([
     (0, common_1.Controller)('health'),
+    (0, auth_metadata_decorator_1.Public)(),
     __metadata("design:paramtypes", [database_service_1.DatabaseService])
 ], HealthController);
 //# sourceMappingURL=health.controller.js.map

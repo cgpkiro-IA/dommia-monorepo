@@ -18,6 +18,7 @@ const tenants_service_1 = require("../services/tenants.service");
 const create_tenant_dto_1 = require("../dto/create-tenant.dto");
 const update_tenant_dto_1 = require("../dto/update-tenant.dto");
 const crm_admin_guard_1 = require("../../auth/guards/crm-admin.guard");
+const auth_metadata_decorator_1 = require("../../auth/decorators/auth-metadata.decorator");
 let TenantsController = class TenantsController {
     tenantsService;
     constructor(tenantsService) {
@@ -73,6 +74,7 @@ __decorate([
 ], TenantsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':slug'),
+    (0, auth_metadata_decorator_1.Public)(),
     __param(0, (0, common_1.Param)('slug')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -107,6 +109,7 @@ __decorate([
 ], TenantsController.prototype, "patch", null);
 exports.TenantsController = TenantsController = __decorate([
     (0, common_1.Controller)('tenants'),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'COMMERCIAL_EXEC', 'SUPPORT'),
     __metadata("design:paramtypes", [tenants_service_1.TenantsService])
 ], TenantsController);
 //# sourceMappingURL=tenants.controller.js.map

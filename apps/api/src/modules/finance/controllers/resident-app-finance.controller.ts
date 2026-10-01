@@ -5,6 +5,7 @@ import { AnnualCampaignQuoteDto, SubmitAnnualPaymentDto, SubmitSpeiPaymentDto } 
 import { ResidentAppAnnualPaymentDto, ResidentAppReceiptUploadDto, ResidentAppSpeiSubmissionDto } from '../dto/resident-app-finance.dto';
 import { BillingEngineService } from '../services/billing-engine.service';
 import { ResidentAppReceiptStorageService } from '../services/resident-app-receipt-storage.service';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 
 type ResidentAppFinanceResponse<T> = {
   success: boolean;
@@ -15,6 +16,7 @@ type ResidentAppFinanceResponse<T> = {
 @Controller('auth/app/resident/finance')
 @UseFilters(ResidentAppExceptionFilter)
 @UseGuards(ResidentAppAuthGuard)
+@Roles('RESIDENT')
 export class ResidentAppFinanceController {
   constructor(
     private readonly billingService: BillingEngineService,

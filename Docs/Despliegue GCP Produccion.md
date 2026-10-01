@@ -47,6 +47,8 @@ POSTGRES_PASSWORD=<contraseña local de PostgreSQL>
 POSTGRES_DB=dommia_master
 AUTH_TOKEN_SECRET=<llave exclusiva de desarrollo, mínimo 32 caracteres>
 RESIDENT_APP_TOKEN_SECRET=<llave distinta para sesiones nativas, mínimo 32 caracteres>
+MFA_ENCRYPTION_KEY=<64 caracteres hexadecimales; obligatoria en producción>
+GCS_FINANCE_EVIDENCE_BUCKET=<bucket privado de evidencias financieras>
 RESIDENT_APP_URL=http://localhost:3003
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004
 ```
@@ -80,7 +82,7 @@ Crea los secretos en Secret Manager dentro del proyecto PROD. Vincula versiones 
 | `RESIDENT_APP_TOKEN_SECRET` | Firma/verificación de JWT de Android/iOS Resident. | Obligatorio para el contrato de apps. Genera una llave distinta de `AUTH_TOKEN_SECRET`, aleatoria, de al menos 32 caracteres. |
 | `POSTGRES_USER` | Usuario de la aplicación en Cloud SQL. | Obligatorio. Crea un usuario de aplicación, no uses el usuario administrador de la instancia. |
 | `POSTGRES_PASSWORD` | Contraseña del usuario de aplicación de Cloud SQL. | Obligatorio. Genera una contraseña aleatoria y rótala mediante un procedimiento controlado. |
-| `MFA_ENCRYPTION_KEY` | Cifrado AES-256-GCM de secretos TOTP administrativos. | Configurar antes de habilitar MFA en PROD. Debe ser exactamente 64 caracteres hexadecimales. |
+| `MFA_ENCRYPTION_KEY` | Cifrado AES-256-GCM de secretos TOTP administrativos. | Obligatoria para arrancar el API en producción. Debe ser exactamente 64 caracteres hexadecimales y mantenerse estable para descifrar datos existentes. |
 | `NOTIFICATIONS_ENCRYPTION_KEY` | Descifrado de configuración SMTP/WhatsApp guardada por tenant. | Configurar antes de activar `NOTIFICATIONS_PREMIUM` o guardar canales. Mantener la misma llave para poder leer configuraciones existentes. |
 | `STRIPE_SECRET_KEY` | Acceso a Stripe. | No configurar para el MVP. Solo agregar cuando se apruebe y valide Stripe en sandbox y PROD. |
 | `STRIPE_WEBHOOK_SECRET` | Verificación de firma de webhooks Stripe. | No configurar para el MVP. Se requiere junto con Stripe antes de habilitar cobros. |
@@ -111,10 +113,20 @@ Configura estas variables en el servicio API:
 | `POSTGRES_DB` | Nombre de la base productiva, por ejemplo `dommia_prod`. |
 | `CORS_ORIGINS` | Lista separada por comas de los orígenes HTTPS exactos de Portal, CRM, Communities, Resident y Guard. Sin rutas ni barras finales. |
 | `RESIDENT_APP_URL` | URL HTTPS pública de Resident. Se usa para enlaces de activación y recuperación de cuenta. |
+| `GCS_FINANCE_EVIDENCE_BUCKET` | Nombre del bucket privado dedicado a evidencias de rendición financiera. Obligatorio en producción. |
 
-`POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_TOKEN_SECRET` y `RESIDENT_APP_TOKEN_SECRET` se inyectan desde Secret Manager. `MFA_ENCRYPTION_KEY` y `NOTIFICATIONS_ENCRYPTION_KEY` se vinculan al mismo servicio cuando se habiliten esas funciones.
+`POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_TOKEN_SECRET`, `RESIDENT_APP_TOKEN_SECRET` y `MFA_ENCRYPTION_KEY` se inyectan desde Secret Manager. `NOTIFICATIONS_ENCRYPTION_KEY` se vincula al mismo servicio antes de guardar o leer credenciales de canales premium.
 
-El API rechaza en producción una allowlist CORS vacía, `*`, orígenes que no sean HTTPS o entradas con rutas. Las solicitudes sin cabecera `Origin`, como algunas comprobaciones de salud, siguen permitidas. CORS no sustituye autenticación ni autorización.
+`ConfigModule` valida el entorno con Joi al iniciar. Producción requiere credenciales PostgreSQL, ambas llaves de firma (mínimo 32 caracteres), `MFA_ENCRYPTION_KEY` (64 hex), `RESIDENT_APP_URL` HTTPS, `CORS_ORIGINS` y `GCS_FINANCE_EVIDENCE_BUCKET`. El API rechaza una allowlist vacía, `*`, orígenes que no sean HTTPS o entradas con rutas. Helmet se instala globalmente para las cabeceras HTTP. CORS no sustituye autenticación ni autorización.
+
+### Bucket privado de evidencias financieras
+
+1. Crea un bucket regional o dual-region alineado con Cloud Run/Cloud SQL, con Public Access Prevention y Uniform Bucket-Level Access.
+2. No publiques objetos ni entregues IAM a frontends/residentes. El API usa Application Default Credentials de la cuenta de servicio de Cloud Run.
+3. Otorga a esa cuenta de servicio permisos mínimos de crear, leer y borrar objetos en el bucket dedicado. No uses una llave JSON dentro de la imagen ni del repositorio.
+4. Configura cifrado administrado por Google o CMEK si lo exige la política; define retención/lifecycle conforme a obligaciones contables y privacidad.
+5. Los objetos usan prefijos generados por servidor `tenants/<slug>/financial-evidence/<uuid>`; el slug del request nunca se usa sin autorización tenant.
+6. Las descargas pasan por el API con `Cache-Control: private, no-store`. Solo copias redactadas y marcadas `RESIDENTS` se muestran a residentes.
 
 Build variables de frontend, definidas antes de `next build`:
 
@@ -174,6 +186,8 @@ docker/migrations/018_guard_consigns_and_panic.sql
 docker/migrations/019_tenant_guard_schema_completion.sql
 docker/migrations/020_tenant_finance_schema_completion.sql
 docker/migrations/021_resident_app_refresh_sessions.sql
+docker/migrations/022_resident_push_tokens.sql
+docker/migrations/023_tenant_monthly_financial_reports.sql
 ```
 
 `production-bootstrap.sql` incluye `init-db/01-init.sql` y cada migración mediante `\ir`, relativo al directorio del propio script. Debe estar presente la carpeta completa `docker/` con la estructura anterior. `validate-schema.sql` se ejecuta por separado después del bootstrap.
@@ -249,7 +263,8 @@ Cuando termine, inicia sesión en CRM con el correo y contraseña recién defini
 
 - **Build de Cloud Run:** el repositorio no contiene Dockerfiles ni configuración Cloud Build por aplicación. Antes de desplegar, define una receta reproducible por workspace que compile dependencias compartidas y ejecute `pnpm start` en el contenedor. Los scripts de `start` de las cinco PWAs ya dejaron de fijar puertos locales; Next.js puede usar el `PORT` que inyecta Cloud Run.
 - **Configuración del build frontend:** las cinco apps ya consumen `NEXT_PUBLIC_API_URL` desde sus resolvers por aplicación y los enlaces entre productos usan variables públicas dedicadas. Antes de PROD, configura las variables `NEXT_PUBLIC_*` de la matriz por aplicación y verifica que los bundles apunten a dominios HTTPS, nunca a `localhost`.
-- **Bootstrap de PostgreSQL:** usa [`docker/production-bootstrap.sql`](../docker/production-bootstrap.sql) una sola vez y únicamente contra una base nueva y vacía. Aplica el baseline y las migraciones 003–021, registra las versiones aplicadas y elimina el tenant demo que crea el baseline común. No ejecutes `02-seed-demo-users.sql` en PROD.
+- **Bootstrap de PostgreSQL:** usa [`docker/production-bootstrap.sql`](../docker/production-bootstrap.sql) una sola vez y únicamente contra una base nueva y vacía. Aplica el baseline y las migraciones 003–023, registra las versiones aplicadas y elimina el tenant demo que crea el baseline común. No ejecutes `02-seed-demo-users.sql` en PROD.
+- **Evidencia financiera:** crea y valida el bucket privado, IAM de la cuenta de servicio y `GCS_FINANCE_EVIDENCE_BUCKET` antes de habilitar la rendición mensual. DEV puede usar `.local/financial-evidence`; PROD no.
 - **Migraciones:** el bootstrap es solo para una base nueva. En una base existente aplica únicamente migraciones pendientes, en orden y con `ON_ERROR_STOP`. Después ejecuta [`docker/validate-schema.sql`](../docker/validate-schema.sql). No apliques DDL desde una request ni apuntes pruebas QA a PROD.
 - **CORS y dominios:** registra los dominios finales antes de desplegar el API. Un frontend construido con URL de API equivocada requiere una nueva imagen.
 - **Secretos criptográficos:** define y respalda `MFA_ENCRYPTION_KEY` y `NOTIFICATIONS_ENCRYPTION_KEY` antes de guardar datos cifrados en PROD. Si se pierden o cambian sin migración, no se podrán descifrar los valores existentes.
@@ -270,7 +285,8 @@ Cuando termine, inicia sesión en CRM con el correo y contraseña recién defini
 
 - [ ] Ningún servicio PROD usa secretos, bases de datos o usuarios de DEV/demo.
 - [ ] Se creó el primer `SUPER_ADMIN` con el comando de un solo uso; no se cargaron usuarios demo.
-- [ ] La API no inicia si falta `AUTH_TOKEN_SECRET`, `RESIDENT_APP_TOKEN_SECRET`, configuración PostgreSQL, `RESIDENT_APP_URL` o `CORS_ORIGINS`.
+- [ ] La API no inicia si falta configuración PostgreSQL, `AUTH_TOKEN_SECRET`, `RESIDENT_APP_TOKEN_SECRET`, `MFA_ENCRYPTION_KEY`, `RESIDENT_APP_URL`, `CORS_ORIGINS` o `GCS_FINANCE_EVIDENCE_BUCKET`, ni si las llaves/orígenes tienen formato inválido.
+- [ ] El bucket financiero bloquea acceso público; la cuenta de servicio API puede cargar/leer evidencias y un residente solo descarga copias redactadas autorizadas por el API.
 - [ ] CORS permite solo orígenes HTTPS aprobados.
 - [ ] Cloud Run usa la cuenta de servicio correcta y PostgreSQL no tiene exposición pública innecesaria.
 - [ ] Las cinco PWAs llaman a `NEXT_PUBLIC_API_URL` de PROD y escuchan en el `PORT` de Cloud Run.

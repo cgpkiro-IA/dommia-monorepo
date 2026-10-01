@@ -5,6 +5,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'crypto';
 
 interface SessionClaims {
@@ -16,8 +17,15 @@ interface SessionClaims {
 
 @Injectable()
 export class FinanceAdminGuard implements CanActivate {
+  constructor(private readonly config: ConfigService) {}
+
   canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest<{ headers: Record<string, string | undefined>; params: { slug?: string } }>();
+    const request = context.switchToHttp().getRequest<{
+      headers: Record<string, string | undefined>;
+      params: { slug?: string };
+      user?: SessionClaims;
+    }>();
+    if (request.user) return this.authorize(request.user, request.params.slug);
     const authorization = request.headers.authorization;
     if (!authorization?.startsWith('Bearer ')) throw new UnauthorizedException('Autenticación requerida.');
 
@@ -25,7 +33,7 @@ export class FinanceAdminGuard implements CanActivate {
     const [encodedClaims, encodedSignature] = token.split('.');
     if (!encodedClaims || !encodedSignature) throw new UnauthorizedException('Token inválido.');
 
-    const secret = process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me';
+    const secret = this.config.getOrThrow<string>('AUTH_TOKEN_SECRET');
     const expectedSignature = createHmac('sha256', secret).update(encodedClaims).digest('base64url');
     const actual = Buffer.from(encodedSignature);
     const expected = Buffer.from(expectedSignature);
@@ -40,13 +48,17 @@ export class FinanceAdminGuard implements CanActivate {
       throw new UnauthorizedException('Token inválido.');
     }
     if (!claims.exp || claims.exp < Date.now()) throw new UnauthorizedException('Sesión expirada.');
+    return this.authorize(claims, request.params.slug);
+  }
+
+  private authorize(claims: SessionClaims, slug?: string) {
+    if (!claims.sub || !claims.exp || claims.exp <= Date.now()) throw new UnauthorizedException('Sesión expirada.');
     if (!['SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR'].includes(claims.role)) {
       throw new ForbiddenException('No tienes permisos para operar finanzas.');
     }
-    if (claims.role !== 'SUPER_ADMIN' && claims.tenantSlug !== request.params.slug) {
+    if (claims.role !== 'SUPER_ADMIN' && claims.tenantSlug !== slug) {
       throw new ForbiddenException('El tenant de la sesión no coincide con la operación.');
     }
-
     return true;
   }
 }

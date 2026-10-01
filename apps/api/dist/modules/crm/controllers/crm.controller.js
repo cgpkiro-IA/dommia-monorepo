@@ -24,6 +24,9 @@ const create_gateway_dto_1 = require("../dto/create-gateway.dto");
 const self_service_provision_dto_1 = require("../dto/self-service-provision.dto");
 const update_plan_dto_1 = require("../dto/update-plan.dto");
 const crm_admin_guard_1 = require("../../auth/guards/crm-admin.guard");
+const auth_metadata_decorator_1 = require("../../auth/decorators/auth-metadata.decorator");
+const throttler_1 = require("@nestjs/throttler");
+const crm_dto_1 = require("../dto/crm.dto");
 let CrmController = class CrmController {
     crmService;
     crmAnalyticsService;
@@ -213,6 +216,9 @@ __decorate([
 ], CrmController.prototype, "getMetrics", null);
 __decorate([
     (0, common_1.Post)('self-service-provision'),
+    (0, auth_metadata_decorator_1.Public)(),
+    (0, common_1.UseGuards)(throttler_1.ThrottlerGuard),
+    (0, throttler_1.Throttle)({ default: { limit: 3, ttl: 15 * 60 * 1000 } }),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -221,6 +227,9 @@ __decorate([
 ], CrmController.prototype, "selfServiceProvision", null);
 __decorate([
     (0, common_1.Post)('prospects'),
+    (0, auth_metadata_decorator_1.Public)(),
+    (0, common_1.UseGuards)(throttler_1.ThrottlerGuard),
+    (0, throttler_1.Throttle)({ default: { limit: 5, ttl: 15 * 60 * 1000 } }),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -266,7 +275,7 @@ __decorate([
     __param(0, (0, common_1.Param)('uuid')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, crm_dto_1.GatewayHeartbeatDto]),
     __metadata("design:returntype", Promise)
 ], CrmController.prototype, "recordHeartbeat", null);
 __decorate([
@@ -275,7 +284,7 @@ __decorate([
     __param(0, (0, common_1.Param)('uuid')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, crm_dto_1.UpdateGatewayDto]),
     __metadata("design:returntype", Promise)
 ], CrmController.prototype, "updateGateway", null);
 __decorate([
@@ -300,7 +309,7 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [crm_dto_1.CreateCrmAlertDto]),
     __metadata("design:returntype", Promise)
 ], CrmController.prototype, "createAlert", null);
 __decorate([
@@ -319,7 +328,7 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:paramtypes", [String, crm_dto_1.ResolveCrmAlertDto, Object]),
     __metadata("design:returntype", Promise)
 ], CrmController.prototype, "resolveAlert", null);
 __decorate([
@@ -334,7 +343,7 @@ __decorate([
     (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [crm_dto_1.UpdateTelegramConfigDto]),
     __metadata("design:returntype", Promise)
 ], CrmController.prototype, "updateTelegramConfig", null);
 __decorate([
@@ -342,11 +351,12 @@ __decorate([
     (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [crm_dto_1.TestTelegramNotificationDto]),
     __metadata("design:returntype", Promise)
 ], CrmController.prototype, "testTelegramNotification", null);
 exports.CrmController = CrmController = __decorate([
     (0, common_1.Controller)('crm'),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'COMMERCIAL_EXEC', 'SUPPORT'),
     __metadata("design:paramtypes", [crm_service_1.CrmService,
         crm_analytics_service_1.CrmAnalyticsService,
         crm_alerts_service_1.CrmAlertsService,

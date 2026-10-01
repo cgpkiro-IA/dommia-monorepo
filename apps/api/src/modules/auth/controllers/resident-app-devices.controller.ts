@@ -3,10 +3,12 @@ import { ResidentAppPushTokenDto } from '../dto/resident-app-auth.dto';
 import { ResidentAppExceptionFilter } from '../filters/resident-app-exception.filter';
 import { ResidentAppAuthGuard, ResidentSessionClaims } from '../guards/resident-auth.guard';
 import { AuthRepository } from '../repositories/auth.repository';
+import { Roles } from '../decorators/auth-metadata.decorator';
 
 @Controller('auth/app/resident/devices')
 @UseFilters(ResidentAppExceptionFilter)
 @UseGuards(ResidentAppAuthGuard)
+@Roles('RESIDENT')
 export class ResidentAppDevicesController {
   constructor(private readonly authRepository: AuthRepository) {}
 

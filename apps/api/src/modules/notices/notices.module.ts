@@ -6,11 +6,12 @@ import { ResidentAppNoticesController } from './controllers/resident-app-notices
 import { AuthModule } from '../auth/auth.module';
 import { NoticesService } from './services/notices.service';
 import { NoticesRepository } from './repositories/notices.repository';
+import { AccessOperatorGuard } from '../access/guards/access-operator.guard';
 
 @Module({
   imports: [DatabaseModule, TenantsModule, AuthModule],
   controllers: [NoticesController, ResidentAppNoticesController],
-  providers: [NoticesService, NoticesRepository],
+  providers: [NoticesService, NoticesRepository, AccessOperatorGuard],
   exports: [NoticesService, NoticesRepository],
 })
 export class NoticesModule {}

@@ -12,6 +12,7 @@ var DatabaseService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DatabaseService = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const pg_1 = require("pg");
 let DatabaseService = DatabaseService_1 = class DatabaseService {
     pool;
@@ -19,13 +20,13 @@ let DatabaseService = DatabaseService_1 = class DatabaseService {
     async setTenantSearchPath(client, schemaName) {
         await client.query("SELECT set_config('search_path', $1, false)", [`${schemaName}, public`]);
     }
-    constructor() {
+    constructor(config) {
         this.pool = new pg_1.Pool({
-            host: process.env.POSTGRES_HOST || 'localhost',
-            port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
-            user: process.env.POSTGRES_USER || 'dommia_admin',
-            password: process.env.POSTGRES_PASSWORD || 'dommia_secret_2026',
-            database: process.env.POSTGRES_DB || 'dommia_master',
+            host: config.getOrThrow('POSTGRES_HOST'),
+            port: Number(config.getOrThrow('POSTGRES_PORT')),
+            user: config.getOrThrow('POSTGRES_USER'),
+            password: config.getOrThrow('POSTGRES_PASSWORD'),
+            database: config.getOrThrow('POSTGRES_DB'),
             max: 20,
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 5000,
@@ -144,6 +145,7 @@ let DatabaseService = DatabaseService_1 = class DatabaseService {
         await this.query('SELECT public.ensure_tenant_feature_tables($1)', [slug]);
         await this.query('SELECT public.ensure_tenant_finance_schema($1)', [slug]);
         await this.query('SELECT public.ensure_tenant_latest_guard_tables($1)', [slug]);
+        await this.query('SELECT public.ensure_tenant_monthly_financial_reports($1)', [slug]);
         const tenantId = res.rows[0].id;
         this.logger.log(`Provisioned tenant ${slug} with ID ${tenantId} and schema tenant_${slug}`);
         return tenantId;
@@ -161,6 +163,6 @@ let DatabaseService = DatabaseService_1 = class DatabaseService {
 exports.DatabaseService = DatabaseService;
 exports.DatabaseService = DatabaseService = DatabaseService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [])
+    __metadata("design:paramtypes", [config_1.ConfigService])
 ], DatabaseService);
 //# sourceMappingURL=database.service.js.map

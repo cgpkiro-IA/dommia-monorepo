@@ -1,4 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 
 @Injectable()
@@ -10,13 +11,13 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await client.query("SELECT set_config('search_path', $1, false)", [`${schemaName}, public`]);
   }
 
-  constructor() {
+  constructor(config: ConfigService) {
     this.pool = new Pool({
-      host: process.env.POSTGRES_HOST || 'localhost',
-      port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
-      user: process.env.POSTGRES_USER || 'dommia_admin',
-      password: process.env.POSTGRES_PASSWORD || 'dommia_secret_2026',
-      database: process.env.POSTGRES_DB || 'dommia_master',
+      host: config.getOrThrow<string>('POSTGRES_HOST'),
+      port: Number(config.getOrThrow<string>('POSTGRES_PORT')),
+      user: config.getOrThrow<string>('POSTGRES_USER'),
+      password: config.getOrThrow<string>('POSTGRES_PASSWORD'),
+      database: config.getOrThrow<string>('POSTGRES_DB'),
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
@@ -153,6 +154,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.query('SELECT public.ensure_tenant_feature_tables($1)', [slug]);
     await this.query('SELECT public.ensure_tenant_finance_schema($1)', [slug]);
     await this.query('SELECT public.ensure_tenant_latest_guard_tables($1)', [slug]);
+    await this.query('SELECT public.ensure_tenant_monthly_financial_reports($1)', [slug]);
     const tenantId = res.rows[0].id;
     this.logger.log(`Provisioned tenant ${slug} with ID ${tenantId} and schema tenant_${slug}`);
     return tenantId;

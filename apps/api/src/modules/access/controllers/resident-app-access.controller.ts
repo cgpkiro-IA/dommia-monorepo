@@ -3,10 +3,12 @@ import { ResidentAppAuthGuard, ResidentSessionClaims } from '../../auth/guards/r
 import { ResidentAppExceptionFilter } from '../../auth/filters/resident-app-exception.filter';
 import { CreateVisitorInvitationDto } from '../dto/access.dto';
 import { AccessService } from '../services/access.service';
+import { Roles } from '../../auth/decorators/auth-metadata.decorator';
 
 @Controller('auth/app/resident')
 @UseFilters(ResidentAppExceptionFilter)
 @UseGuards(ResidentAppAuthGuard)
+@Roles('RESIDENT')
 export class ResidentAppAccessController {
   constructor(private readonly accessService: AccessService) {}
 

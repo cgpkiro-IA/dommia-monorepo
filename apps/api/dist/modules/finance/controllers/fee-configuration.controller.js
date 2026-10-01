@@ -16,6 +16,8 @@ exports.FeeConfigurationController = void 0;
 const common_1 = require("@nestjs/common");
 const fee_configuration_service_1 = require("../services/fee-configuration.service");
 const fee_configuration_dto_1 = require("../dto/fee-configuration.dto");
+const finance_admin_guard_1 = require("../../auth/guards/finance-admin.guard");
+const auth_metadata_decorator_1 = require("../../auth/decorators/auth-metadata.decorator");
 let FeeConfigurationController = class FeeConfigurationController {
     feeService;
     constructor(feeService) {
@@ -122,6 +124,8 @@ __decorate([
 ], FeeConfigurationController.prototype, "simulateFee", null);
 exports.FeeConfigurationController = FeeConfigurationController = __decorate([
     (0, common_1.Controller)('tenants/:slug/finance/fees'),
+    (0, common_1.UseGuards)(finance_admin_guard_1.FinanceAdminGuard),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR'),
     __metadata("design:paramtypes", [fee_configuration_service_1.FeeConfigurationService])
 ], FeeConfigurationController);
 //# sourceMappingURL=fee-configuration.controller.js.map

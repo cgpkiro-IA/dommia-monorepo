@@ -20,6 +20,8 @@ const admin_mfa_dto_1 = require("../dto/admin-mfa.dto");
 const resident_auth_dto_1 = require("../dto/resident-auth.dto");
 const resident_auth_guard_1 = require("../guards/resident-auth.guard");
 const admin_session_guard_1 = require("../guards/admin-session.guard");
+const auth_metadata_decorator_1 = require("../decorators/auth-metadata.decorator");
+const throttler_1 = require("@nestjs/throttler");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -80,6 +82,9 @@ let AuthController = class AuthController {
 exports.AuthController = AuthController;
 __decorate([
     (0, common_1.Post)('login'),
+    (0, auth_metadata_decorator_1.Public)(),
+    (0, common_1.UseGuards)(throttler_1.ThrottlerGuard),
+    (0, throttler_1.Throttle)({ default: { limit: 10, ttl: 60_000 } }),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -88,6 +93,7 @@ __decorate([
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, common_1.Post)('mfa/verify'),
+    (0, auth_metadata_decorator_1.Public)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -96,6 +102,7 @@ __decorate([
 ], AuthController.prototype, "verifyMfaLogin", null);
 __decorate([
     (0, common_1.Get)('mfa/status'),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'COMMERCIAL_EXEC', 'SUPPORT'),
     (0, common_1.UseGuards)(admin_session_guard_1.AdminSessionGuard),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -104,6 +111,7 @@ __decorate([
 ], AuthController.prototype, "mfaStatus", null);
 __decorate([
     (0, common_1.Post)('mfa/setup'),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'COMMERCIAL_EXEC', 'SUPPORT'),
     (0, common_1.UseGuards)(admin_session_guard_1.AdminSessionGuard),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Req)()),
@@ -114,6 +122,7 @@ __decorate([
 ], AuthController.prototype, "startMfaSetup", null);
 __decorate([
     (0, common_1.Post)('mfa/enable'),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'COMMERCIAL_EXEC', 'SUPPORT'),
     (0, common_1.UseGuards)(admin_session_guard_1.AdminSessionGuard),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Req)()),
@@ -124,6 +133,7 @@ __decorate([
 ], AuthController.prototype, "enableMfa", null);
 __decorate([
     (0, common_1.Post)('mfa/disable'),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'COMMERCIAL_EXEC', 'SUPPORT'),
     (0, common_1.UseGuards)(admin_session_guard_1.AdminSessionGuard),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Req)()),
@@ -134,6 +144,7 @@ __decorate([
 ], AuthController.prototype, "disableMfa", null);
 __decorate([
     (0, common_1.Post)('select-tenant'),
+    (0, auth_metadata_decorator_1.Roles)('SUPER_ADMIN', 'TENANT_ADMIN', 'OPERATOR', 'COMMERCIAL_EXEC', 'SUPPORT'),
     (0, common_1.UseGuards)(admin_session_guard_1.AdminSessionGuard),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Req)()),
@@ -144,6 +155,7 @@ __decorate([
 ], AuthController.prototype, "selectTenant", null);
 __decorate([
     (0, common_1.Post)('resident/login'),
+    (0, auth_metadata_decorator_1.Public)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -152,6 +164,7 @@ __decorate([
 ], AuthController.prototype, "residentLogin", null);
 __decorate([
     (0, common_1.Post)('resident/activate'),
+    (0, auth_metadata_decorator_1.Public)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -160,6 +173,7 @@ __decorate([
 ], AuthController.prototype, "residentActivate", null);
 __decorate([
     (0, common_1.Get)('resident/me'),
+    (0, auth_metadata_decorator_1.Roles)('RESIDENT'),
     (0, common_1.UseGuards)(resident_auth_guard_1.ResidentAuthGuard),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -168,6 +182,7 @@ __decorate([
 ], AuthController.prototype, "residentProfile", null);
 __decorate([
     (0, common_1.Post)('resident/logout'),
+    (0, auth_metadata_decorator_1.Roles)('RESIDENT'),
     (0, common_1.UseGuards)(resident_auth_guard_1.ResidentAuthGuard),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Req)()),
@@ -177,6 +192,7 @@ __decorate([
 ], AuthController.prototype, "residentLogout", null);
 __decorate([
     (0, common_1.Post)('resident/change-password'),
+    (0, auth_metadata_decorator_1.Public)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -185,6 +201,7 @@ __decorate([
 ], AuthController.prototype, "residentChangePassword", null);
 __decorate([
     (0, common_1.Post)('resident/password-recovery'),
+    (0, auth_metadata_decorator_1.Public)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -193,6 +210,7 @@ __decorate([
 ], AuthController.prototype, "residentPasswordRecovery", null);
 __decorate([
     (0, common_1.Post)('resident/password-reset'),
+    (0, auth_metadata_decorator_1.Public)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),

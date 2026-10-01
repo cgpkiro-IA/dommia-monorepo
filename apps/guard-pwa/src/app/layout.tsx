@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import './globals.css';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'DOMMIA Guard | Control de acceso',
   description: 'Validación en tiempo real de accesos QR para personal de seguridad DOMMIA.',

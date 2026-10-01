@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InviteResidentsDto = exports.UpdateResidentDto = exports.CreateResidentDto = void 0;
+exports.InviteResidentDto = exports.InviteResidentsDto = exports.UpdateResidentDto = exports.CreateResidentDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateResidentDto {
     propertyId;
@@ -154,4 +154,25 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], InviteResidentsDto.prototype, "delivery", void 0);
+class InviteResidentDto {
+    createdBy;
+    contactMethod;
+    delivery;
+}
+exports.InviteResidentDto = InviteResidentDto;
+__decorate([
+    (0, class_validator_1.IsUUID)('4'),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], InviteResidentDto.prototype, "createdBy", void 0);
+__decorate([
+    (0, class_validator_1.IsIn)(['AUTO', 'EMAIL', 'PHONE']),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], InviteResidentDto.prototype, "contactMethod", void 0);
+__decorate([
+    (0, class_validator_1.IsIn)(['NONE', 'EMAIL', 'WHATSAPP']),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], InviteResidentDto.prototype, "delivery", void 0);
 //# sourceMappingURL=resident.dto.js.map

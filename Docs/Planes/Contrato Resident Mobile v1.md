@@ -1,8 +1,8 @@
 # Contrato Resident Mobile v1
 
-**Estado:** Contrato comun para Android e iOS, corregido contra `apps/api` el 29 de septiembre de 2026.
+**Estado:** Contrato normativo comun para Android e iOS, verificado contra `apps/api` y E2E el 30 de septiembre de 2026 (15/15).
 **Alcance:** Clientes nativos Android e iOS de DOMMIA Resident.
-**Fuente de verdad de implementacion:** `apps/api/src/modules/auth`, `apps/api/src/modules/access`, `apps/api/src/modules/notices` y `apps/api/src/modules/finance`.
+**Fuente normativa para clientes:** este documento. La implementacion se verifica contra `apps/api/src/modules/auth`, `apps/api/src/modules/access`, `apps/api/src/modules/notices` y `apps/api/src/modules/finance`; las guias Android/iOS no redefinen rutas, DTOs, permisos ni envelopes.
 **Prefijo HTTP:** `/api/v1`.
 
 Este documento define un unico contrato para Android e iOS. No se deben crear rutas separadas por plataforma. `clientType` identifica la plataforma de la sesion, pero no concede permisos.
@@ -11,12 +11,13 @@ Este documento define un unico contrato para Android e iOS. No se deben crear ru
 
 - Las rutas moviles usan `/auth/app/resident/*`.
 - `clientType` solo acepta `ANDROID` o `IOS`.
-- La PWA mantiene temporalmente las rutas legacy `/auth/resident/*`.
+- La PWA mantiene las rutas `/auth/resident/*` durante la transicion. Los nuevos logins de esas rutas emiten JWT estandar firmado con `AUTH_TOKEN_SECRET`; los tokens HMAC de dos segmentos ya emitidos se aceptan solo como compatibilidad temporal hasta su expiracion.
 - El servidor es la autoridad para identidad, tenant, vivienda, permisos y estado de sesion.
 - El cliente trata el JWT como opaco; no toma decisiones de negocio leyendo sus claims.
 - El cliente no envia `propertyId` para decidir su propia vivienda en operaciones moviles.
 - No se crean usuarios desde Android o iOS.
 - El `tenantSlug` es contexto de comunidad, no un secreto.
+- El servidor valida firma HS256, issuer, audience, `clientType`, expiracion y sesion revocable; el cliente trata el JWT como opaco.
 
 ## 2. Login movil
 
@@ -76,6 +77,8 @@ Reglas del request:
 
 El API no devuelve en este contrato `user`, `tenant` ni `refreshExpiresIn`.
 
+El access token es JWT de tres segmentos con header `{ alg: "HS256", typ: "JWT", kid: "resident-hs256-v1" }`. Sus claims de autorización los valida exclusivamente el servidor: `iss=dommia-api`, `aud=dommia-resident-api`, `sub`, `role=RESIDENT`, `tenantSlug`, `propertyId`, `sid`, `jti`, `clientType`, `iat` y `exp` (NumericDate en segundos). `RESIDENT_APP_TOKEN_SECRET` es secreto exclusivo del API, de al menos 32 caracteres; nunca se distribuye en APK/IPA.
+
 ### Cambio de contraseña requerido
 
 Si la cuenta tiene contraseña temporal, el login responde exitosamente sin emitir tokens:
@@ -107,7 +110,7 @@ El cliente debe completar el cambio y ejecutar login nuevamente.
 
 La contraseña nueva debe tener al menos 10 caracteres, una mayuscula, una minuscula, un numero y un simbolo.
 
-Este endpoint actualmente no requiere Bearer token. La politica de revocacion de sesiones existentes despues del cambio debe cerrarse antes de produccion; el comportamiento actual actualiza la contraseña y registra auditoria, pero no revoca todas las sesiones.
+Este endpoint no requiere Bearer token porque autentica con identificador, tenant y contraseña actual. Al completarlo, el API revoca todas las sesiones moviles activas y responde con `data.revokedSessions`; la app debe borrar ambos tokens y volver a login.
 
 ## 4. Refresh y sesion
 
@@ -176,7 +179,7 @@ Reglas para Android e iOS:
 
 ## 5. Recursos moviles
 
-Todas las rutas siguientes requieren JWT movil y derivan tenant y vivienda desde la sesion:
+Todas las rutas de recursos siguientes requieren una sesion Resident valida y rol `RESIDENT`; el API deriva tenant y vivienda desde la sesion. Acceso, invitaciones, sesiones/dispositivos y finanzas requieren JWT nativo mediante `ResidentAppAuthGuard`. Avisos usa `ResidentAuthGuard` para aceptar tambien sesiones Resident web durante la transicion. Login, cambio de contraseña, recuperacion, reset y refresh son publicas y se validan con credenciales, token de recuperacion o refresh token segun corresponda.
 
 | Operacion | Metodo y ruta |
 | --- | --- |
@@ -195,8 +198,27 @@ Todas las rutas siguientes requieren JWT movil y derivan tenant y vivienda desde
 | Upload de comprobante DEV | `POST /api/v1/auth/app/resident/finance/receipts` |
 | Registrar push token | `POST /api/v1/auth/app/resident/devices/push-token` |
 | Revocar push token | `DELETE /api/v1/auth/app/resident/devices/push-token/:deviceId` |
+| Listar rendiciones publicadas | `GET /api/v1/auth/app/resident/finance/monthly-reports` |
+| Consultar rendición | `GET /api/v1/auth/app/resident/finance/monthly-reports/:id` |
+| Marcar revisión opcional | `POST /api/v1/auth/app/resident/finance/monthly-reports/:id/review` |
+| Descargar evidencia redactada | `GET /api/v1/auth/app/resident/finance/monthly-reports/evidence/:evidenceId/content` |
 
-Las respuestas de finanzas no estan uniformadas en todos los servicios actuales. Los clientes deben usar modelos por endpoint hasta que el API publique envelopes consistentes.
+### Payloads de recursos móviles
+
+Los DTOs del API son la lista allowlist. No envíes propiedades extras; el `ValidationPipe` las rechaza. En ningún body nativo se acepta `tenantSlug` o `propertyId` para cambiar el contexto de la sesión.
+
+| Request | Campos requeridos y restricciones |
+| --- | --- |
+| Crear invitación | `visitorName` (2–150), `passType` (`SINGLE_USE`, `TEMPORARY`, `FREQUENT`), `validDays` (entero 1–30); `notes?` (máx. 300). |
+| Cotizar campaña | Sin body; el servidor usa la vivienda de los claims. |
+| Enviar SPEI | `amount` (número >0), `reference` (1–128), `receiptUrl` (1–5,000,000); `chargeId?`, `payerName?` (máx. 120), `notes?` (máx. 500). El backend agrega `propertyId` de la sesión. |
+| Enviar pago de campaña | `amount` (>0), `reference` (1–128); `receiptUrl?` (máx. 5,000,000), `payerName?` (máx. 120). El backend agrega `propertyId` de la sesión. |
+| Subir recibo DEV | `contentBase64`, `contentType` (`application/pdf`, `image/jpeg`, `image/png`). Máximo binario 3.75 MB. |
+| Registrar push token | `deviceId` UUID, `token` (20–4096). El servidor obtiene plataforma de `clientType`. |
+
+Las rutas de recursos Resident Mobile normalizan la respuesta como `{ success, message?, data }`. Los errores HTTP procesados por `ResidentAppExceptionFilter` responden `{ success: false, message, data: null, statusCode, error }`. Cada `data` conserva el modelo propio de su endpoint; no reutilices modelos de rutas PWA legacy.
+
+Las rendiciones mensuales son de solo lectura para Resident. La marca de revisión es opcional, idempotente y no condiciona el acceso. El snapshot publicado incluye agregados de ingresos/egresos y evidencias expresamente redactadas; no expone objetos `ADMIN_ONLY` ni datos de otro tenant.
 
 ### Push multiplataforma
 
@@ -213,6 +235,8 @@ La plataforma se obtiene de `clientType` en el JWT movil; el cliente no puede de
 
 `POST/DELETE /api/v1/auth/app/resident/devices/fcm-token` se conserva como alias compatible para clientes Android existentes. Las nuevas integraciones deben usar `push-token`.
 
+El request exige `deviceId` UUID y `token` de 20 a 4096 caracteres. La plataforma se deriva de `clientType` en la sesion, nunca del body.
+
 ### Comprobantes en DEV
 
 `POST /api/v1/auth/app/resident/finance/receipts` recibe:
@@ -226,7 +250,7 @@ La plataforma se obtiene de `clientType` en el JWT movil; el cliente no puede de
 
 Tipos permitidos en DEV: `application/pdf`, `image/jpeg` e `image/png`. El API valida la firma binaria, limita el archivo a 3.75 MB y lo guarda localmente fuera de PostgreSQL. La respuesta devuelve una referencia `local://resident-receipts/...` con `storage=LOCAL_DEV`.
 
-Esta referencia solo sirve para pruebas locales. No debe enviarse a producción ni interpretarse como una URL pública. El almacenamiento productivo requiere un adaptador privado posterior; el contrato de pagos mantiene `receiptUrl` para recibir la referencia aprobada por el backend.
+Esta referencia solo sirve para pruebas locales. No debe enviarse a produccion ni interpretarse como URL publica. Android aun no integra el upload; iOS solo puede usarlo en DEV. El almacenamiento productivo requiere un adaptador privado aprobado. Ninguna app debe presentar pagos con `local://` como comprobantes listos para PROD.
 
 ## 6. Errores y reintentos
 
@@ -240,32 +264,32 @@ Esta referencia solo sirve para pruebas locales. No debe enviarse a producción 
 
 No se deben registrar passwords, access tokens, refresh tokens, QR, comprobantes ni PII innecesaria.
 
-## 7. Contratos pendientes antes de release
+## 7. Estado y bloqueos antes de release
 
-Estos puntos son multiplataforma y no deben resolverse creando rutas exclusivas de Android o iOS:
+Backend y las rutas de este contrato pasaron E2E local 15/15 el 2026-09-30. Ya estan implementados y probados: guard Resident movil, aislamiento tenant/vivienda, cambio/reset de contraseña con revocacion de sesiones moviles, rotacion/replay de refresh, sesiones por dispositivo, avisos, invitaciones, acceso y lectura/cotizacion financiera.
 
-1. Revocar sesiones existentes al cambiar contraseña.
-2. Uniformar envelopes de login, refresh, perfil y finanzas.
-3. Definir idempotencia para pagos, comprobantes e invitaciones. Sin cambios de esquema no se puede garantizar idempotencia atomica; mientras no exista almacenamiento aprobado, las apps no deben reintentar automaticamente estas operaciones.
-4. Definir upload privado de comprobantes y el significado de `receiptUrl`.
-5. Validar integracion de proveedores FCM/APNs y completar pruebas de entrega; el contrato generico `push-token` ya esta disponible y `fcm-token` permanece como alias.
-6. Validar App Links/Universal Links y entrega por email/WhatsApp para las rutas de recuperacion movil, ya disponibles. El contrato de URL queda fijado en esta version.
-7. Probar refresh concurrente y rate limiting distribuido.
+Pendientes que bloquean el uso productivo de las funciones correspondientes:
+
+1. Almacenamiento privado de comprobantes. `POST /finance/receipts` actualmente guarda solo en DEV y devuelve `local://`; no usarlo en PROD.
+2. Idempotencia persistida para pagos/envios. No existe `Idempotency-Key` ni garantia atomica; los clientes no reintentan automaticamente esos POST.
+3. Rate limiting distribuido antes de escalar Cloud Run a varias instancias; el rate limiter Resident actual es en memoria por proceso.
+4. Validacion de staging, proveedores push FCM/APNs y enlaces App Links/Universal Links en dominios y cuentas de firma productivos.
+5. Android implementa estado/campañas/cotizacion, pero aun no envio de pago/upload. iOS implementa upload local DEV, pero no envio de pago.
 
 ## 8. Limite de compatibilidad de esta version
 
-Las implementaciones de este contrato solo pueden modificar las salidas y el comportamiento de las rutas `/api/v1/auth/app/*` y sus recursos moviles protegidos bajo `/api/v1/auth/app/resident/*`.
+Este contrato limita los cambios propios del cliente nativo a `/api/v1/auth/app/*` y sus recursos protegidos. La compatibilidad legacy de la PWA se conserva con los cambios transversales de autorización documentados en el Plan Maestro 1.22.0: algunas rutas `tenants/*` ahora requieren Bearer y devuelven 401/403 a clientes no autorizados, aunque sus modelos de éxito de negocio no cambien.
 
 No se permite en esta fase:
 
-- Crear migraciones, columnas, indices o tablas nuevas.
+- Ejecutar DDL desde handlers HTTP, guards o requests.
 - Cambiar el esquema o los datos consumidos por la PWA y los sitios administrativos.
-- Cambiar respuestas de `/api/v1/auth/resident/*`, `/api/v1/auth/*` administrativo o rutas `tenants/*` existentes.
+- Cambiar campos de éxito de `/api/v1/auth/resident/*`, `/api/v1/auth/*` administrativo o rutas `tenants/*` existentes sin versionado y prueba de consumidores.
 - Cambiar servicios compartidos de forma que alteren la respuesta de clientes legacy.
 
-La implementacion debe usar adaptadores, mappers o servicios especificos de app para transformar respuestas sin afectar los contratos existentes. Puede leer y actualizar registros existentes cuando la operacion ya forme parte del contrato movil actual, por ejemplo revocar una sesion movil existente.
+La implementacion debe usar adaptadores, mappers o servicios especificos de app para transformar respuestas sin afectar los contratos existentes. Puede leer y actualizar registros existentes cuando la operacion ya forme parte del contrato movil actual, por ejemplo revocar una sesion movil existente. Esta version consume las migraciones 021 (`resident_app_refresh_sessions`), 022 (`resident_push_tokens`) y 023 (`tenant_monthly_financial_reports`); cualquier nueva migracion requiere revision, bootstrap y cobertura E2E.
 
-La finalizacion de estos puntos cambia solamente las rutas `/api/v1/auth/app/*` y sus pruebas. Cualquier requisito que necesite persistencia nueva, como idempotencia atomica o un registro generico de tokens push, debe quedar documentado como bloqueo y no implementarse mediante cambios de base de datos en esta fase.
+La compatibilidad móvil se prueba contra `/api/v1/auth/app/*` y las rutas compartidas explícitamente indicadas aquí; no se debe ampliar o cambiar el contrato PWA/admin por conveniencia del cliente nativo.
 
 ## 9. Rate limiting por ambiente
 

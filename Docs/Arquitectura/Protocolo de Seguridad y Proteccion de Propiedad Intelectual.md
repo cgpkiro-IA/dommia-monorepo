@@ -124,6 +124,11 @@ Para evitar que un usuario demo o un atacante pueda deducir o extraer datos de o
 - [x] Filtro de correos temporales/desechables activo en el endpoint de prospectos.
 - [x] Flujo de Auto-Aprovisionamiento Inmediato validando subdominios únicos y contraseñas cifradas con `bcrypt`.
 - [x] Esquemas de base de datos protegidos con `search_path` estricto y sin acceso cruzado entre tenants.
+- [x] Helmet instalado globalmente; smoke local confirmó `X-Frame-Options` y otras cabeceras de seguridad.
+- [x] CORS usa allowlist explícita y Joi rechaza en producción wildcard/orígenes no HTTPS, configuración PostgreSQL incompleta o llaves débiles.
+- [x] `ValidationPipe` global transforma DTOs, elimina propiedades no declaradas y rechaza campos inesperados.
+- [x] Passport JWT con `ApiAuthGuard` global, `@Public()` para excepciones explícitas y `@Roles()`/`RolesGuard` para RBAC.
+- [x] Guards de dominio validan audiencia Resident, sesión revocable y aislamiento tenant/vivienda; API E2E local 15/15 el 2026-09-30.
 
 ## 7. Autenticación de Dos Pasos para Administradores
 

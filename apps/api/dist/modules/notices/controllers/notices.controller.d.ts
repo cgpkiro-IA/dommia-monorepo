@@ -1,17 +1,17 @@
 import { NoticesService } from '../services/notices.service';
-import { CreateNoticeDto, UpdateNoticeDto } from '../dto/notice.dto';
+import { AcknowledgeGuardNoticeDto, CreateNoticeDto, UpdateNoticeDto } from '../dto/notice.dto';
+import { AccessOperatorClaims } from '../../access/guards/access-operator.guard';
 export declare class NoticesController {
     private readonly noticesService;
     constructor(noticesService: NoticesService);
-    getNotices(slug: string, publishedOnly?: string, audience?: string): Promise<{
+    getNotices(slug: string, request: {
+        user: AccessOperatorClaims;
+    }, publishedOnly?: string, audience?: string): Promise<{
         success: boolean;
         data: any[];
         count: number;
     }>;
-    acknowledgeNoticeByGuard(slug: string, id: string, body: {
-        guardUserId?: string;
-        guardName?: string;
-    }): Promise<{
+    acknowledgeNoticeByGuard(slug: string, id: string, body: AcknowledgeGuardNoticeDto): Promise<{
         success: boolean;
         message: string;
         data: any;

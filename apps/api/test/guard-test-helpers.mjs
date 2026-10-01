@@ -69,6 +69,7 @@ export async function prepareGuardQa() {
         '020_tenant_finance_schema_completion.sql',
         '021_resident_app_refresh_sessions.sql',
         '022_resident_push_tokens.sql',
+        '023_tenant_monthly_financial_reports.sql',
       ];
       for (const migrationName of migrations) {
         const migration = await readFile(resolve(repositoryRoot, 'docker/migrations', migrationName), 'utf8');
@@ -94,7 +95,9 @@ export async function tenantUserId(email, role) {
     FROM public.users u
     JOIN public.user_tenants ut ON ut.user_id = u.id
     JOIN public.tenants t ON t.id = ut.tenant_id
-    WHERE lower(u.email) = lower($1) AND t.slug = $2 AND ut.role = $3 AND u.is_active = TRUE
+    WHERE lower(u.email) = lower($1)
+      AND lower(replace(t.slug, '-', '_')) = $2
+      AND ut.role = $3 AND u.is_active = TRUE
   `, [email, tenantDatabaseSlug, role]);
   assert.equal(result.rowCount, 1, `Debe existir el usuario QA ${email} con rol ${role}.`);
   return result.rows[0].id;
@@ -102,7 +105,10 @@ export async function tenantUserId(email, role) {
 
 export async function signTenantToken(email, role) {
   const userId = await tenantUserId(email, role);
-  const tenant = await pool.query('SELECT id FROM public.tenants WHERE slug = $1', [tenantDatabaseSlug]);
+  const tenant = await pool.query(
+    "SELECT id FROM public.tenants WHERE lower(replace(slug, '-', '_')) = $1",
+    [tenantDatabaseSlug],
+  );
   assert.equal(tenant.rowCount, 1, 'Debe existir el tenant QA.');
   const claims = Buffer.from(JSON.stringify({
     sub: userId,
@@ -112,7 +118,9 @@ export async function signTenantToken(email, role) {
     tenantSlug,
     exp: Date.now() + 5 * 60 * 1000,
   })).toString('base64url');
-  const signature = createHmac('sha256', process.env.AUTH_TOKEN_SECRET || 'dommia-local-auth-secret-change-me')
+  const secret = process.env.AUTH_TOKEN_SECRET;
+  assert.ok(secret && secret.length >= 32, 'AUTH_TOKEN_SECRET debe estar configurado para las pruebas.');
+  const signature = createHmac('sha256', secret)
     .update(claims)
     .digest('base64url');
   return `${claims}.${signature}`;

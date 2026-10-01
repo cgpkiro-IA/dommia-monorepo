@@ -66,6 +66,11 @@ required_tenant_tables(table_name) AS (
     ('annual_payment_campaigns'),
     ('annual_payment_commitments'),
     ('annual_payment_allocations'),
+    ('financial_monthly_report_settings'),
+    ('financial_monthly_reports'),
+    ('financial_expenses'),
+    ('financial_report_evidence'),
+    ('financial_monthly_report_reviews'),
     ('notices'),
     ('guard_deliveries'),
     ('guard_incidents'),
@@ -109,7 +114,23 @@ required_tenant_columns(table_name, column_name) AS (
     ('financial_payments', 'payer_name'),
     ('financial_payments', 'notes'),
     ('financial_payments', 'gateway_provider'),
-    ('financial_payments', 'gateway_tx_id')
+    ('financial_payments', 'gateway_tx_id'),
+    ('financial_expenses', 'report_id'),
+    ('financial_expenses', 'category'),
+    ('financial_expenses', 'expense_date'),
+    ('financial_expenses', 'amount'),
+    ('financial_expenses', 'status'),
+    ('financial_monthly_reports', 'period_start'),
+    ('financial_monthly_reports', 'period_end'),
+    ('financial_monthly_reports', 'revision'),
+    ('financial_monthly_reports', 'status'),
+    ('financial_monthly_reports', 'report_snapshot'),
+    ('financial_report_evidence', 'report_id'),
+    ('financial_report_evidence', 'expense_id'),
+    ('financial_report_evidence', 'object_key'),
+    ('financial_report_evidence', 'visibility'),
+    ('financial_report_evidence', 'is_redacted'),
+    ('financial_monthly_report_settings', 'reporting_start_month')
 ),
 required_tenant_indexes(index_name) AS (
   VALUES
@@ -125,13 +146,17 @@ required_tenant_indexes(index_name) AS (
     ('invitations_resident_created_idx'),
     ('access_logs_invitation_idx'),
     ('idx_notices_audience'),
-    ('idx_guard_incidents_panic')
+    ('idx_guard_incidents_panic'),
+    ('financial_expenses_period_status_idx'),
+    ('financial_expenses_report_idx'),
+    ('financial_monthly_reports_one_draft_idx')
 ),
 required_functions(signature) AS (
   VALUES
     ('public.provision_tenant_schema(text,text,text,integer,text)'),
     ('public.ensure_tenant_feature_tables(text)'),
     ('public.ensure_tenant_finance_schema(text)'),
+    ('public.ensure_tenant_monthly_financial_reports(text)'),
     ('public.ensure_guard_consigns_and_panic(text)'),
     ('public.ensure_tenant_latest_guard_tables(text)')
 ),
@@ -189,7 +214,7 @@ missing AS (
   FROM tenant_schemas s
   WHERE NOT EXISTS (
     SELECT 1 FROM public.tenants t
-    WHERE t.slug = substring(s.schema_name FROM 8)
+    WHERE lower(replace(t.slug, '-', '_')) = substring(s.schema_name FROM 8)
   )
   UNION ALL
   SELECT 'public function', 'public', r.signature

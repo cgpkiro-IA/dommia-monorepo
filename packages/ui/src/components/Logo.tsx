@@ -2,14 +2,14 @@ import React from 'react';
 
 export interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
-  variant?: 'light' | 'dark';
+  variant?: 'light' | 'dark' | 'auto';
   showText?: boolean;
   className?: string;
 }
 
 export const Logo: React.FC<LogoProps> = ({
   size = 'md',
-  variant = 'dark',
+  variant = 'auto',
   showText = true,
   className = '',
 }) => {
@@ -25,10 +25,14 @@ export const Logo: React.FC<LogoProps> = ({
     lg: 'text-3xl',
   };
 
-  const isDark = variant === 'dark';
-  const textColor = isDark ? 'text-slate-900' : 'text-white';
+  const textColor =
+    variant === 'light'
+      ? 'text-white'
+      : variant === 'dark'
+      ? 'text-slate-900'
+      : 'text-slate-900 dark:text-white';
+
   const iconColor = '#2563EB'; // Royal Blue
-  const secondaryColor = isDark ? '#0F172A' : '#FFFFFF';
 
   return (
     <div className={`inline-flex items-center gap-2.5 font-bold tracking-tight select-none ${className}`}>
@@ -44,9 +48,13 @@ export const Logo: React.FC<LogoProps> = ({
         {/* Contorno de la letra D con techo de casa */}
         <path
           d="M8 8V40H26C34.8366 40 42 32.8366 42 24C42 15.1634 34.8366 8 26 8H8Z"
-          fill={secondaryColor}
-          fillOpacity={isDark ? 0.08 : 0.2}
-          stroke={secondaryColor}
+          className={
+            variant === 'light'
+              ? 'fill-white/20 stroke-white'
+              : variant === 'dark'
+              ? 'fill-slate-900/10 stroke-slate-900'
+              : 'fill-slate-900/10 stroke-slate-900 dark:fill-white/20 dark:stroke-white'
+          }
           strokeWidth="3.5"
           strokeLinejoin="round"
         />
@@ -66,7 +74,7 @@ export const Logo: React.FC<LogoProps> = ({
 
       {showText && (
         <div className="flex flex-col leading-none">
-          <span className={`font-extrabold tracking-wider ${textSizes[size]} ${textColor} font-['Manrope']`}>
+          <span className={`font-extrabold tracking-wider ${textSizes[size]} ${textColor} font-['Manrope'] transition-colors`}>
             DOMMIA
           </span>
           <span className="text-[9px] tracking-widest text-blue-600 font-semibold uppercase mt-0.5">

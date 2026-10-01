@@ -1,7 +1,7 @@
-const configuredCrmUrl = process.env.NEXT_PUBLIC_CRM_URL?.trim();
-
-if (!configuredCrmUrl || !/^https?:\/\//i.test(configuredCrmUrl)) {
-  throw new Error('NEXT_PUBLIC_CRM_URL debe definir una URL HTTP(S) antes de compilar Communities.');
-}
+const configuredCrmUrl =
+  process.env.NEXT_PUBLIC_CRM_URL?.trim() ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://crm.dommia.com.mx'
+    : 'http://localhost:3001');
 
 export const CRM_URL = new URL(configuredCrmUrl).origin;

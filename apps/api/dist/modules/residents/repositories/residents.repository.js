@@ -57,6 +57,8 @@ let ResidentsRepository = class ResidentsRepository {
         return res.rows.length > 0;
     }
     async checkEmailExists(slug, email, excludeId) {
+        if (!email?.trim())
+            return false;
         let query = 'SELECT 1 FROM residents WHERE LOWER(email) = LOWER($1)';
         const params = [email.trim()];
         if (excludeId) {
@@ -82,7 +84,7 @@ let ResidentsRepository = class ResidentsRepository {
             data.propertyId,
             data.firstName.trim(),
             data.lastName.trim(),
-            data.email.trim(),
+            data.email?.trim() || null,
             data.phone,
             data.role,
             data.isPrimary,

@@ -1,7 +1,7 @@
 import React from 'react';
 export interface LogoProps {
     size?: 'sm' | 'md' | 'lg';
-    variant?: 'light' | 'dark';
+    variant?: 'light' | 'dark' | 'auto';
     showText?: boolean;
     className?: string;
 }

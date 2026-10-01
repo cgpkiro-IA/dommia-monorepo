@@ -41,11 +41,14 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsEmail)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateIf)((_object, value) => value !== undefined && value !== null && value !== ''),
     __metadata("design:type", String)
 ], CreateResidentDto.prototype, "email", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateIf)((_object, value) => value !== undefined && value !== null && value !== ''),
+    (0, class_validator_1.Matches)(/^\d{10}$/, { message: 'El celular debe tener exactamente 10 dígitos.' }),
     __metadata("design:type", String)
 ], CreateResidentDto.prototype, "phone", void 0);
 __decorate([
@@ -97,11 +100,14 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsEmail)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateIf)((_object, value) => value !== undefined && value !== null && value !== ''),
     __metadata("design:type", String)
 ], UpdateResidentDto.prototype, "email", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateIf)((_object, value) => value !== undefined && value !== null && value !== ''),
+    (0, class_validator_1.Matches)(/^\d{10}$/, { message: 'El celular debe tener exactamente 10 dígitos.' }),
     __metadata("design:type", String)
 ], UpdateResidentDto.prototype, "phone", void 0);
 __decorate([

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Send, Loader2, Phone, Mail, Building, User } from 'lucide-react';
 import { DemoFormData } from '../../../types';
+import { Button } from '@dommia/ui';
 
 interface DemoFormProps {
   formData: DemoFormData;
@@ -18,7 +19,7 @@ export const DemoForm: React.FC<DemoFormProps> = ({
   onSubmit,
 }) => {
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
+    <form onSubmit={onSubmit} className="space-y-6">
       {/* Invisible Honeypot for Anti-Bot protection */}
       <input
         type="text"
@@ -32,7 +33,7 @@ export const DemoForm: React.FC<DemoFormProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-heading">
             Nombre Completo *
           </label>
           <div className="relative">
@@ -43,13 +44,13 @@ export const DemoForm: React.FC<DemoFormProps> = ({
               value={formData.name}
               onChange={(e) => onFormChange({ ...formData, name: e.target.value })}
               placeholder="Ing. Carlos Mendoza"
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 transition-all"
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-heading">
             Correo Electrónico *
           </label>
           <div className="relative">
@@ -59,14 +60,14 @@ export const DemoForm: React.FC<DemoFormProps> = ({
               required
               value={formData.email}
               onChange={(e) => onFormChange({ ...formData, email: e.target.value })}
-              placeholder="carlos@residencia.com"
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 transition-all"
+              placeholder="carlos@residencial.com"
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-heading">
             Teléfono / WhatsApp *
           </label>
           <div className="relative">
@@ -77,13 +78,13 @@ export const DemoForm: React.FC<DemoFormProps> = ({
               value={formData.phone}
               onChange={(e) => onFormChange({ ...formData, phone: e.target.value })}
               placeholder="+52 55 1234 5678"
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 transition-all"
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-heading">
             Fraccionamiento / Residencial *
           </label>
           <div className="relative">
@@ -94,42 +95,41 @@ export const DemoForm: React.FC<DemoFormProps> = ({
               value={formData.communityName}
               onChange={(e) => onFormChange({ ...formData, communityName: e.target.value })}
               placeholder="Residencial Las Palmas"
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 transition-all"
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner"
             />
           </div>
         </div>
 
         <div className="sm:col-span-2">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-            Notas o preguntas para la demostración
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-heading">
+            Notas o inquietudes para la sesión de demostración
           </label>
           <textarea
-            rows={2}
+            rows={3}
             value={formData.notes}
             onChange={(e) => onFormChange({ ...formData, notes: e.target.value })}
-            placeholder="Ej. Quisiéramos ver cómo funciona la app para colonos y si es compatible con nuestras plumas existentes."
-            className="w-full p-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 transition-all resize-none"
+            placeholder="Ej. Quisiéramos revisar la facturación automatizada CFDI y la sincronización con nuestras plumas vehiculares."
+            className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none shadow-inner"
           />
         </div>
       </div>
 
-      <button
+      <Button
         type="submit"
+        variant="primary"
+        size="lg"
         disabled={loading}
-        className="w-full py-4 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-500 shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Agendando demostración privada...</span>
-          </>
-        ) : (
-          <>
-            <span>Solicitar Demostración Guiada</span>
+        className="w-full !py-4 font-bold text-sm shadow-xl shadow-blue-600/25 cursor-pointer disabled:opacity-50"
+        rightIcon={
+          loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
             <Send className="w-4 h-4" />
-          </>
-        )}
-      </button>
+          )
+        }
+      >
+        {loading ? 'Agendando demostración privada...' : 'Solicitar Demostración Guiada'}
+      </Button>
     </form>
   );
 };

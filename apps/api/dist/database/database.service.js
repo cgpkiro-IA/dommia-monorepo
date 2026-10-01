@@ -146,6 +146,7 @@ let DatabaseService = DatabaseService_1 = class DatabaseService {
         await this.query('SELECT public.ensure_tenant_finance_schema($1)', [slug]);
         await this.query('SELECT public.ensure_tenant_latest_guard_tables($1)', [slug]);
         await this.query('SELECT public.ensure_tenant_monthly_financial_reports($1)', [slug]);
+        await this.query('SELECT public.ensure_tenant_access_points($1)', [slug]);
         const tenantId = res.rows[0].id;
         this.logger.log(`Provisioned tenant ${slug} with ID ${tenantId} and schema tenant_${slug}`);
         return tenantId;

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { TierKey } from '../../../types';
+import { Globe, Check } from 'lucide-react';
 
 interface DomainPolicyBoxProps {
   slug: string;
@@ -17,63 +18,67 @@ export const DomainPolicyBox: React.FC<DomainPolicyBoxProps> = ({
   onCustomDomainChange,
 }) => {
   return (
-    <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+    <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800/90 space-y-3.5 shadow-inner">
       <div className="flex items-center justify-between text-xs">
-        <span className="font-bold uppercase tracking-wider text-slate-300">
-          Configuración de Dominio y Acceso
-        </span>
+        <div className="flex items-center gap-2">
+          <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <span className="font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 font-heading">
+            Configuración de Dominio y Acceso Web
+          </span>
+        </div>
         {tierKey === 'ENTERPRISE' ? (
-          <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-bold">
-            Gratis en Enterprise
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/40 text-[10px] font-black uppercase">
+            Incluido en Enterprise
           </span>
         ) : (
-          <span className="px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 text-[10px] font-semibold">
+          <span className="px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/40 text-[10px] font-bold uppercase">
             Dominio Estándar
           </span>
         )}
       </div>
 
       {tierKey === 'ENTERPRISE' ? (
-        <div className="p-3 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-xs">
-          <p className="text-emerald-300 font-semibold mb-1">
-            ✓ Subdominio propio incluido en tu plan
-          </p>
-          <p className="text-slate-400 font-mono text-[11px]">
-            URL: <span className="text-white font-bold">https://{slug || 'tu_comunidad'}.dommia.com</span>
+        <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/30 text-xs">
+          <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-bold mb-1">
+            <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+            <span>Subdominio exclusivo incluido en tu plan</span>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+            Enlace de acceso: <span className="text-slate-900 dark:text-white font-bold underline">https://{slug || 'tu_fraccionamiento'}.dommia.com</span>
           </p>
         </div>
       ) : (
-        <div className="space-y-2.5">
-          <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs">
-            <p className="text-slate-300 font-medium mb-1">
-              URL Estándar de Acceso (Sin costo adicional):
+        <div className="space-y-3">
+          <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-xs shadow-xs">
+            <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">
+              Enlace Estándar de Acceso (Sin costo adicional):
             </p>
-            <p className="text-blue-400 font-mono text-[11px]">
-              https://standar.dommia.com/{slug || 'tu_comunidad'}
+            <p className="text-blue-600 dark:text-blue-400 font-mono text-[11px] font-semibold">
+              https://standar.dommia.com/{slug || 'tu_fraccionamiento'}
             </p>
           </div>
 
-          <label className="flex items-start gap-3 p-3 rounded-lg bg-purple-950/20 border border-purple-800/40 cursor-pointer hover:border-purple-600 transition-colors">
+          <label className="flex items-start gap-3.5 p-3.5 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 hover:border-purple-500/60 cursor-pointer transition-all">
             <input
               type="checkbox"
               checked={hasCustomDomain}
               onChange={(e) => onCustomDomainChange(e.target.checked)}
-              className="mt-0.5 rounded border-slate-700 bg-slate-900 text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
+              className="mt-0.5 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer accent-purple-600"
             />
             <div className="text-xs">
-              <div className="font-semibold text-purple-200 flex items-center gap-2">
+              <div className="font-bold text-purple-900 dark:text-purple-200 flex items-center gap-2">
                 <span>Contratar Add-on de Subdominio Personalizado</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-900/60 text-purple-200 font-bold border border-purple-700">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/80 text-purple-700 dark:text-purple-200 font-bold border border-purple-300 dark:border-purple-700">
                   + $490 MXN/mes
                 </span>
               </div>
-              <p className="text-slate-400 text-[11px] mt-0.5">
+              <p className="text-slate-600 dark:text-slate-400 text-[11px] mt-1">
                 {hasCustomDomain ? (
                   <span>
-                    Acceso contratado: <strong className="text-emerald-400 font-mono">https://{slug || 'tu_comunidad'}.dommia.com</strong>
+                    Acceso activo: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">https://{slug || 'tu_fraccionamiento'}.dommia.com</strong>
                   </span>
                 ) : (
-                  <span>Otorga a tu fraccionamiento un subdominio exclusivo sin prefijos estándar.</span>
+                  <span>Otorga a tu comunidad un enlace propio y exclusivo para colonos y administradores.</span>
                 )}
               </p>
             </div>

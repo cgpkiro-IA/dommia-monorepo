@@ -5,7 +5,7 @@ export declare class ResidentsRepository {
     findAllByTenant(slug: string, propertyId?: string): Promise<any[]>;
     findById(slug: string, id: string): Promise<any>;
     checkPropertyExists(slug: string, propertyId: string): Promise<boolean>;
-    checkEmailExists(slug: string, email: string, excludeId?: string): Promise<boolean>;
+    checkEmailExists(slug: string, email: string | null, excludeId?: string): Promise<boolean>;
     resetPrimaryForProperty(slug: string, propertyId: string, excludeId?: string): Promise<void>;
     create(slug: string, data: {
         propertyId: string;

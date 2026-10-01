@@ -9,14 +9,14 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AcknowledgeGuardNoticeDto = exports.UpdateNoticeDto = exports.CreateNoticeDto = void 0;
+exports.UpdateNoticeDto = exports.CreateNoticeDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateNoticeDto {
     title;
     content;
-    category = 'GENERAL';
-    priority = 'MEDIUM';
-    targetAudience = 'ALL';
+    category = "GENERAL";
+    priority = "MEDIUM";
+    targetAudience = "ALL";
     target_audience;
     expiresAt;
     expires_at;
@@ -41,19 +41,26 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL', 'GUARD_CONSIGN', 'SECURITY']),
+    (0, class_validator_1.IsIn)([
+        "URGENT",
+        "MAINTENANCE",
+        "ASSEMBLY",
+        "GENERAL",
+        "GUARD_CONSIGN",
+        "SECURITY",
+    ]),
     __metadata("design:type", String)
 ], CreateNoticeDto.prototype, "category", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['HIGH', 'MEDIUM', 'LOW', 'URGENT']),
+    (0, class_validator_1.IsIn)(["HIGH", "MEDIUM", "LOW", "URGENT"]),
     __metadata("design:type", String)
 ], CreateNoticeDto.prototype, "priority", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['ALL', 'RESIDENTS', 'GUARDS']),
+    (0, class_validator_1.IsIn)(["ALL", "RESIDENTS", "GUARDS"]),
     __metadata("design:type", String)
 ], CreateNoticeDto.prototype, "targetAudience", void 0);
 __decorate([
@@ -131,19 +138,26 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL', 'GUARD_CONSIGN', 'SECURITY']),
+    (0, class_validator_1.IsIn)([
+        "URGENT",
+        "MAINTENANCE",
+        "ASSEMBLY",
+        "GENERAL",
+        "GUARD_CONSIGN",
+        "SECURITY",
+    ]),
     __metadata("design:type", String)
 ], UpdateNoticeDto.prototype, "category", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['HIGH', 'MEDIUM', 'LOW', 'URGENT']),
+    (0, class_validator_1.IsIn)(["HIGH", "MEDIUM", "LOW", "URGENT"]),
     __metadata("design:type", String)
 ], UpdateNoticeDto.prototype, "priority", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['ALL', 'RESIDENTS', 'GUARDS']),
+    (0, class_validator_1.IsIn)(["ALL", "RESIDENTS", "GUARDS"]),
     __metadata("design:type", String)
 ], UpdateNoticeDto.prototype, "targetAudience", void 0);
 __decorate([
@@ -191,19 +205,4 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateNoticeDto.prototype, "is_published", void 0);
-class AcknowledgeGuardNoticeDto {
-    guardUserId;
-    guardName;
-}
-exports.AcknowledgeGuardNoticeDto = AcknowledgeGuardNoticeDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], AcknowledgeGuardNoticeDto.prototype, "guardUserId", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], AcknowledgeGuardNoticeDto.prototype, "guardName", void 0);
 //# sourceMappingURL=notice.dto.js.map

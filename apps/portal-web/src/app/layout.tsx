@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import './globals.css';
 import { Analytics } from '../components/Analytics';
+
+export const dynamic = 'force-dynamic';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://dommia.com';
 
@@ -153,11 +156,15 @@ const jsonLdSchema = {
   ],
 };
 
-export default function RootLayout({
+const jsonLd = JSON.stringify(jsonLdSchema).replace(/</g, '\\u003c');
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const nonce = (await headers()).get('x-nonce') || undefined;
+
   return (
     <html lang="es" className="scroll-smooth">
       <head>
@@ -165,11 +172,12 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }}
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: jsonLd }}
         />
       </head>
       <body className="min-h-screen bg-[#0B1120] text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
-        <Analytics />
+        <Analytics nonce={nonce} />
         {children}
       </body>
     </html>

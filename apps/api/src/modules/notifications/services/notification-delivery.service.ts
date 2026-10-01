@@ -48,7 +48,26 @@ export class NotificationDeliveryService {
   }
 
   private html(message: InvitationMessage) {
-    return `<div style="font-family:Arial,sans-serif;color:#0f172a;max-width:620px;margin:auto"><h1 style="color:#2563eb">Activa tu acceso a Dommia Resident</h1><p>Hola <strong>${message.residentName}</strong>:</p><p>La administración de <strong>${message.communityName}</strong> habilitó tu cuenta Resident.</p><h2>Con tu cuenta podrás:</h2><ul><li>Consultar cuotas y estados de cuenta.</li><li>Recibir avisos de tu comunidad.</li><li>Generar invitaciones para visitantes.</li><li>Consultar tu información residencial.</li><li>Usar accesos digitales cuando estén habilitados.</li></ul><p><a href="${message.activationUrl}" style="display:inline-block;background:#2563eb;color:white;padding:14px 20px;border-radius:8px;text-decoration:none;font-weight:bold">Activar mi cuenta</a></p><p style="font-size:12px;color:#64748b">El enlace expira el ${message.expiresAt} y solo puede utilizarse una vez.</p><p style="font-size:12px;color:#64748b">Si no solicitaste este acceso, ignora este mensaje y contacta a la administración.</p></div>`;
+    let activationUrl: URL;
+    try {
+      activationUrl = new URL(message.activationUrl);
+    } catch {
+      throw new BadRequestException('La URL de activación no es válida.');
+    }
+    if (
+      !['http:', 'https:'].includes(activationUrl.protocol) ||
+      activationUrl.username ||
+      activationUrl.password
+    ) {
+      throw new BadRequestException('La URL de activación debe usar HTTP(S) y no incluir credenciales.');
+    }
+
+    const residentName = escapeHtml(message.residentName);
+    const communityName = escapeHtml(message.communityName);
+    const safeActivationUrl = escapeHtml(activationUrl.href);
+    const expiresAt = escapeHtml(message.expiresAt);
+
+    return `<div style="font-family:Arial,sans-serif;color:#0f172a;max-width:620px;margin:auto"><h1 style="color:#2563eb">Activa tu acceso a Dommia Resident</h1><p>Hola <strong>${residentName}</strong>:</p><p>La administración de <strong>${communityName}</strong> habilitó tu cuenta Resident.</p><h2>Con tu cuenta podrás:</h2><ul><li>Consultar cuotas y estados de cuenta.</li><li>Recibir avisos de tu comunidad.</li><li>Generar invitaciones para visitantes.</li><li>Consultar tu información residencial.</li><li>Usar accesos digitales cuando estén habilitados.</li></ul><p><a href="${safeActivationUrl}" style="display:inline-block;background:#2563eb;color:white;padding:14px 20px;border-radius:8px;text-decoration:none;font-weight:bold">Activar mi cuenta</a></p><p style="font-size:12px;color:#64748b">El enlace expira el ${expiresAt} y solo puede utilizarse una vez.</p><p style="font-size:12px;color:#64748b">Si no solicitaste este acceso, ignora este mensaje y contacta a la administración.</p></div>`;
   }
 
   private text(message: InvitationMessage) {

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Dommia Communities • Portal Operativo del Fraccionamiento',
   description: 'Sistema Operativo de tu Comunidad. Gestión de propiedades, residentes, accesos y tesorería.',

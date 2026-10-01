@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'DOMMIA Resident | Tu Comunidad Conectada',
   description: 'PWA Offline-First para residentes y colonos de fraccionamientos operados por DOMMIA.',

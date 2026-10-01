@@ -3,7 +3,7 @@
 import { BrowserQRCodeReader } from '@zxing/browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { guardApiRequest } from '../guard-api';
-import type { AccessResult, GuardSession, ManualVisitCandidate, ResultState } from '../types';
+import type { AccessResult, GuardSession, ManualVisitCandidate, ManualVisitPropertySuggestion, ResultState } from '../types';
 
 export function useGuardAccess(session: GuardSession | null, isOnline: boolean) {
   const [cameraState, setCameraState] = useState<'idle' | 'starting' | 'scanning'>('idle');
@@ -14,6 +14,10 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
   const [manualOverrideBusy, setManualOverrideBusy] = useState(false);
   const [manualOverrideError, setManualOverrideError] = useState('');
   const [manualVisitQuery, setManualVisitQuery] = useState('');
+  const [manualVisitPropertySuggestions, setManualVisitPropertySuggestions] = useState<ManualVisitPropertySuggestion[]>([]);
+  const [manualVisitSuggestionsBusy, setManualVisitSuggestionsBusy] = useState(false);
+  const [manualVisitSuggestionsResolved, setManualVisitSuggestionsResolved] = useState(false);
+  const [manualVisitSuggestionsError, setManualVisitSuggestionsError] = useState('');
   const [manualVisitCandidates, setManualVisitCandidates] = useState<ManualVisitCandidate[]>([]);
   const [selectedManualVisit, setSelectedManualVisit] = useState<ManualVisitCandidate | null>(null);
   const [manualVisitBusy, setManualVisitBusy] = useState(false);
@@ -28,6 +32,48 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
   const cameraTimeoutRef = useRef<number | null>(null);
   const inFlightRef = useRef(false);
   const autoSubmittedRef = useRef(false);
+  const manualVisitSuggestionRequestRef = useRef(0);
+
+  useEffect(() => {
+    const normalized = manualVisitQuery.trim();
+    const requestId = ++manualVisitSuggestionRequestRef.current;
+    if (!session || !isOnline || normalized.length < 2) {
+      setManualVisitPropertySuggestions([]);
+      setManualVisitSuggestionsBusy(false);
+      setManualVisitSuggestionsResolved(false);
+      setManualVisitSuggestionsError('');
+      return;
+    }
+
+    setManualVisitSuggestionsResolved(false);
+    setManualVisitSuggestionsError('');
+    const timeoutId = window.setTimeout(async () => {
+      setManualVisitSuggestionsBusy(true);
+      try {
+        const data = await guardApiRequest<{ suggestions: ManualVisitPropertySuggestion[] }>(
+          `/tenants/${encodeURIComponent(session.tenantSlug)}/access/manual-visits/properties?query=${encodeURIComponent(normalized)}`,
+          session.token,
+        );
+        if (manualVisitSuggestionRequestRef.current === requestId) {
+          setManualVisitPropertySuggestions(data.suggestions || []);
+          setManualVisitSuggestionsResolved(true);
+        }
+      } catch (error) {
+        if (manualVisitSuggestionRequestRef.current === requestId) {
+          setManualVisitPropertySuggestions([]);
+          setManualVisitSuggestionsError(error instanceof Error ? error.message : 'No se pudieron consultar los domicilios.');
+          setManualVisitSuggestionsResolved(true);
+        }
+      } finally {
+        if (manualVisitSuggestionRequestRef.current === requestId) setManualVisitSuggestionsBusy(false);
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      manualVisitSuggestionRequestRef.current += 1;
+    };
+  }, [isOnline, manualVisitQuery, session]);
 
   const stopCamera = useCallback(() => {
     cameraRequestedRef.current = false;
@@ -159,6 +205,11 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
   const searchManualVisits = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!session || !isOnline || manualVisitBusy || manualVisitQuery.trim().length < 2) return;
+    manualVisitSuggestionRequestRef.current += 1;
+    setManualVisitPropertySuggestions([]);
+    setManualVisitSuggestionsBusy(false);
+    setManualVisitSuggestionsResolved(false);
+    setManualVisitSuggestionsError('');
     setManualVisitBusy(true);
     setManualVisitError('');
     setManualVisitMessage('');
@@ -187,6 +238,25 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
     setManualVisitError('');
     setManualVisitMessage('');
   }, []);
+
+  const updateManualVisitQuery = useCallback((query: string) => {
+    manualVisitSuggestionRequestRef.current += 1;
+    setManualVisitQuery(query);
+    setManualVisitPropertySuggestions([]);
+    setManualVisitSuggestionsBusy(false);
+    setManualVisitSuggestionsResolved(false);
+    setManualVisitSuggestionsError('');
+    setManualVisitCandidates([]);
+    setSelectedManualVisit(null);
+    setIdentityVerified(false);
+    setCallConfirmed(false);
+    setManualVisitError('');
+    setManualVisitMessage('');
+  }, []);
+
+  const selectManualVisitPropertySuggestion = useCallback((suggestion: ManualVisitPropertySuggestion) => {
+    updateManualVisitQuery(suggestion.propertyAddress);
+  }, [updateManualVisitQuery]);
 
   const authorizeManualVisit = useCallback(async () => {
     if (!session || !selectedManualVisit || !isOnline || manualVisitAuthorizationBusy) return;
@@ -246,6 +316,7 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
   const resetAfterResult = useCallback(() => {
     stopCamera();
     setManualVisitQuery('');
+    setManualVisitPropertySuggestions([]);
     setManualVisitCandidates([]);
     setSelectedManualVisit(null);
     setManualVisitError('');
@@ -263,6 +334,7 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
     stopCamera();
     setResult(null);
     setManualVisitQuery('');
+    setManualVisitPropertySuggestions([]);
     setManualVisitCandidates([]);
     setSelectedManualVisit(null);
     setIdentityVerified(false);
@@ -280,7 +352,12 @@ export function useGuardAccess(session: GuardSession | null, isOnline: boolean) 
     manualOverrideBusy,
     manualOverrideError,
     manualVisitQuery,
-    setManualVisitQuery,
+    setManualVisitQuery: updateManualVisitQuery,
+    manualVisitPropertySuggestions,
+    manualVisitSuggestionsBusy,
+    manualVisitSuggestionsResolved,
+    manualVisitSuggestionsError,
+    selectManualVisitPropertySuggestion,
     manualVisitCandidates,
     selectedManualVisit,
     manualVisitBusy,

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsEmail, IsBoolean, IsArray, IsUUID, IsIn, ValidateIf } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsEmail, IsBoolean, IsArray, IsUUID, IsIn, Matches, ValidateIf } from 'class-validator';
 
 export class CreateResidentDto {
   @IsString()
@@ -15,10 +15,13 @@ export class CreateResidentDto {
 
   @IsEmail()
   @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined && value !== null && value !== '')
   email?: string;
 
   @IsString()
   @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined && value !== null && value !== '')
+  @Matches(/^\d{10}$/, { message: 'El celular debe tener exactamente 10 dígitos.' })
   phone?: string;
 
   @IsString()
@@ -53,10 +56,13 @@ export class UpdateResidentDto {
 
   @IsEmail()
   @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined && value !== null && value !== '')
   email?: string;
 
   @IsString()
   @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined && value !== null && value !== '')
+  @Matches(/^\d{10}$/, { message: 'El celular debe tener exactamente 10 dígitos.' })
   phone?: string;
 
   @IsString()

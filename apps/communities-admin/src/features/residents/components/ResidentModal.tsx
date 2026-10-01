@@ -128,17 +128,23 @@ export function ResidentModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Teléfono Celular</label>
+              <label htmlFor="resident-phone" className="block text-xs font-bold uppercase text-slate-700 mb-1">Teléfono Celular</label>
               <input
+                id="resident-phone"
                 type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                pattern="[0-9]{10}"
+                maxLength={10}
                 value={form.phone}
                 onChange={(e) => onChange('phone', e.target.value)}
-                placeholder="+52 55 1234 5678"
+                placeholder="5512345678"
+                aria-describedby="resident-phone-hint"
                 className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-indigo-500"
               />
             </div>
           </div>
-          <p className="text-[11px] text-slate-500">Captura correo o celular para habilitar el acceso. Si capturas ambos, el correo se usará por defecto y el administrador podrá cambiarlo a celular al generar la invitación.</p>
+          <p id="resident-phone-hint" className="text-[11px] text-slate-500">El celular debe tener exactamente 10 dígitos o puedes dejarlo vacío. Captura correo o celular para habilitar el acceso.</p>
 
           <div>
             <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Rol / Clasificación del Habitante *</label>

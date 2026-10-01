@@ -78,8 +78,10 @@ export class NoticesService {
     return notice;
   }
 
-  async acknowledgeNoticeByGuard(slug: string, id: string, guardUserId: string, guardName: string) {
+  async acknowledgeNoticeByGuard(slug: string, id: string, guardUserId: string) {
     const tenant = await this.validateTenant(slug);
+    const guardName = await this.noticesRepo.findAcknowledgingGuardName(guardUserId);
+    if (!guardName) throw new NotFoundException('La cuenta que inició sesión ya no está activa.');
     const notice = await this.noticesRepo.acknowledgeByGuard(tenant.slug, id, guardUserId, guardName);
     if (!notice) {
       throw new NotFoundException(`Aviso con ID "${id}" no encontrado`);

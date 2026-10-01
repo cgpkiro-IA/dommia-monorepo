@@ -1,14 +1,18 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, MapPin } from 'lucide-react';
 import { Button } from '@dommia/ui';
-import type { ManualVisitCandidate } from '../types';
+import type { ManualVisitCandidate, ManualVisitPropertySuggestion } from '../types';
 
 interface ManualVisitPanelProps {
   isOnline: boolean;
   query: string;
   onQueryChange: (query: string) => void;
+  propertySuggestions: ManualVisitPropertySuggestion[];
+  propertySuggestionsBusy: boolean;
+  propertySuggestionsResolved: boolean;
+  propertySuggestionsError: string;
   candidates: ManualVisitCandidate[];
   selected: ManualVisitCandidate | null;
   busy: boolean;
@@ -20,14 +24,15 @@ interface ManualVisitPanelProps {
   callConfirmed: boolean;
   onCallConfirmedChange: (value: boolean) => void;
   onSearch: (event: FormEvent<HTMLFormElement>) => void;
+  onSelectPropertySuggestion: (suggestion: ManualVisitPropertySuggestion) => void;
   onSelect: (candidate: ManualVisitCandidate) => void;
   onAuthorize: () => void;
 }
 
 export function ManualVisitPanel({
-  isOnline, query, onQueryChange, candidates, selected, busy, authorizationBusy,
+  isOnline, query, onQueryChange, propertySuggestions, propertySuggestionsBusy, propertySuggestionsResolved, propertySuggestionsError, candidates, selected, busy, authorizationBusy,
   error, message, identityVerified, onIdentityVerifiedChange, callConfirmed,
-  onCallConfirmedChange, onSearch, onSelect, onAuthorize,
+  onCallConfirmedChange, onSearch, onSelectPropertySuggestion, onSelect, onAuthorize,
 }: ManualVisitPanelProps) {
   return (
     <section className="manual-panel" aria-labelledby="manual-title">
@@ -39,9 +44,47 @@ export function ManualVisitPanel({
       <form className="manual-visit-search" onSubmit={onSearch}>
         <label htmlFor="manual-visit-query">Domicilio, lote o nombre del visitante</label>
         <div className="manual-visit-search-row">
-          <input id="manual-visit-query" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Ej. Circuito del Roble 101" minLength={2} maxLength={120} required disabled={!isOnline || busy || authorizationBusy} />
+          <input
+            id="manual-visit-query"
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder="Ej. Circuito del Roble 101"
+            minLength={2}
+            maxLength={120}
+            required
+            disabled={!isOnline || busy || authorizationBusy}
+            autoComplete="off"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls="manual-visit-property-suggestions"
+            aria-expanded={propertySuggestions.length > 0}
+          />
           <Button variant="dark-outline" size="md" type="submit" disabled={!isOnline || busy || authorizationBusy || query.trim().length < 2} isLoading={busy}>Buscar visita</Button>
         </div>
+        {propertySuggestionsBusy && <p className="mt-2 text-xs text-slate-400" role="status">Buscando domicilios...</p>}
+        {propertySuggestionsError && <p className="mt-2 text-xs text-rose-300" role="alert">{propertySuggestionsError}</p>}
+        {propertySuggestionsResolved && !propertySuggestionsBusy && !propertySuggestionsError && propertySuggestions.length === 0 && query.trim().length >= 2 && (
+          <p className="mt-2 text-xs text-slate-400" role="status">No hay coincidencias en domicilios registrados. Puedes buscar la visita por nombre.</p>
+        )}
+        {propertySuggestions.length > 0 && (
+          <ul id="manual-visit-property-suggestions" role="listbox" aria-label="Domicilios registrados" className="mt-2 overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-xl">
+            {propertySuggestions.map((suggestion) => (
+              <li key={suggestion.propertyId} role="presentation" className="border-b border-slate-800 last:border-b-0">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected="false"
+                  onClick={() => onSelectPropertySuggestion(suggestion)}
+                  disabled={busy || authorizationBusy}
+                  className="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400 disabled:opacity-50"
+                >
+                  <MapPin className="h-4 w-4 shrink-0 text-blue-400" aria-hidden="true" />
+                  <span>{suggestion.propertyAddress}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </form>
       {error && <p className="form-error" role="alert">{error}</p>}
       {message && <p className="delivery-success" role="status">{message}</p>}

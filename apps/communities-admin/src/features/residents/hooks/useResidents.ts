@@ -3,11 +3,13 @@
 import { useRef, useState, useMemo } from 'react';
 import { Resident, Property } from '@/types';
 import { API_BASE } from '@/lib/api-url';
+import { useConfirmAction } from '@/features/dashboard/components/ConfirmActionProvider';
 
 export type InviteContactMethod = 'AUTO' | 'EMAIL' | 'PHONE';
 export type InviteDelivery = 'NONE' | 'EMAIL' | 'WHATSAPP';
 
 export function useResidents(authToken?: string) {
+  const confirmAction = useConfirmAction();
   const [residents, setResidents] = useState<Resident[]>([]);
   const [selectedResidentIds, setSelectedResidentIds] = useState<string[]>([]);
   const [invitationResults, setInvitationResults] = useState<any[]>([]);
@@ -42,21 +44,22 @@ export function useResidents(authToken?: string) {
 
   const loadResidents = async (slug: string) => {
     const requestId = ++loadRequestRef.current;
-    setResidents([]);
     setSelectedResidentIds([]);
     setInvitationResults([]);
     setLoadingResidents(true);
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/residents`, { headers: authHeaders });
       const data = await res.json();
-      if (data.success && requestId === loadRequestRef.current) {
-        setResidents(data.data || []);
-        return data.data;
-      }
+      if (!res.ok || !data.success) throw new Error(data.message || 'No se pudo actualizar el padrón.');
+      const updatedResidents = data.data || [];
+      if (requestId !== loadRequestRef.current) return null;
+      setResidents(updatedResidents);
+      return updatedResidents;
     } catch (err) {
       console.error('Error loading residents:', err);
+      return null;
     } finally {
-      setLoadingResidents(false);
+      if (requestId === loadRequestRef.current) setLoadingResidents(false);
     }
   };
 
@@ -116,9 +119,12 @@ export function useResidents(authToken?: string) {
       const result = await res.json();
 
       if (res.ok && result.success) {
+        const updatedResidents = await loadResidents(slug);
         setIsAddResidentModalOpen(false);
-        onSuccess(`Residente "${result.data.first_name} ${result.data.last_name}" registrado exitosamente en el padrón.`);
-        loadResidents(slug);
+        const residentName = `${result.data.first_name} ${result.data.last_name}`;
+        onSuccess(updatedResidents
+          ? `Residente "${residentName}" registrado y padrón actualizado.`
+          : `Residente "${residentName}" registrado. No se pudo actualizar la lista; pulsa Actualizar.`);
       } else {
         setFormError(result.message || 'Error al registrar el residente.');
       }
@@ -153,9 +159,9 @@ export function useResidents(authToken?: string) {
       const result = await res.json();
 
       if (res.ok && result.success) {
+        const updatedResidents = await loadResidents(slug);
         setIsEditResidentModalOpen(false);
-        onSuccess('Datos del residente actualizados correctamente.');
-        loadResidents(slug);
+        onSuccess(updatedResidents ? 'Datos del residente y padrón actualizados correctamente.' : 'Datos del residente guardados, pero no se pudo actualizar la lista.');
       } else {
         setFormError(result.message || 'Error al actualizar residente.');
       }
@@ -172,9 +178,12 @@ export function useResidents(authToken?: string) {
     name: string,
     onSuccess: (msg: string) => void,
   ) => {
-    if (!window.confirm(`¿Confirmas la baja del residente "${name}" del padrón? Se revocarán sus accesos y credenciales de app.`)) {
-      return;
-    }
+    const confirmed = await confirmAction({
+      title: 'Dar de baja residente',
+      message: `Se eliminará a "${name}" del padrón y se revocarán sus accesos y credenciales de la aplicación.`,
+      confirmLabel: 'Dar de baja',
+    });
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/residents/${id}`, {
@@ -182,8 +191,8 @@ export function useResidents(authToken?: string) {
       });
       const result = await res.json();
       if (res.ok && result.success) {
+        await loadResidents(slug);
         onSuccess(`Residente "${name}" eliminado del padrón.`);
-        loadResidents(slug);
       }
     } catch (err) {
       console.error('Error deleting resident:', err);

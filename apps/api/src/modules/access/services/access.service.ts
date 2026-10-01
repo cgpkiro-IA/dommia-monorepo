@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import { ResidentSessionClaims } from '../../auth/guards/resident-auth.guard';
 import { AccessNotificationStatus, NotificationDeliveryService } from '../../notifications/services/notification-delivery.service';
 import { TenantsRepository } from '../../tenants/repositories/tenants.repository';
-import { CreateGuardServiceDto, CreateGuardUserDto, CreateVisitorInvitationDto, ManualAccessOverrideDto, ManualVisitAccessDto, RegisterServiceExitDto, UnifiedAuditLogQueryDto } from '../dto/access.dto';
+import { CreateGuardAccessPointDto, CreateGuardServiceDto, CreateGuardUserDto, CreateVisitorInvitationDto, ManualAccessOverrideDto, ManualVisitAccessDto, RegisterServiceExitDto, UnifiedAuditLogQueryDto, UpdateGuardAccessPointDto } from '../dto/access.dto';
 import { AccessRepository, AccessQrPayload, ManualOverrideClaims } from '../repositories/access.repository';
 
 const ACCESS_STEP_SECONDS = 15;
@@ -114,6 +114,26 @@ export class AccessService {
       throw new ConflictException('Ya existe una cuenta con ese correo. Usa otro correo o solicita la asignación al administrador correspondiente.');
     }
     return guard;
+  }
+
+  async listAccessPoints(slug: string, activeOnly = false) {
+    await this.assertAccessEnabled(slug);
+    return this.accessRepository.listAccessPoints(slug, activeOnly);
+  }
+
+  async createAccessPoint(slug: string, dto: CreateGuardAccessPointDto) {
+    await this.assertAccessEnabled(slug);
+    return this.accessRepository.createAccessPoint(slug, dto);
+  }
+
+  async updateAccessPoint(slug: string, id: string, dto: UpdateGuardAccessPointDto) {
+    await this.assertAccessEnabled(slug);
+    if (dto.name === undefined && dto.isActive === undefined) {
+      throw new BadRequestException('Indica un nombre o un cambio de estado para actualizar la caseta o acceso.');
+    }
+    const accessPoint = await this.accessRepository.updateAccessPoint(slug, id, dto);
+    if (!accessPoint) throw new NotFoundException('Caseta o acceso no encontrado.');
+    return accessPoint;
   }
 
   async assertAccessEnabled(slug: string) {
@@ -439,6 +459,21 @@ export class AccessService {
         propertyAddress: `${row.street} #${row.exterior_number}${row.interior_number ? ` Int. ${row.interior_number}` : ''}${row.block ? ` ${row.block}` : ''}${row.lot ? ` Lote ${row.lot}` : ''}`,
         hostName: row.host_name,
         hostPhone: row.host_phone || undefined,
+      })),
+    };
+  }
+
+  async findManualVisitPropertySuggestions(slug: string, query: string) {
+    await this.assertAccessEnabled(slug);
+    const normalized = query.trim().slice(0, 120);
+    if (normalized.length < 2) return { query: normalized, suggestions: [] };
+
+    const rows = await this.accessRepository.findManualVisitPropertySuggestions(slug, `%${normalized}%`);
+    return {
+      query: normalized,
+      suggestions: rows.map((row: Record<string, any>) => ({
+        propertyId: row.id,
+        propertyAddress: `${row.street} #${row.exterior_number}${row.interior_number ? ` Int. ${row.interior_number}` : ''}${row.block ? ` ${row.block}` : ''}${row.lot ? ` Lote ${row.lot}` : ''}`,
       })),
     };
   }

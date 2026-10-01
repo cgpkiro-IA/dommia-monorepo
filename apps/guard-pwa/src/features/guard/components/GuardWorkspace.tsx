@@ -76,7 +76,6 @@ export function GuardWorkspace({ session, isOnline, onLogout }: GuardWorkspacePr
         session={session}
         tenantCopied={tenantCopied}
         activeModule={activeModule}
-        activeConsignsCount={consigns.activeConsignsCount}
         unreadConsignsCount={consigns.unreadConsignsCount}
         openIncidentsCount={operations.openIncidentsCount}
         onCopyTenantId={() => void handleCopyTenantId()}
@@ -157,6 +156,10 @@ export function GuardWorkspace({ session, isOnline, onLogout }: GuardWorkspacePr
                   isOnline={isOnline}
                   query={access.manualVisitQuery}
                   onQueryChange={access.setManualVisitQuery}
+                  propertySuggestions={access.manualVisitPropertySuggestions}
+                  propertySuggestionsBusy={access.manualVisitSuggestionsBusy}
+                  propertySuggestionsResolved={access.manualVisitSuggestionsResolved}
+                  propertySuggestionsError={access.manualVisitSuggestionsError}
                   candidates={access.manualVisitCandidates}
                   selected={access.selectedManualVisit}
                   busy={access.manualVisitBusy}
@@ -168,6 +171,7 @@ export function GuardWorkspace({ session, isOnline, onLogout }: GuardWorkspacePr
                   callConfirmed={access.callConfirmed}
                   onCallConfirmedChange={access.setCallConfirmed}
                   onSearch={access.searchManualVisits}
+                  onSelectPropertySuggestion={access.selectManualVisitPropertySuggestion}
                   onSelect={access.selectManualVisit}
                   onAuthorize={() => void access.authorizeManualVisit()}
                 />
@@ -218,6 +222,11 @@ export function GuardWorkspace({ session, isOnline, onLogout }: GuardWorkspacePr
               destinationType={services.destinationType}
               onDestinationTypeChange={services.setDestinationType}
               destinations={services.destinations}
+              accessPoints={services.accessPoints}
+              entryAccessPointId={services.entryAccessPointId}
+              onEntryAccessPointChange={services.setEntryAccessPointId}
+              exitAccessPointIds={services.exitAccessPointIds}
+              onExitAccessPointChange={services.setExitAccessPointId}
               onAddDestination={services.addDestination}
               onRemoveDestination={services.removeDestination}
               notes={services.notes}
@@ -265,6 +274,7 @@ export function GuardWorkspace({ session, isOnline, onLogout }: GuardWorkspacePr
           tenantSlug={session.tenantSlug}
           token={session.token}
           isOnline={isOnline}
+          onRefreshConsigns={consigns.refreshConsigns}
         />
       )}
 

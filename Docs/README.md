@@ -68,6 +68,9 @@ Planificación de ingeniería, seguimiento de entregables y roadmap de producci�
 
 ---
 
-## 🧪 4. Guía de Pruebas & Operación
+## 📘 4. Manual de operación
+* Consulta [Manual DOMMIA para principiantes](./Manual/Manual%20DOMMIA%20para%20principiantes.md) para el recorrido desde contratación y aprovisionamiento hasta la configuración de Communities, Guard y Resident, con los límites conocidos del flujo actual.
+
+## 🧪 5. Guía de Pruebas & Operación
 * Consulta la carpeta **[`/Testing`](../Testing/)** para comandos verificados, precondiciones E2E, migraciones requeridas y brechas de validación local/staging/dispositivos.
 * Consulta [Despliegue GCP Producción](./Despliegue%20GCP%20Produccion.md) para configuración Cloud Run/Cloud SQL, bootstrap de una base vacía y auditoría de esquema.

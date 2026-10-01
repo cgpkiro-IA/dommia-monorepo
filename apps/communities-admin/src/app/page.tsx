@@ -29,6 +29,7 @@ import { useFees } from '@/features/finance/hooks/useFees';
 import { ChargesAndPaymentsView } from '@/features/finance/components/ChargesAndPaymentsView';
 import { NotificationsSettings } from '@/features/notifications/components/NotificationsSettings';
 import { GuardUsersPanel } from '@/features/guards/components/GuardUsersPanel';
+import { GuardAccessPointsPanel } from '@/features/guards/components/GuardAccessPointsPanel';
 import { GuardOperationsPanel } from '@/features/guards/components/GuardOperationsPanel';
 import { AdminProviderLiveAlert } from '@/features/guards/components/AdminProviderLiveAlert';
 import { UnifiedAuditLogView } from '@/features/audit/components/UnifiedAuditLogView';
@@ -44,7 +45,7 @@ export default function CommunitiesAdminPage() {
   const auth = useAuth();
   const properties = useProperties(auth.userSession?.token);
   const residents = useResidents(auth.userSession?.token);
-  const vehicles = useVehicles();
+  const vehicles = useVehicles(auth.userSession?.token);
   const notices = useNotices(auth.userSession?.token);
   const fees = useFees(auth.userSession?.token);
 
@@ -294,6 +295,7 @@ export default function CommunitiesAdminPage() {
 
         {activeTab === 'GUARDS' && accessQrEnabled && auth.activeTenant?.slug && (
           <div className="space-y-8">
+            <GuardAccessPointsPanel tenantSlug={auth.activeTenant.slug} authToken={auth.userSession.token} />
             <GuardUsersPanel tenantSlug={auth.activeTenant.slug} authToken={auth.userSession.token} />
             <GuardOperationsPanel tenantSlug={auth.activeTenant.slug} authToken={auth.userSession.token} />
           </div>

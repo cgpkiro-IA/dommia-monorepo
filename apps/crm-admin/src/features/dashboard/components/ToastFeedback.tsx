@@ -13,6 +13,7 @@ export function ToastFeedback({ feedback }: ToastFeedbackProps) {
 
   return (
     <div
+      role={feedback.type === 'error' ? 'alert' : 'status'}
       className={`p-4 rounded-xl flex items-center gap-3 text-sm border animate-in fade-in duration-200 ${
         feedback.type === 'success'
           ? 'bg-emerald-50 text-emerald-800 border-emerald-200'

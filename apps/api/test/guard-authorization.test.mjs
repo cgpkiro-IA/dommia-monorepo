@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { closeTestPool, prepareGuardQa, request, responseData, signTenantToken } from './guard-test-helpers.mjs';
+import { closeTestPool, pool, prepareGuardQa, request, responseData, signTenantToken, tenantUserId, uniqueId } from './guard-test-helpers.mjs';
 
 let guardToken;
+let secondGuardToken;
 let adminToken;
 
 before(async () => {
   await prepareGuardQa();
   guardToken = await signTenantToken('guard.norte@qa.dommia.test', 'GUARD');
+  secondGuardToken = await signTenantToken('guard.sur@qa.dommia.test', 'GUARD');
   adminToken = await signTenantToken('admin.guard-qa@dommia.test', 'TENANT_ADMIN');
 });
 
@@ -57,4 +59,93 @@ test('protege incidencias administrativas y mantiene aislamiento tenant', async 
 
   const crossTenantAdminList = await request('/tenants/demo/guard/incidents?status=OPEN', { token: adminToken });
   assert.equal(crossTenantAdminList.status, 403);
+});
+
+test('confirma consignas por identidad autenticada y conserva pendientes por guardia', async () => {
+  let noticeId;
+  try {
+    const createResponse = await request('/tenants/guard-qa/notices', {
+      method: 'POST',
+      token: adminToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Consigna E2E de caseta',
+        content: 'Confirmar lectura en cada turno.',
+        category: 'GUARD_CONSIGN',
+        targetAudience: 'GUARDS',
+      }),
+    });
+    assert.equal(createResponse.status, 201);
+    noticeId = (await responseData(createResponse)).id;
+
+    const beforeResponse = await request('/tenants/guard-qa/notices?audience=GUARDS', { token: guardToken });
+    const before = (await responseData(beforeResponse)).find((notice) => notice.id === noticeId);
+    assert.equal(before.is_acknowledged_by_current_guard, false);
+
+    const acknowledgeResponse = await request(`/tenants/guard-qa/notices/${noticeId}/acknowledge-guard`, {
+      method: 'POST',
+      token: guardToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guardUserId: 'spoofed-guard-id', guardName: 'Guardia falso' }),
+    });
+    assert.equal(acknowledgeResponse.status, 201);
+    const acknowledgement = await responseData(acknowledgeResponse);
+    assert.equal(acknowledgement.acknowledged_guards[0].guard_id, await tenantUserId('guard.norte@qa.dommia.test', 'GUARD'));
+    assert.notEqual(acknowledgement.acknowledged_guards[0].guard_name, 'Guardia falso');
+
+    const firstGuardResponse = await request('/tenants/guard-qa/notices?audience=GUARDS', { token: guardToken });
+    const firstGuardNotice = (await responseData(firstGuardResponse)).find((notice) => notice.id === noticeId);
+    assert.equal(firstGuardNotice.is_acknowledged_by_current_guard, true);
+
+    const secondGuardResponse = await request('/tenants/guard-qa/notices?audience=GUARDS', { token: secondGuardToken });
+    const secondGuardNotice = (await responseData(secondGuardResponse)).find((notice) => notice.id === noticeId);
+    assert.equal(secondGuardNotice.is_acknowledged_by_current_guard, false);
+  } finally {
+    if (noticeId) await request(`/tenants/guard-qa/notices/${noticeId}`, { method: 'DELETE', token: adminToken });
+  }
+});
+
+test('acepta correo o celular como identificador y rechaza contactos inválidos o ausentes', async () => {
+  const property = await pool.query('SELECT id FROM tenant_guard_qa.properties ORDER BY exterior_number LIMIT 1');
+  assert.equal(property.rowCount, 1);
+  const createdIds = [];
+  const submitResident = async (email, phone) => request('/tenants/guard-qa/residents', {
+    method: 'POST',
+    token: adminToken,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      propertyId: property.rows[0].id,
+      firstName: 'Telefono',
+      lastName: 'QA',
+      email,
+      phone,
+      role: 'FAMILY_MEMBER',
+      isPrimary: false,
+    }),
+  });
+
+  try {
+    assert.equal((await submitResident('', '123456789')).status, 400, 'Debe rechazar nueve dígitos.');
+    assert.equal((await submitResident('', '12345678901')).status, 400, 'Debe rechazar once dígitos.');
+    assert.equal((await submitResident('', '')).status, 400, 'Debe exigir al menos un dato de contacto.');
+
+    const email = `email-only-${uniqueId()}@dommia.test`;
+    for (const [emailInput, phoneInput] of [[email, ''], ['', '5512345678']]) {
+      const response = await submitResident(emailInput, phoneInput);
+      const body = await response.json();
+      assert.equal(response.status, 201, JSON.stringify(body));
+      createdIds.push(body.data.id);
+    }
+
+    const residentLogin = await request('/auth/resident/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: '5512345678', password: 'Dommia2026!', tenantSlug: 'guard-qa' }),
+    });
+    assert.equal(residentLogin.status, 200, 'El residente solo con celular debe poder usarlo como identificador de login.');
+  } finally {
+    if (createdIds.length) {
+      await pool.query('DELETE FROM tenant_guard_qa.residents WHERE id = ANY($1::uuid[])', [createdIds]);
+    }
+  }
 });

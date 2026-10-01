@@ -55,10 +55,11 @@ export function usePlans({ onRefresh, showFeedback }: UsePlansProps) {
         setIsPlanModalOpen(false);
         onRefresh();
       } else {
-        alert(data.message || 'Error al actualizar plan');
+        showFeedback('error', data.message || 'Error al actualizar plan');
       }
     } catch (err) {
       console.error('Error saving plan:', err);
+      showFeedback('error', 'No se pudo actualizar el plan. Inténtalo de nuevo.');
     } finally {
       setIsSubmitting(false);
     }

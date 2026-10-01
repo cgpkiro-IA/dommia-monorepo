@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { PoolClient } from 'pg';
 import { DatabaseService } from '../../../database/database.service';
 import {
   CreateGuardServiceDto,
+  CreateGuardAccessPointDto,
   CreateGuardUserDto,
   CreateVisitorInvitationDto,
   RegisterServiceExitDto,
+  UpdateGuardAccessPointDto,
   UnifiedAuditLogItem,
   UnifiedAuditLogQueryDto,
   UnifiedAuditLogSummary,
@@ -47,6 +50,70 @@ export type ManualVisitAccessResult =
 @Injectable()
 export class AccessRepository {
   constructor(private readonly db: DatabaseService) {}
+
+  private async resolveActiveAccessPoint(client: PoolClient, accessPointId?: string) {
+    const result = await client.query('SELECT id, name FROM guard_access_points WHERE is_active = TRUE ORDER BY LOWER(name)');
+    if (accessPointId) {
+      const accessPoint = result.rows.find((row) => row.id === accessPointId);
+      if (!accessPoint) throw new NotFoundException('La caseta o acceso seleccionado no existe o está inactivo.');
+      return accessPoint;
+    }
+    if (result.rows.length === 1) return result.rows[0];
+    if (result.rows.length === 0) throw new BadRequestException('La comunidad no tiene casetas o accesos activos configurados.');
+    throw new BadRequestException('Selecciona la caseta o acceso donde se registra la operación.');
+  }
+
+  async listAccessPoints(slug: string, activeOnly = false) {
+    const result = await this.db.queryTenant(slug, `
+      SELECT id, name, is_active, created_at, updated_at
+      FROM guard_access_points
+      WHERE $1::boolean = FALSE OR is_active = TRUE
+      ORDER BY LOWER(name)
+    `, [activeOnly]);
+    return result.rows;
+  }
+
+  async createAccessPoint(slug: string, dto: CreateGuardAccessPointDto) {
+    try {
+      const result = await this.db.queryTenant(slug, `
+        INSERT INTO guard_access_points (name)
+        VALUES ($1)
+        RETURNING id, name, is_active, created_at, updated_at
+      `, [dto.name.trim()]);
+      return result.rows[0];
+    } catch (error) {
+      if ((error as { code?: string }).code === '23505') throw new ConflictException('Ya existe una caseta o acceso con ese nombre.');
+      throw error;
+    }
+  }
+
+  async updateAccessPoint(slug: string, id: string, dto: UpdateGuardAccessPointDto) {
+    try {
+      return await this.db.withTenantTransaction(slug, async (client) => {
+        const currentResult = await client.query('SELECT id, is_active FROM guard_access_points WHERE id = $1 FOR UPDATE', [id]);
+        const current = currentResult.rows[0];
+        if (!current) return null;
+
+        if (dto.isActive === false && current.is_active) {
+          const activeResult = await client.query('SELECT id FROM guard_access_points WHERE is_active = TRUE FOR UPDATE');
+          if (activeResult.rowCount <= 1) throw new BadRequestException('La comunidad debe conservar al menos una caseta o acceso activo.');
+        }
+
+        const result = await client.query(`
+          UPDATE guard_access_points
+          SET name = COALESCE($2, name),
+              is_active = COALESCE($3, is_active),
+              updated_at = NOW()
+          WHERE id = $1
+          RETURNING id, name, is_active, created_at, updated_at
+        `, [id, dto.name?.trim() || null, dto.isActive ?? null]);
+        return result.rows[0] || null;
+      });
+    } catch (error) {
+      if ((error as { code?: string }).code === '23505') throw new ConflictException('Ya existe una caseta o acceso con ese nombre.');
+      throw error;
+    }
+  }
 
   async listGuards(slug: string) {
     const result = await this.db.query(`
@@ -291,6 +358,22 @@ export class AccessRepository {
     return result.rows;
   }
 
+  async findManualVisitPropertySuggestions(slug: string, queryToken: string) {
+    const result = await this.db.queryTenant(slug, `
+      SELECT id, street, exterior_number, interior_number, block, lot
+      FROM properties
+      WHERE CONCAT_WS(' ', street, exterior_number, interior_number, block, lot) ILIKE $1
+         OR street ILIKE $1
+         OR exterior_number ILIKE $1
+         OR COALESCE(interior_number, '') ILIKE $1
+         OR COALESCE(block, '') ILIKE $1
+         OR COALESCE(lot, '') ILIKE $1
+      ORDER BY LOWER(street), exterior_number, interior_number
+      LIMIT 8
+    `, [queryToken]);
+    return result.rows;
+  }
+
   async authorizeManualVisit(slug: string, invitationId: string, guardId: string): Promise<ManualVisitAccessResult> {
     return this.db.withTenantTransaction(slug, async (client) => {
       const result = await client.query(`
@@ -367,14 +450,17 @@ export class AccessRepository {
     const destinationsJson = JSON.stringify(dto.destinations || []);
     const primaryPropertyId = dto.destinations?.[0]?.propertyId || null;
     return this.db.withTenantTransaction(slug, async (client) => {
+      const accessPoint = await this.resolveActiveAccessPoint(client, dto.accessPointId);
       const result = await client.query(`
         INSERT INTO guard_services (
           service_type, custom_service_name, supplier_name, vehicle_plates,
-          destination_type, destinations, status, notes, entered_by, entered_at
+          destination_type, destinations, status, notes, entered_by,
+          entered_access_point_id, entered_access_point_name, entered_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6::jsonb, 'IN_TRANSIT', $7, $8, NOW())
+        VALUES ($1, $2, $3, $4, $5, $6::jsonb, 'IN_TRANSIT', $7, $8, $9, $10, NOW())
         RETURNING id, service_type, custom_service_name, supplier_name, vehicle_plates,
-                  destination_type, destinations, status, notes, entered_by, entered_at, exited_by, exited_at
+                  destination_type, destinations, status, notes, entered_by,
+                  entered_access_point_id, entered_access_point_name, entered_at, exited_by, exited_at
       `, [
         dto.serviceType,
         dto.customServiceName?.trim() || null,
@@ -384,8 +470,15 @@ export class AccessRepository {
         destinationsJson,
         dto.notes?.trim() || null,
         guardId,
+        accessPoint.id,
+        accessPoint.name,
       ]);
-      const created = result.rows[0];
+      const inserted = result.rows[0];
+      const actorResult = await client.query(`
+        SELECT COALESCE(NULLIF(CONCAT_WS(' ', first_name, last_name), ''), 'Guardia') AS entered_by_name
+        FROM public.users WHERE id = $1
+      `, [guardId]);
+      const created = { ...inserted, entered_by_name: actorResult.rows[0]?.entered_by_name || 'Guardia' };
 
       let validPropertyId: string | null = null;
       if (primaryPropertyId) {
@@ -401,7 +494,7 @@ export class AccessRepository {
       `, [
         created.id,
         validPropertyId,
-        `INGRESO_SERVICIO: ${dto.serviceType}${dto.supplierName ? ` (${dto.supplierName})` : ''}`,
+        `INGRESO_SERVICIO: ${dto.serviceType}${dto.supplierName ? ` (${dto.supplierName})` : ''} · Acceso: ${accessPoint.name}`,
         guardId,
       ]);
 
@@ -423,8 +516,13 @@ export class AccessRepository {
     const result = await this.db.queryTenant(slug, `
       SELECT s.id, s.service_type, s.custom_service_name, s.supplier_name, s.vehicle_plates,
              s.destination_type, s.destinations, s.status, s.notes, s.entered_by, s.entered_at,
-             s.exited_by, s.exited_at
+              s.entered_access_point_id, s.entered_access_point_name,
+              s.exited_by, s.exited_at, s.exited_access_point_id, s.exited_access_point_name,
+              COALESCE(NULLIF(CONCAT_WS(' ', entry_guard.first_name, entry_guard.last_name), ''), 'Guardia') AS entered_by_name,
+              COALESCE(NULLIF(CONCAT_WS(' ', exit_guard.first_name, exit_guard.last_name), ''), 'Guardia') AS exited_by_name
       FROM guard_services s
+            LEFT JOIN public.users entry_guard ON entry_guard.id = s.entered_by
+            LEFT JOIN public.users exit_guard ON exit_guard.id = s.exited_by
       ${whereClause}
       ORDER BY s.entered_at DESC
       LIMIT 100
@@ -434,23 +532,35 @@ export class AccessRepository {
 
   async registerServiceExit(slug: string, serviceId: string, guardId: string, dto?: RegisterServiceExitDto) {
     return this.db.withTenantTransaction(slug, async (client) => {
+      const activeService = await client.query('SELECT id FROM guard_services WHERE id = $1 AND status = $2 FOR UPDATE', [serviceId, 'IN_TRANSIT']);
+      if (!activeService.rows[0]) return null;
+      const accessPoint = await this.resolveActiveAccessPoint(client, dto?.accessPointId);
       const result = await client.query(`
         UPDATE guard_services
         SET status = 'COMPLETED',
             exited_by = $2,
+            exited_access_point_id = $4,
+            exited_access_point_name = $5,
             exited_at = NOW(),
             notes = CASE WHEN $3::text IS NOT NULL THEN CONCAT(COALESCE(notes, ''), ' [Salida: ', $3::text, ']') ELSE notes END
         WHERE id = $1 AND status = 'IN_TRANSIT'
         RETURNING id, service_type, custom_service_name, supplier_name, vehicle_plates,
-                  destination_type, destinations, status, notes, entered_by, entered_at, exited_by, exited_at
-      `, [serviceId, guardId, dto?.notes?.trim() || null]);
-      const updated = result.rows[0] || null;
-      if (!updated) return null;
+                  destination_type, destinations, status, notes, entered_by,
+                  entered_access_point_id, entered_access_point_name, entered_at,
+                  exited_by, exited_access_point_id, exited_access_point_name, exited_at
+      `, [serviceId, guardId, dto?.notes?.trim() || null, accessPoint.id, accessPoint.name]);
+      const exited = result.rows[0] || null;
+      if (!exited) return null;
+      const actorResult = await client.query(`
+        SELECT COALESCE(NULLIF(CONCAT_WS(' ', first_name, last_name), ''), 'Guardia') AS exited_by_name
+        FROM public.users WHERE id = $1
+      `, [guardId]);
+      const updated = { ...exited, exited_by_name: actorResult.rows[0]?.exited_by_name || 'Guardia' };
 
       await client.query(`
         INSERT INTO access_logs (access_type, identifier, property_id, is_granted, rejection_reason, manual_reason, guard_user_id)
-        VALUES ('SERVICE_EXIT', $1, NULL, TRUE, NULL, 'SALIDA_SERVICIO', $2)
-      `, [serviceId, guardId]);
+        VALUES ('SERVICE_EXIT', $1, NULL, TRUE, NULL, $2, $3)
+      `, [serviceId, `SALIDA_SERVICIO · Acceso: ${accessPoint.name}`, guardId]);
 
       return updated;
     });
@@ -622,7 +732,7 @@ export class AccessRepository {
             WHEN s.service_type = 'MAINTENANCE' THEN 'Mantenimiento'
             ELSE COALESCE(s.custom_service_name, 'Servicio / Proveedor')
           END)::text AS title,
-          CONCAT(COALESCE(s.supplier_name, 'Proveedor'), ' - ', CASE WHEN s.destination_type = 'GENERAL' THEN 'Recorrido General' ELSE 'Destino Residencial' END)::text AS description,
+          CONCAT(COALESCE(s.supplier_name, 'Proveedor'), ' - ', CASE WHEN s.destination_type = 'GENERAL' THEN 'Recorrido General' ELSE 'Destino Residencial' END, ' · Ingresó por: ', COALESCE(s.entered_access_point_name, 'Sin dato previo'))::text AS description,
           CASE 
             WHEN s.destination_type = 'GENERAL' THEN 'Recorrido General por Fraccionamiento'
             ELSE (SELECT string_agg(d->>'propertyAddress', ', ') FROM jsonb_array_elements(s.destinations) d)
@@ -653,7 +763,7 @@ export class AccessRepository {
             WHEN s.service_type = 'MAINTENANCE' THEN 'Mantenimiento'
             ELSE COALESCE(s.custom_service_name, 'Servicio / Proveedor')
           END)::text AS title,
-          CONCAT('Salida registrada del proveedor: ', COALESCE(s.supplier_name, ''))::text AS description,
+          CONCAT('Salida registrada del proveedor: ', COALESCE(s.supplier_name, ''), ' · Salió por: ', COALESCE(s.exited_access_point_name, 'Sin dato previo'))::text AS description,
           CASE 
             WHEN s.destination_type = 'GENERAL' THEN 'Recorrido General por Fraccionamiento'
             ELSE (SELECT string_agg(d->>'propertyAddress', ', ') FROM jsonb_array_elements(s.destinations) d)

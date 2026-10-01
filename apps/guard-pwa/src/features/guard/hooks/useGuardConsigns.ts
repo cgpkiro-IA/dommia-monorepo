@@ -15,6 +15,7 @@ export interface GuardNoticeItem {
   is_pinned: boolean;
   published_at: string;
   acknowledged_guards: { guard_id: string; guard_name: string; acknowledged_at: string }[];
+  is_acknowledged_by_current_guard: boolean;
   expires_at?: string;
 }
 
@@ -53,14 +54,11 @@ export function useGuardConsigns(session: GuardSession | null, isOnline: boolean
 
   // Consignas pendientes de confirmación por este guardia
   const unreadConsignsCount = consigns.filter(
-    (c) => !(c.acknowledged_guards && c.acknowledged_guards.length > 0)
+    (consign) => !consign.is_acknowledged_by_current_guard
   ).length;
-
-  const activeConsignsCount = consigns.length;
 
   return {
     consigns,
-    activeConsignsCount,
     unreadConsignsCount,
     loading,
     error,

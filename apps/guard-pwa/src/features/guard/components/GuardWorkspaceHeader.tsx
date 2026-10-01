@@ -10,7 +10,6 @@ interface GuardWorkspaceHeaderProps {
   session: GuardSession;
   tenantCopied: boolean;
   activeModule: GuardModule;
-  activeConsignsCount?: number;
   unreadConsignsCount?: number;
   openIncidentsCount?: number;
   onCopyTenantId: () => void;
@@ -23,7 +22,6 @@ export function GuardWorkspaceHeader({
   session,
   tenantCopied,
   activeModule,
-  activeConsignsCount = 0,
   unreadConsignsCount = 0,
   openIncidentsCount = 0,
   onCopyTenantId,
@@ -31,7 +29,7 @@ export function GuardWorkspaceHeader({
   onModuleChange,
   onOpenPanic,
 }: GuardWorkspaceHeaderProps) {
-  const hasConsignsAlert = unreadConsignsCount > 0 || activeConsignsCount > 0;
+  const hasConsignsAlert = unreadConsignsCount > 0;
   const hasIncidentsAlert = openIncidentsCount > 0;
 
   return (
@@ -83,7 +81,7 @@ export function GuardWorkspaceHeader({
           <span>Consignas</span>
           {hasConsignsAlert && (
             <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950 shadow-md shadow-amber-900/50 animate-bounce">
-              {unreadConsignsCount > 0 ? `${unreadConsignsCount} nueva${unreadConsignsCount > 1 ? 's' : ''}` : activeConsignsCount}
+              {`${unreadConsignsCount} nueva${unreadConsignsCount > 1 ? 's' : ''}`}
             </span>
           )}
         </button>

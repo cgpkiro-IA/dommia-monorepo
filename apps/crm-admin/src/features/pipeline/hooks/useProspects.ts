@@ -34,10 +34,11 @@ export function useProspects({ onRefresh, showFeedback }: UseProspectsProps) {
       if (res.ok) {
         onRefresh();
       } else {
-        alert(data.message || 'Error al actualizar etapa');
+        showFeedback('error', data.message || 'Error al actualizar etapa');
       }
     } catch (err) {
       console.error('Error updating stage:', err);
+      showFeedback('error', 'No se pudo actualizar la etapa del prospecto.');
     }
   };
 

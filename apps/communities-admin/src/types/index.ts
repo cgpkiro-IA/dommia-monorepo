@@ -322,8 +322,14 @@ export interface GuardServiceItem {
   status: 'IN_TRANSIT' | 'COMPLETED';
   notes?: string;
   entered_by: string;
+  entered_by_name?: string;
+  entered_access_point_id?: string;
+  entered_access_point_name?: string;
   entered_at: string;
   exited_by?: string;
+  exited_by_name?: string;
+  exited_access_point_id?: string;
+  exited_access_point_name?: string;
   exited_at?: string;
 }
 

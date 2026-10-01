@@ -250,6 +250,8 @@ export function GuardOperationsPanel({ tenantSlug, authToken }: GuardOperationsP
                         </span>
                       )}
                     </p>
+                    <p>Ingresó por: <strong>{service.entered_access_point_name || 'Ubicación no registrada'}</strong></p>
+                    <p>Registró: <strong>{service.entered_by_name || 'Guardia'}</strong></p>
                     {service.notes && <p className="text-[10px] text-slate-500 italic truncate">Nota: {service.notes}</p>}
                   </div>
                 </div>

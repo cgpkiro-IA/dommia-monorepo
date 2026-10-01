@@ -3,8 +3,10 @@
 import { useState, useMemo } from 'react';
 import { Vehicle, Property } from '@/types';
 import { API_BASE } from '@/lib/api-url';
+import { useConfirmAction } from '@/features/dashboard/components/ConfirmActionProvider';
 
-export function useVehicles() {
+export function useVehicles(authToken?: string) {
+  const confirmAction = useConfirmAction();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
 
@@ -28,11 +30,12 @@ export function useVehicles() {
   });
   const [actionLoading, setActionLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const authHeaders = authToken ? { Authorization: `Bearer ${authToken}` } : {};
 
   const loadVehicles = async (slug: string) => {
     setLoadingVehicles(true);
     try {
-      const res = await fetch(`${API_BASE}/tenants/${slug}/vehicles`);
+      const res = await fetch(`${API_BASE}/tenants/${slug}/vehicles`, { headers: authHeaders });
       const data = await res.json();
       if (data.success) {
         setVehicles(data.data || []);
@@ -80,7 +83,7 @@ export function useVehicles() {
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/vehicles`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(vehicleForm),
       });
 
@@ -108,7 +111,7 @@ export function useVehicles() {
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/vehicles/${editingVehicle.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(vehicleForm),
       });
 
@@ -134,13 +137,16 @@ export function useVehicles() {
     plates: string,
     onSuccess: (msg: string) => void,
   ) => {
-    if (!window.confirm(`¿Confirmas la baja del vehículo con placas "${plates}"?`)) {
-      return;
-    }
+    const confirmed = await confirmAction({
+      title: 'Dar de baja vehículo',
+      message: `Se eliminará el vehículo con placas "${plates}" del padrón de la comunidad.`,
+      confirmLabel: 'Dar de baja',
+    });
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/vehicles/${id}`, {
-        method: 'DELETE',
+        method: 'DELETE', headers: authHeaders,
       });
       const result = await res.json();
       if (res.ok && result.success) {

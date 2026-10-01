@@ -11,6 +11,22 @@ before(async () => {
 
 after(closeTestPool);
 
+test('sugiere domicilios registrados de forma aislada y sin datos personales', async () => {
+  const anonymous = await request('/tenants/guard-qa/access/manual-visits/properties?query=Circuito');
+  assert.equal(anonymous.status, 401);
+
+  const response = await request('/tenants/guard-qa/access/manual-visits/properties?query=Circuito', { token: guardToken });
+  assert.equal(response.status, 200);
+  const result = await responseData(response);
+  const property = result.suggestions.find((suggestion) => suggestion.propertyAddress === 'Circuito del Roble #101 Norte Lote 01');
+  assert.ok(property, 'Debe sugerir la dirección registrada en el tenant.');
+  assert.equal(Object.hasOwn(property, 'email'), false);
+  assert.equal(Object.hasOwn(property, 'phone'), false);
+
+  const noMatch = await request('/tenants/guard-qa/access/manual-visits/properties?query=DireccionInexistente', { token: guardToken });
+  assert.deepEqual((await responseData(noMatch)).suggestions, []);
+});
+
 test('autoriza visita sin QR solo con INE verificada y llamada confirmada, registra auditoría y consume pase SINGLE', async () => {
   const visitorName = `Visita manual ${uniqueId()}`;
   const inserted = await pool.query(`

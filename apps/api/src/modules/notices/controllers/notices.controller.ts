@@ -1,6 +1,6 @@
 import { Controller, ForbiddenException, Get, Post, Put, Delete, Body, Param, Query, Req, HttpStatus, HttpCode, UseGuards } from '@nestjs/common';
 import { NoticesService } from '../services/notices.service';
-import { AcknowledgeGuardNoticeDto, CreateNoticeDto, UpdateNoticeDto } from '../dto/notice.dto';
+import { CreateNoticeDto, UpdateNoticeDto } from '../dto/notice.dto';
 import { AccessOperatorClaims, AccessOperatorGuard } from '../../access/guards/access-operator.guard';
 import { FinanceAdminGuard } from '../../auth/guards/finance-admin.guard';
 import { Roles } from '../../auth/decorators/auth-metadata.decorator';
@@ -23,10 +23,17 @@ export class NoticesController {
     }
     const isPublishedOnly = publishedOnly === 'true';
     const notices = await this.noticesService.getTenantNotices(slug, isPublishedOnly, audience);
+    const data = request.user.role === 'GUARD'
+      ? notices.map((notice) => ({
+        ...notice,
+        is_acknowledged_by_current_guard: Array.isArray(notice.acknowledged_guards)
+          && notice.acknowledged_guards.some((ack: { guard_id: string }) => ack.guard_id === request.user.sub),
+      }))
+      : notices;
     return {
       success: true,
-      data: notices,
-      count: notices.length,
+      data,
+      count: data.length,
     };
   }
 
@@ -36,13 +43,12 @@ export class NoticesController {
   async acknowledgeNoticeByGuard(
     @Param('slug') slug: string,
     @Param('id') id: string,
-    @Body() body: AcknowledgeGuardNoticeDto,
+    @Req() request: { user: AccessOperatorClaims },
   ) {
     const notice = await this.noticesService.acknowledgeNoticeByGuard(
       slug,
       id,
-      body.guardUserId || 'guard_shift',
-      body.guardName || 'Guardia de Turno',
+      request.user.sub,
     );
     return {
       success: true,

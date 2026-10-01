@@ -306,15 +306,17 @@ export function AdminProviderLiveAlert({
                   </div>
                 </div>
 
-                {/* Footer indicator */}
-                <div className="mt-3 pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">
-                    Ingresó por: <strong className="text-slate-700">{service.entered_by || 'Guardia'}</strong>
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                    En Tránsito
-                  </span>
+                <div className="mt-3 space-y-1 border-t border-slate-200/80 pt-2 text-[11px]">
+                  <p className="text-slate-500">
+                    Ingresó por: <strong className="text-slate-700">{service.entered_access_point_name || 'Ubicación no registrada'}</strong>
+                  </p>
+                  <p className="flex items-center justify-between gap-2 text-slate-500">
+                    Registró: <strong className="text-slate-700">{service.entered_by_name || 'Guardia'}</strong>
+                    <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
+                      <span className="h-2 w-2 animate-ping rounded-full bg-emerald-500" />
+                      En Tránsito
+                    </span>
+                  </p>
                 </div>
               </div>
             );

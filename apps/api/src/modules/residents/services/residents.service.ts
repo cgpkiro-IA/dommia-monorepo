@@ -15,7 +15,7 @@ export class ResidentsService {
   ) {}
 
   private async validateTenant(slug: string) {
-    const tenant = await this.tenantsRepo.findByExactSlug(slug);
+    const tenant = await this.tenantsRepo.findBySlug(slug);
     if (!tenant) {
       throw new NotFoundException(`Fraccionamiento con slug "${slug}" no encontrado`);
     }
@@ -30,6 +30,12 @@ export class ResidentsService {
   async createTenantResident(slug: string, dto: CreateResidentDto) {
     await this.validateTenant(slug);
 
+    const email = dto.email?.trim().toLowerCase() || null;
+    const phone = dto.phone?.trim() || null;
+    if (!email && !phone) {
+      throw new BadRequestException('Captura un correo electrónico o un número celular para habilitar el acceso Resident.');
+    }
+
     // Verify property exists
     const propertyExists = await this.residentsRepo.checkPropertyExists(slug, dto.propertyId);
     if (!propertyExists) {
@@ -37,18 +43,14 @@ export class ResidentsService {
     }
 
     // Check email uniqueness within tenant
-    const emailExists = await this.residentsRepo.checkEmailExists(slug, dto.email);
+    const emailExists = email ? await this.residentsRepo.checkEmailExists(slug, email) : false;
     if (emailExists) {
-      throw new ConflictException(`El correo electrónico "${dto.email}" ya está registrado para otro residente en este fraccionamiento.`);
+      throw new ConflictException(`El correo electrónico "${email}" ya está registrado para otro residente en este fraccionamiento.`);
     }
 
     const role = dto.role || 'OWNER';
     const isPrimary = dto.isPrimary !== undefined ? dto.isPrimary : (role === 'OWNER');
     const defaultPassword = dto.password || 'Dommia2026!';
-    if (!dto.email?.trim() && !dto.phone?.trim()) {
-      throw new BadRequestException('Captura un correo electrónico o un número celular para habilitar el acceso Resident.');
-    }
-
     if (isPrimary) {
       await this.residentsRepo.resetPrimaryForProperty(slug, dto.propertyId);
     }
@@ -57,8 +59,8 @@ export class ResidentsService {
       propertyId: dto.propertyId,
       firstName: dto.firstName,
       lastName: dto.lastName,
-      email: dto.email || '',
-      phone: dto.phone?.trim() || null,
+      email,
+      phone,
       role,
       isPrimary,
       password: defaultPassword,
@@ -77,18 +79,18 @@ export class ResidentsService {
       throw new NotFoundException(`Residente con ID "${id}" no encontrado.`);
     }
 
-    if (dto.email && dto.email.toLowerCase() !== (current.email || '').toLowerCase()) {
-      const emailExists = await this.residentsRepo.checkEmailExists(slug, dto.email, id);
+    const email = dto.email !== undefined ? (dto.email.trim().toLowerCase() || null) : current.email;
+    const phone = dto.phone !== undefined ? (dto.phone.trim() || null) : current.phone;
+    if (email && email.toLowerCase() !== (current.email || '').toLowerCase()) {
+      const emailExists = await this.residentsRepo.checkEmailExists(slug, email, id);
       if (emailExists) {
-        throw new ConflictException(`El correo electrónico "${dto.email}" ya está registrado por otro residente.`);
+        throw new ConflictException(`El correo electrónico "${email}" ya está registrado por otro residente.`);
       }
     }
 
     const propertyId = dto.propertyId || current.property_id;
     const firstName = dto.firstName !== undefined ? dto.firstName.trim() : current.first_name;
     const lastName = dto.lastName !== undefined ? dto.lastName.trim() : current.last_name;
-    const email = dto.email !== undefined ? (dto.email.trim().toLowerCase() || null) : current.email;
-    const phone = dto.phone !== undefined ? dto.phone.trim() : current.phone;
     const role = dto.role !== undefined ? dto.role : current.role;
     const isPrimary = dto.isPrimary !== undefined ? dto.isPrimary : current.is_primary;
     const isActive = dto.isActive !== undefined ? dto.isActive : current.is_active;

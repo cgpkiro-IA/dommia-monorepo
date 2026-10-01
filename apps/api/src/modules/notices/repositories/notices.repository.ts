@@ -184,6 +184,15 @@ export class NoticesRepository {
     return res.rows[0] || null;
   }
 
+  async findAcknowledgingGuardName(guardUserId: string) {
+    const result = await this.db.query(`
+      SELECT COALESCE(NULLIF(CONCAT_WS(' ', first_name, last_name), ''), email) AS guard_name
+      FROM public.users
+      WHERE id = $1 AND is_active = TRUE
+    `, [guardUserId]);
+    return result.rows[0]?.guard_name || null;
+  }
+
   async delete(slug: string, id: string): Promise<boolean> {
     const res = await this.db.queryTenant(slug, 'DELETE FROM notices WHERE id = $1 RETURNING id', [id]);
     return res.rows.length > 0;

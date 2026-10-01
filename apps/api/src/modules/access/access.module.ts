@@ -13,10 +13,11 @@ import { FinanceAdminGuard } from '../auth/guards/finance-admin.guard';
 import { AccessService } from './services/access.service';
 import { AccessRepository } from './repositories/access.repository';
 import { GuardUsersController } from './controllers/guard-users.controller';
+import { AccessPointsController } from './controllers/access-points.controller';
 
 @Module({
   imports: [DatabaseModule, AuthModule, TenantsModule, NotificationsModule, ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }])],
-  controllers: [ResidentInvitationsController, ResidentAccessController, ResidentAppAccessController, AccessValidationController, GuardUsersController],
+  controllers: [ResidentInvitationsController, ResidentAccessController, ResidentAppAccessController, AccessValidationController, GuardUsersController, AccessPointsController],
   providers: [AccessService, AccessRepository, AccessOperatorGuard, FinanceAdminGuard],
   exports: [AccessService, AccessOperatorGuard],
 })

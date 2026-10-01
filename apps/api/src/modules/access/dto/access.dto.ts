@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsEmail, IsIn, IsInt, IsOptional, IsString, IsStrongPassword, Length, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsInt, IsOptional, IsString, IsStrongPassword, IsUUID, Length, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateVisitorInvitationDto {
   @IsString()
@@ -58,6 +58,23 @@ export class CreateGuardUserDto {
 
   @IsStrongPassword({ minLength: 10, minLowercase: 1, minUppercase: 1, minNumbers: 1, minSymbols: 1 })
   password!: string;
+}
+
+export class CreateGuardAccessPointDto {
+  @IsString()
+  @Length(2, 80)
+  name!: string;
+}
+
+export class UpdateGuardAccessPointDto {
+  @IsOptional()
+  @IsString()
+  @Length(2, 80)
+  name?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
 
 export type GuardServiceType =
@@ -122,6 +139,10 @@ export class CreateGuardServiceDto {
   @IsString()
   @MaxLength(500)
   notes?: string;
+
+  @IsOptional()
+  @IsUUID()
+  accessPointId?: string;
 }
 
 export class RegisterServiceExitDto {
@@ -129,6 +150,10 @@ export class RegisterServiceExitDto {
   @IsString()
   @MaxLength(500)
   notes?: string;
+
+  @IsOptional()
+  @IsUUID()
+  accessPointId?: string;
 }
 
 export class UnifiedAuditLogQueryDto {

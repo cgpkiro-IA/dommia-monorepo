@@ -19,7 +19,7 @@ import {
   AlertTriangle,
   RefreshCw,
 } from 'lucide-react';
-import type { GuardServiceType, GuardServiceItem, GuardServiceDestination } from '../types';
+import type { GuardAccessPoint, GuardServiceType, GuardServiceItem, GuardServiceDestination } from '../types';
 
 interface GuardServicePanelProps {
   isOnline: boolean;
@@ -34,6 +34,11 @@ interface GuardServicePanelProps {
   destinationType: 'SPECIFIC' | 'GENERAL';
   onDestinationTypeChange: (destType: 'SPECIFIC' | 'GENERAL') => void;
   destinations: GuardServiceDestination[];
+  accessPoints: GuardAccessPoint[];
+  entryAccessPointId: string;
+  onEntryAccessPointChange: (id: string) => void;
+  exitAccessPointIds: Record<string, string>;
+  onExitAccessPointChange: (serviceId: string, accessPointId: string) => void;
   onAddDestination: (dest: { propertyId: string; propertyAddress: string; residentName: string; residentPhone?: string; residentEmail?: string }) => void;
   onRemoveDestination: (propertyId: string) => void;
   notes: string;
@@ -51,7 +56,7 @@ interface GuardServicePanelProps {
   message: string | null;
   error: string | null;
   onSubmit: () => void;
-  onRegisterExit: (serviceId: string) => void;
+  onRegisterExit: (serviceId: string, accessPointId: string) => void;
   onRefreshServices: () => void;
 }
 
@@ -152,6 +157,11 @@ export function GuardServicePanel({
   destinationType,
   onDestinationTypeChange,
   destinations,
+  accessPoints,
+  entryAccessPointId,
+  onEntryAccessPointChange,
+  exitAccessPointIds,
+  onExitAccessPointChange,
   onAddDestination,
   onRemoveDestination,
   notes,
@@ -215,6 +225,23 @@ export function GuardServicePanel({
           }}
           className="space-y-5"
         >
+          <div>
+            <label htmlFor="guard-entry-access-point" className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-300">
+              Caseta o acceso de entrada
+            </label>
+            <select
+              id="guard-entry-access-point"
+              value={entryAccessPointId}
+              onChange={(event) => onEntryAccessPointChange(event.target.value)}
+              required
+              disabled={!isOnline || accessPoints.length === 0}
+              className="min-h-11 w-full rounded-xl border border-slate-600 bg-slate-800 px-3.5 text-sm text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400 disabled:opacity-60"
+            >
+              <option value="">{accessPoints.length ? 'Selecciona dónde registras el ingreso' : 'Sin casetas o accesos activos'}</option>
+              {accessPoints.map((accessPoint) => <option key={accessPoint.id} value={accessPoint.id}>{accessPoint.name}</option>)}
+            </select>
+          </div>
+
           {/* Selector de Iconos / Tipos de Servicios */}
           <div>
             <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5">
@@ -458,6 +485,7 @@ export function GuardServicePanel({
               const Icon = cfg.icon;
               const isSelected = selectedActiveServiceId === service.id;
               const isExiting = exitingId === service.id;
+              const exitAccessPointId = exitAccessPointIds[service.id] || (accessPoints.length === 1 ? accessPoints[0].id : '');
 
               return (
                 <div
@@ -505,19 +533,31 @@ export function GuardServicePanel({
                         </span>
                       )}
                     </p>
+                    <p className="text-[11px] text-slate-400">
+                      Ingresó por: <strong className="text-slate-200">{service.entered_access_point_name || 'Ubicación no registrada'}</strong>
+                    </p>
                   </div>
 
                   {/* Botón de Registrar Salida */}
                   <div className="mt-3 pt-3 border-t border-slate-700/60 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-slate-400">
-                      {isSelected ? 'Listo para registrar salida' : 'Toca para marcar salida'}
-                    </span>
+                    <label className="min-w-0 flex-1 text-[11px] font-semibold text-slate-300" onClick={(event) => event.stopPropagation()}>
+                      Caseta o acceso de salida
+                      <select
+                        value={exitAccessPointId}
+                        onChange={(event) => onExitAccessPointChange(service.id, event.target.value)}
+                        disabled={!isOnline || accessPoints.length === 0}
+                        className="mt-1 min-h-10 w-full rounded-lg border border-slate-600 bg-slate-900 px-2 text-xs text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400 disabled:opacity-60"
+                      >
+                        <option value="">{accessPoints.length ? 'Selecciona acceso' : 'Sin accesos activos'}</option>
+                        {accessPoints.map((accessPoint) => <option key={accessPoint.id} value={accessPoint.id}>{accessPoint.name}</option>)}
+                      </select>
+                    </label>
                     <button
                       type="button"
-                      disabled={isExiting || !isOnline}
+                      disabled={isExiting || !isOnline || !exitAccessPointId}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onRegisterExit(service.id);
+                        onRegisterExit(service.id, exitAccessPointId);
                       }}
                       className="px-3.5 py-1.5 rounded-xl bg-rose-600/90 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer transition-all hover:scale-[1.02] disabled:opacity-50"
                     >

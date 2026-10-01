@@ -4,6 +4,13 @@ const nextConfig = {
   transpilePackages: ['@dommia/ui', '@dommia/shared-types'],
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
+  async rewrites() {
+    if (process.env.NODE_ENV !== 'development') return [];
+    return [{
+      source: '/api/v1/:path*',
+      destination: 'http://127.0.0.1:4000/api/v1/:path*',
+    }];
+  },
   async headers() {
     return [
       {

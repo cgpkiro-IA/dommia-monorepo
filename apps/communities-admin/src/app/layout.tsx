@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ConfirmActionProvider } from '@/features/dashboard/components/ConfirmActionProvider';
 import './globals.css';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
-        {children}
+        <ConfirmActionProvider>{children}</ConfirmActionProvider>
       </body>
     </html>
   );

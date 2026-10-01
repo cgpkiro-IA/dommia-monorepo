@@ -57,6 +57,15 @@ export class AccessValidationController {
     return { success: true, data: await this.accessService.findManualVisitCandidates(slug, request.user.sub, query || '') };
   }
 
+  @Get('manual-visits/properties')
+  @UseGuards(AccessOperatorGuard)
+  async manualVisitPropertySuggestions(
+    @Param('slug') slug: string,
+    @Query('query') query?: string,
+  ) {
+    return { success: true, data: await this.accessService.findManualVisitPropertySuggestions(slug, query || '') };
+  }
+
   @Post('manual-visits/:id/authorize')
   @UseGuards(AccessOperatorGuard)
   async authorizeManualVisit(
@@ -86,6 +95,12 @@ export class AccessValidationController {
     @Body() dto: CreateGuardServiceDto,
   ) {
     return { success: true, data: await this.accessService.createGuardService(slug, request.user.sub, dto) };
+  }
+
+  @Get('access-points')
+  @UseGuards(AccessOperatorGuard)
+  async listActiveAccessPoints(@Param('slug') slug: string) {
+    return { success: true, data: await this.accessService.listAccessPoints(slug, true) };
   }
 
   @Get('services')

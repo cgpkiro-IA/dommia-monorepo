@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { FeeConfiguration, FeeFormData, FeeType, FeeSimulationResult } from '@/types';
 import { API_BASE } from '@/lib/api-url';
+import { useConfirmAction } from '@/features/dashboard/components/ConfirmActionProvider';
 
 const INITIAL_FORM: FeeFormData = {
   name: '',
@@ -22,6 +23,7 @@ const INITIAL_FORM: FeeFormData = {
 };
 
 export function useFees(authToken?: string) {
+  const confirmAction = useConfirmAction();
   const [fees, setFees] = useState<FeeConfiguration[]>([]);
   const [loadingFees, setLoadingFees] = useState(false);
 
@@ -172,7 +174,11 @@ export function useFees(authToken?: string) {
   };
 
   const handleDeleteFee = async (slug: string, feeId: string, showToast: (msg: string, type?: 'success' | 'error') => void) => {
-    if (!confirm('¿Estás seguro de eliminar esta estructura de cuota?')) return;
+    const confirmed = await confirmAction({
+      title: 'Eliminar estructura de cuota',
+      message: 'Esta acción eliminará la configuración seleccionada. ¿Deseas continuar?',
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/finance/fees/${feeId}`, {
         method: 'DELETE',

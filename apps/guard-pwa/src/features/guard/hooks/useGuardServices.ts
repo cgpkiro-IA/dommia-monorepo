@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { GuardSession, GuardServiceType, GuardServiceDestination, GuardServiceItem, GuardLookupResult } from '../types';
+import type { GuardAccessPoint, GuardSession, GuardServiceType, GuardServiceDestination, GuardServiceItem, GuardLookupResult } from '../types';
 import { guardApiRequest } from '../guard-api';
 
 export function useGuardServices(session: GuardSession, isOnline: boolean) {
@@ -18,6 +18,9 @@ export function useGuardServices(session: GuardSession, isOnline: boolean) {
 
   // Active services
   const [activeServices, setActiveServices] = useState<GuardServiceItem[]>([]);
+  const [accessPoints, setAccessPoints] = useState<GuardAccessPoint[]>([]);
+  const [entryAccessPointId, setEntryAccessPointId] = useState('');
+  const [exitAccessPointIds, setExitAccessPointIds] = useState<Record<string, string>>({});
   const [loadingServices, setLoadingServices] = useState(false);
   const [selectedActiveServiceId, setSelectedActiveServiceId] = useState<string | null>(null);
 
@@ -28,6 +31,30 @@ export function useGuardServices(session: GuardSession, isOnline: boolean) {
   const [error, setError] = useState<string | null>(null);
 
   const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const loadAccessPoints = useCallback(async () => {
+    if (!isOnline) return;
+    try {
+      const data = await guardApiRequest<GuardAccessPoint[]>(
+        `/tenants/${encodeURIComponent(session.tenantSlug)}/access/access-points`,
+        session.token,
+      );
+      const activePoints = data || [];
+      setAccessPoints(activePoints);
+      setEntryAccessPointId((current) => {
+        if (activePoints.some((point) => point.id === current)) return current;
+        return activePoints.length === 1 ? activePoints[0].id : '';
+      });
+    } catch (requestError) {
+      setAccessPoints([]);
+      setEntryAccessPointId('');
+      setError(requestError instanceof Error ? requestError.message : 'No se pudieron cargar las casetas o accesos.');
+    }
+  }, [isOnline, session.tenantSlug, session.token]);
+
+  useEffect(() => {
+    void loadAccessPoints();
+  }, [loadAccessPoints]);
 
   const loadActiveServices = useCallback(async () => {
     if (!isOnline) return;
@@ -121,6 +148,10 @@ export function useGuardServices(session: GuardSession, isOnline: boolean) {
       setError('Por favor selecciona al menos un domicilio o residente de destino.');
       return;
     }
+    if (!entryAccessPointId) {
+      setError(accessPoints.length > 1 ? 'Selecciona la caseta o acceso de entrada.' : 'No hay una caseta o acceso activo configurado. Contacta a la administración.');
+      return;
+    }
     if (serviceType === 'OTHER' && !customServiceName.trim()) {
       setError('Indica qué tipo de servicio o empresa está ingresando.');
       return;
@@ -145,6 +176,7 @@ export function useGuardServices(session: GuardSession, isOnline: boolean) {
             destinationType,
             destinations: destinationType === 'SPECIFIC' ? destinations : [],
             notes: notes.trim() || undefined,
+            accessPointId: entryAccessPointId,
           }),
         }
       );
@@ -160,9 +192,13 @@ export function useGuardServices(session: GuardSession, isOnline: boolean) {
     }
   };
 
-  const handleRegisterExit = async (serviceId: string, exitNotes?: string) => {
+  const handleRegisterExit = async (serviceId: string, accessPointId: string) => {
     if (!isOnline) {
       setError('Operación no disponible sin conexión.');
+      return;
+    }
+    if (!accessPointId) {
+      setError(accessPoints.length > 1 ? 'Selecciona la caseta o acceso de salida.' : 'No hay una caseta o acceso activo configurado. Contacta a la administración.');
       return;
     }
 
@@ -177,7 +213,7 @@ export function useGuardServices(session: GuardSession, isOnline: boolean) {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ notes: exitNotes || undefined }),
+          body: JSON.stringify({ accessPointId }),
         }
       );
 
@@ -204,6 +240,11 @@ export function useGuardServices(session: GuardSession, isOnline: boolean) {
     destinationType,
     setDestinationType,
     destinations,
+    accessPoints,
+    entryAccessPointId,
+    setEntryAccessPointId,
+    exitAccessPointIds,
+    setExitAccessPointId: (serviceId: string, accessPointId: string) => setExitAccessPointIds((current) => ({ ...current, [serviceId]: accessPointId })),
     notes,
     setNotes,
     searchQuery,

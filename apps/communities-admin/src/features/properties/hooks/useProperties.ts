@@ -3,8 +3,10 @@
 import { useState, useMemo } from 'react';
 import { Property, Metrics } from '@/types';
 import { API_BASE } from '@/lib/api-url';
+import { useConfirmAction } from '@/features/dashboard/components/ConfirmActionProvider';
 
 export function useProperties(authToken?: string) {
+  const confirmAction = useConfirmAction();
   const [properties, setProperties] = useState<Property[]>([]);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loadingData, setLoadingData] = useState(false);
@@ -148,9 +150,11 @@ export function useProperties(authToken?: string) {
     num: string,
     onSuccess: (msg: string) => void,
   ) => {
-    if (!window.confirm(`¿Estás seguro de eliminar la vivienda "${street} #${num}"? Esta acción liberará 1 espacio en tu capacidad contratada.`)) {
-      return;
-    }
+    const confirmed = await confirmAction({
+      title: 'Eliminar vivienda',
+      message: `Se eliminará "${street} #${num}" y se liberará un espacio de la capacidad contratada. También se revocarán sus accesos asociados.`,
+    });
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/properties/${id}`, {

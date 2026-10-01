@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, IsOptional, IsBoolean, IsIn } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsIn,
+} from "class-validator";
 
 export class CreateNoticeDto {
   @IsString()
@@ -11,18 +17,25 @@ export class CreateNoticeDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL', 'GUARD_CONSIGN', 'SECURITY'])
-  category?: string = 'GENERAL';
+  @IsIn([
+    "URGENT",
+    "MAINTENANCE",
+    "ASSEMBLY",
+    "GENERAL",
+    "GUARD_CONSIGN",
+    "SECURITY",
+  ])
+  category?: string = "GENERAL";
 
   @IsString()
   @IsOptional()
-  @IsIn(['HIGH', 'MEDIUM', 'LOW', 'URGENT'])
-  priority?: string = 'MEDIUM';
+  @IsIn(["HIGH", "MEDIUM", "LOW", "URGENT"])
+  priority?: string = "MEDIUM";
 
   @IsString()
   @IsOptional()
-  @IsIn(['ALL', 'RESIDENTS', 'GUARDS'])
-  targetAudience?: string = 'ALL';
+  @IsIn(["ALL", "RESIDENTS", "GUARDS"])
+  targetAudience?: string = "ALL";
 
   @IsString()
   @IsOptional()
@@ -60,7 +73,6 @@ export class CreateNoticeDto {
   @IsOptional()
   is_published?: boolean;
 }
-
 export class UpdateNoticeDto {
   @IsString()
   @IsOptional()
@@ -72,17 +84,24 @@ export class UpdateNoticeDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['URGENT', 'MAINTENANCE', 'ASSEMBLY', 'GENERAL', 'GUARD_CONSIGN', 'SECURITY'])
+  @IsIn([
+    "URGENT",
+    "MAINTENANCE",
+    "ASSEMBLY",
+    "GENERAL",
+    "GUARD_CONSIGN",
+    "SECURITY",
+  ])
   category?: string;
 
   @IsString()
   @IsOptional()
-  @IsIn(['HIGH', 'MEDIUM', 'LOW', 'URGENT'])
+  @IsIn(["HIGH", "MEDIUM", "LOW", "URGENT"])
   priority?: string;
 
   @IsString()
   @IsOptional()
-  @IsIn(['ALL', 'RESIDENTS', 'GUARDS'])
+  @IsIn(["ALL", "RESIDENTS", "GUARDS"])
   targetAudience?: string;
 
   @IsString()
@@ -121,14 +140,3 @@ export class UpdateNoticeDto {
   @IsOptional()
   is_published?: boolean;
 }
-
-export class AcknowledgeGuardNoticeDto {
-  @IsString()
-  @IsOptional()
-  guardUserId?: string;
-
-  @IsString()
-  @IsOptional()
-  guardName?: string;
-}
-

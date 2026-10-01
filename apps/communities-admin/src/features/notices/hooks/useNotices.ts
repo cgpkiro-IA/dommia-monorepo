@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { CommunityNotice, NoticeFormData, NoticeCategory } from '@/types';
 import { API_BASE } from '@/lib/api-url';
+import { useConfirmAction } from '@/features/dashboard/components/ConfirmActionProvider';
 
 const INITIAL_FORM: NoticeFormData = {
   title: '',
@@ -16,6 +17,7 @@ const INITIAL_FORM: NoticeFormData = {
 };
 
 export function useNotices(authToken?: string) {
+  const confirmAction = useConfirmAction();
   const [notices, setNotices] = useState<CommunityNotice[]>([]);
   const [loadingNotices, setLoadingNotices] = useState(false);
 
@@ -136,7 +138,11 @@ export function useNotices(authToken?: string) {
   };
 
   const handleDeleteNotice = async (slug: string, id: string, title: string, onSuccess: (msg: string) => void) => {
-    if (!confirm(`¿Estás seguro de eliminar el comunicado "${title}"?`)) return;
+    const confirmed = await confirmAction({
+      title: 'Eliminar comunicado',
+      message: `Se eliminará el comunicado "${title}". ¿Deseas continuar?`,
+    });
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`${API_BASE}/tenants/${slug}/notices/${id}`, {

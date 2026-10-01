@@ -16,6 +16,7 @@ interface GuardNoticeItem {
   is_pinned: boolean;
   published_at: string;
   acknowledged_guards: { guard_id: string; guard_name: string; acknowledged_at: string }[];
+  is_acknowledged_by_current_guard: boolean;
   expires_at?: string;
 }
 
@@ -23,9 +24,10 @@ interface GuardConsignsPanelProps {
   tenantSlug: string;
   token: string;
   isOnline: boolean;
+  onRefreshConsigns: () => Promise<void>;
 }
 
-export function GuardConsignsPanel({ tenantSlug, token, isOnline }: GuardConsignsPanelProps) {
+export function GuardConsignsPanel({ tenantSlug, token, isOnline, onRefreshConsigns }: GuardConsignsPanelProps) {
   const [consigns, setConsigns] = useState<GuardNoticeItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +66,8 @@ export function GuardConsignsPanel({ tenantSlug, token, isOnline }: GuardConsign
     void fetchConsigns();
   }, [fetchConsigns]);
 
+  const pendingConsigns = consigns.filter((consign) => !consign.is_acknowledged_by_current_guard);
+
   const handleAcknowledge = async (noticeId: string) => {
     if (!isOnline) return;
     try {
@@ -71,20 +75,15 @@ export function GuardConsignsPanel({ tenantSlug, token, isOnline }: GuardConsign
       const res = await fetch(`${API_BASE}/tenants/${encodeURIComponent(tenantSlug)}/notices/${noticeId}/acknowledge-guard`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          guardUserId: 'guard_active',
-          guardName: 'Guardia en Caseta',
-        }),
       });
       const json = await res.json().catch(() => null);
 
       if (res.ok && json?.success) {
         setSuccessMsg('Consigna marcada como leída y confirmada.');
         setTimeout(() => setSuccessMsg(null), 3000);
-        void fetchConsigns();
+        await Promise.all([fetchConsigns(), onRefreshConsigns()]);
       }
     } catch {
       // Ignorar error transitorio
@@ -104,7 +103,7 @@ export function GuardConsignsPanel({ tenantSlug, token, isOnline }: GuardConsign
             <h3 className="text-base font-black text-white flex items-center gap-2">
               <span>Consignas y Directivas de Caseta</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-950 text-blue-300 border border-blue-800">
-                {consigns.length} activas
+                {pendingConsigns.length} pendientes
               </span>
             </h3>
             <p className="text-xs text-slate-400">
@@ -141,7 +140,7 @@ export function GuardConsignsPanel({ tenantSlug, token, isOnline }: GuardConsign
           <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-500" />
           <p className="text-xs font-medium">Consultando directivas de caseta...</p>
         </div>
-      ) : consigns.length === 0 ? (
+      ) : pendingConsigns.length === 0 ? (
         <div className="p-12 text-center rounded-2xl bg-slate-900/60 border border-slate-800 text-slate-400 space-y-2">
           <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
           <h4 className="text-sm font-bold text-slate-200">Sin consignas pendientes</h4>
@@ -151,9 +150,9 @@ export function GuardConsignsPanel({ tenantSlug, token, isOnline }: GuardConsign
         </div>
       ) : (
         <div className="space-y-3">
-          {consigns.map((consign) => {
+          {pendingConsigns.map((consign) => {
             const isUrgent = consign.priority === 'URGENT' || consign.priority === 'HIGH';
-            const isAcknowledged = consign.acknowledged_guards?.length > 0;
+            const isAcknowledged = consign.is_acknowledged_by_current_guard;
 
             const badgeBg = isUrgent
               ? 'bg-rose-950 text-rose-300 border-rose-600/60'

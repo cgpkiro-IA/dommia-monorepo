@@ -122,3 +122,69 @@ test('consulta bitacora unificada de eventos y accesos con metricas y filtros te
   assert.equal(typeof body.summary.totalEvents, 'number');
 });
 
+test('registra casetas distintas de entrada y salida en servicios y bitacora', async () => {
+  const adminToken = await signTenantToken('admin.guard-qa@dommia.test', 'TENANT_ADMIN');
+  const suffix = uniqueId();
+  let entryPointId;
+  let exitPointId;
+  let serviceId;
+
+  try {
+    const entryPointResponse = await request('/tenants/guard-qa/access-points', {
+      method: 'POST',
+      token: adminToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: `Caseta entrada ${suffix}` }),
+    });
+    assert.equal(entryPointResponse.status, 201);
+    entryPointId = (await responseData(entryPointResponse)).id;
+
+    const exitPointResponse = await request('/tenants/guard-qa/access-points', {
+      method: 'POST',
+      token: adminToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: `Acceso salida ${suffix}` }),
+    });
+    assert.equal(exitPointResponse.status, 201);
+    exitPointId = (await responseData(exitPointResponse)).id;
+
+    const createResponse = await request('/tenants/guard-qa/access/services', {
+      method: 'POST',
+      token: guardToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        serviceType: 'GAS_SUPPLY',
+        destinationType: 'GENERAL',
+        accessPointId: entryPointId,
+      }),
+    });
+    assert.equal(createResponse.status, 201);
+    const created = await responseData(createResponse);
+    serviceId = created.id;
+    assert.equal(created.entered_access_point_id, entryPointId);
+    assert.equal(created.entered_access_point_name, `Caseta entrada ${suffix}`);
+    assert.ok(created.entered_by_name);
+
+    const exitResponse = await request(`/tenants/guard-qa/access/services/${serviceId}/exit`, {
+      method: 'POST',
+      token: guardToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessPointId: exitPointId }),
+    });
+    assert.equal(exitResponse.status, 201);
+    const exited = await responseData(exitResponse);
+    assert.equal(exited.exited_access_point_id, exitPointId);
+    assert.equal(exited.exited_access_point_name, `Acceso salida ${suffix}`);
+    assert.ok(exited.exited_by_name);
+
+    const logResponse = await request('/tenants/guard-qa/access/unified-log?limit=20', { token: adminToken });
+    const { events } = await responseData(logResponse);
+    assert.match(events.find((event) => event.id === `${serviceId}-entry`).description, new RegExp(`Caseta entrada ${suffix}`));
+    assert.match(events.find((event) => event.id === `${serviceId}-exit`).description, new RegExp(`Acceso salida ${suffix}`));
+  } finally {
+    if (serviceId) await pool.query('DELETE FROM tenant_guard_qa.guard_services WHERE id = $1', [serviceId]);
+    if (entryPointId) await pool.query('DELETE FROM tenant_guard_qa.guard_access_points WHERE id = $1', [entryPointId]);
+    if (exitPointId) await pool.query('DELETE FROM tenant_guard_qa.guard_access_points WHERE id = $1', [exitPointId]);
+  }
+});
+

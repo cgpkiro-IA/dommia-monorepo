@@ -75,7 +75,8 @@ required_tenant_tables(table_name) AS (
     ('guard_deliveries'),
     ('guard_incidents'),
     ('guard_vehicle_flags'),
-    ('guard_services')
+    ('guard_services'),
+    ('guard_access_points')
 ),
 required_tenant_columns(table_name, column_name) AS (
   VALUES
@@ -96,7 +97,13 @@ required_tenant_columns(table_name, column_name) AS (
     ('guard_services', 'destination_type'),
     ('guard_services', 'destinations'),
     ('guard_services', 'status'),
+    ('guard_services', 'entered_access_point_id'),
+    ('guard_services', 'entered_access_point_name'),
+    ('guard_services', 'exited_access_point_id'),
+    ('guard_services', 'exited_access_point_name'),
     ('guard_services', 'exited_at'),
+    ('guard_access_points', 'name'),
+    ('guard_access_points', 'is_active'),
     ('fee_configurations', 'frequency'),
     ('fee_configurations', 'due_day'),
     ('fee_configurations', 'late_fee_amount'),
@@ -143,6 +150,7 @@ required_tenant_indexes(index_name) AS (
     ('resident_password_resets_resident_idx'),
     ('guard_incidents_status_created_idx'),
     ('guard_services_status_idx'),
+    ('guard_access_points_name_unique'),
     ('invitations_resident_created_idx'),
     ('access_logs_invitation_idx'),
     ('idx_notices_audience'),
@@ -157,6 +165,7 @@ required_functions(signature) AS (
     ('public.ensure_tenant_feature_tables(text)'),
     ('public.ensure_tenant_finance_schema(text)'),
     ('public.ensure_tenant_monthly_financial_reports(text)'),
+    ('public.ensure_tenant_access_points(text)'),
     ('public.ensure_guard_consigns_and_panic(text)'),
     ('public.ensure_tenant_latest_guard_tables(text)')
 ),

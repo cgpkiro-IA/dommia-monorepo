@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { parseClientError } from '@dommia/ui';
 import { TenantFormData } from '../components/TenantModal';
 import { ProspectItem, TenantItem } from '../../../types';
 import { crmApiFetch } from '../../auth/api';
@@ -133,7 +134,8 @@ export function useTenants({ onRefresh, showFeedback }: UseTenantsProps) {
       }, 1000);
       onRefresh();
     } catch (err: any) {
-      showFeedback('error', err.message || 'Ocurrió un error inesperado');
+      const parsed = parseClientError(err, 'No fue posible completar la operación del fraccionamiento.');
+      showFeedback('error', parsed.description);
     } finally {
       setIsSubmitting(false);
     }

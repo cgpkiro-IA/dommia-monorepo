@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { parseClientError } from '@dommia/ui';
 import { ProspectFormData } from '../components/ProspectModal';
 import { crmApiFetch } from '../../auth/api';
 
@@ -34,11 +35,13 @@ export function useProspects({ onRefresh, showFeedback }: UseProspectsProps) {
       if (res.ok) {
         onRefresh();
       } else {
-        showFeedback('error', data.message || 'Error al actualizar etapa');
+        const parsed = parseClientError(data, 'No fue posible actualizar la etapa del prospecto.');
+        showFeedback('error', parsed.description);
       }
     } catch (err) {
       console.error('Error updating stage:', err);
-      showFeedback('error', 'No se pudo actualizar la etapa del prospecto.');
+      const parsed = parseClientError(err, 'No fue posible actualizar la etapa del prospecto.');
+      showFeedback('error', parsed.description);
     }
   };
 
@@ -70,7 +73,8 @@ export function useProspects({ onRefresh, showFeedback }: UseProspectsProps) {
       }, 1500);
       onRefresh();
     } catch (err: any) {
-      showFeedback('error', err.message || 'Ocurrió un error');
+      const parsed = parseClientError(err, 'No fue posible registrar el prospecto.');
+      showFeedback('error', parsed.description);
     } finally {
       setIsSubmitting(false);
     }

@@ -60,7 +60,7 @@ export const SelfServiceForm: React.FC<SelfServiceFormProps> = ({
         {/* Subdomain Slug */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-            Identificador / Slug Único *
+            ID / Enlace Único del Condominio *
           </label>
           <div className="relative">
             <Globe className="absolute inset-y-0 left-3.5 my-auto w-4 h-4 text-slate-400" />

@@ -51,7 +51,7 @@ fun ResidentPasswordRecoveryScreen(
             OutlinedTextField(
                 value = tenantSlug,
                 onValueChange = { tenantSlug = it },
-                label = { Text("Tenant slug") },
+                label = { Text("ID del Condominio") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -74,7 +74,7 @@ fun ResidentPasswordRecoveryScreen(
             Button(
                 onClick = {
                     if (identifier.isBlank() || tenantSlug.isBlank()) {
-                        message = "Completa el tenant y tu correo o teléfono."
+                        message = "Ingresa el ID asignado a tu fraccionamiento y tu correo o teléfono."
                     } else {
                         scope.launch {
                             isLoading = true

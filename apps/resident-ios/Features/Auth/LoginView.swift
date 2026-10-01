@@ -7,7 +7,7 @@ struct LoginView: View {
         NavigationStack {
             Form {
                 Section("Comunidad") {
-                    TextField("Tenant slug", text: $viewModel.tenantSlug)
+                    TextField("ID del Condominio (ej. bosques)", text: $viewModel.tenantSlug)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                 }

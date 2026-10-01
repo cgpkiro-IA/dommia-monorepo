@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { parseClientError } from '@dommia/ui';
 import { PlanFormData } from '../components/PlanModal';
 import { PlanItem } from '../../../types';
 import { crmApiFetch } from '../../auth/api';
@@ -55,11 +56,13 @@ export function usePlans({ onRefresh, showFeedback }: UsePlansProps) {
         setIsPlanModalOpen(false);
         onRefresh();
       } else {
-        showFeedback('error', data.message || 'Error al actualizar plan');
+        const parsed = parseClientError(data, 'No fue posible actualizar el plan.');
+        showFeedback('error', parsed.description);
       }
     } catch (err) {
       console.error('Error saving plan:', err);
-      showFeedback('error', 'No se pudo actualizar el plan. Inténtalo de nuevo.');
+      const parsed = parseClientError(err, 'No se pudo actualizar el plan.');
+      showFeedback('error', parsed.description);
     } finally {
       setIsSubmitting(false);
     }

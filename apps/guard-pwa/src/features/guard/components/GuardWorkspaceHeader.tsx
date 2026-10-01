@@ -37,8 +37,8 @@ export function GuardWorkspaceHeader({
       <div className="guard-heading">
         <div>
           <p className="eyebrow">PUESTO ACTIVO <span className="heading-divider">/</span> {session.tenantName}</p>
-          <button type="button" className="tenant-id-chip" onClick={onCopyTenantId} aria-label={`Copiar IDTENANT ${session.tenantSlug}`}>
-            <span>IDTENANT</span><code>{session.tenantSlug}</code><span className="tenant-id-copy-state">{tenantCopied ? 'Copiado' : 'Copiar'}</span>
+          <button type="button" className="tenant-id-chip" onClick={onCopyTenantId} aria-label={`Copiar ID del fraccionamiento ${session.tenantSlug}`}>
+            <span>ID</span><code>{session.tenantSlug}</code><span className="tenant-id-copy-state">{tenantCopied ? 'Copiado' : 'Copiar'}</span>
           </button>
           <h1 id="guard-title">Control de Acceso y Caseta</h1>
           <p className="guard-subtitle">Valida pases QR, autoriza visitas y gestiona servicios de comida, gas, agua y paquetería.</p>

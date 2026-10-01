@@ -172,8 +172,9 @@ fun ResidentFinanceSection(repository: ResidentFinanceRepository?) {
                                 }
                                 if (!report.reviewedByCurrentResident) {
                                     TextButton(onClick = {
+                                        val repo = repository ?: return@TextButton
                                         coroutineScope.launch {
-                                            when (val result = repository.markMonthlyReportReviewed(report.id)) {
+                                            when (val result = repo.markMonthlyReportReviewed(report.id)) {
                                                 is ApiResult.Success -> monthlyReports = monthlyReports.map { if (it.id == report.id) it.copy(reviewedByCurrentResident = true) else it }
                                                 is ApiResult.Error -> reportActionMessage = result.message
                                                 is ApiResult.Loading -> Unit

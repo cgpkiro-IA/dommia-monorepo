@@ -225,9 +225,9 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Field 2: IDTENANT de tu comunidad
+                    // Field 2: ID de tu Condominio / Fraccionamiento
                     Text(
-                        text = "IDTENANT de tu comunidad",
+                        text = "ID de tu Condominio / Fraccionamiento",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color(0xFFCBD5E1),
                     )

@@ -560,7 +560,7 @@ private fun ResidentCardComposable(
                             color = Color.White,
                         )
 
-                        // IDTENANT Copy Pill
+                        // ID Copy Pill
                         Spacer(modifier = Modifier.height(4.dp))
                         Box(
                             modifier = Modifier
@@ -568,16 +568,16 @@ private fun ResidentCardComposable(
                                 .border(1.dp, Color(0xFF334155), shape = RoundedCornerShape(8.dp))
                                 .clickable {
                                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    clipboard.setPrimaryClip(ClipData.newPlainText("IDTENANT", tenantSlug))
+                                    clipboard.setPrimaryClip(ClipData.newPlainText("ID", tenantSlug))
                                     Toast
-                                        .makeText(context, "IDTENANT $tenantSlug copiado", Toast.LENGTH_SHORT)
+                                        .makeText(context, "ID $tenantSlug copiado", Toast.LENGTH_SHORT)
                                         .show()
                                 }
                                 .padding(horizontal = 8.dp, vertical = 3.dp),
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "IDTENANT ",
+                                    text = "ID ",
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
                                     color = Color(0xFF94A3B8),
                                 )

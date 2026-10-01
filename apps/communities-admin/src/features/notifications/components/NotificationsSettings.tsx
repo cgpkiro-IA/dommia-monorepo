@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { parseClientError } from '@dommia/ui';
 import { Mail, MessageCircle, Save, ShieldCheck } from 'lucide-react';
 import { API_BASE as API } from '@/lib/api-url';
 
@@ -30,11 +31,17 @@ export function NotificationsSettings({ tenantSlug, authToken, showToast }: Prop
     let mounted = true;
     fetch(`${API}/tenants/${tenantSlug}/notifications/config`, { headers })
       .then(async (response) => {
-        const json = await response.json();
-        if (!response.ok) throw new Error(json.message || 'No se pudo consultar la configuración.');
+        const json = await response.json().catch(() => null);
+        if (!response.ok) {
+          const parsed = parseClientError(json || { status: response.status }, 'No se pudo consultar la configuración.');
+          throw new Error(parsed.description);
+        }
         if (mounted) setChannels(json.data?.channels || []);
       })
-      .catch((error) => showToast(error instanceof Error ? error.message : 'No se pudo consultar la configuración.', 'error'))
+      .catch((error) => {
+        const parsed = parseClientError(error, 'No se pudo consultar la configuración.');
+        showToast(parsed.description, 'error');
+      })
       .finally(() => mounted && setLoading(false));
     return () => { mounted = false; };
   }, [tenantSlug, authToken]);
@@ -43,14 +50,18 @@ export function NotificationsSettings({ tenantSlug, authToken, showToast }: Prop
     setSaving(channel);
     try {
       const response = await fetch(`${API}/tenants/${tenantSlug}/notifications/config`, { method: 'PATCH', headers, body: JSON.stringify({ channel, ...data }) });
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.message || 'No se pudo guardar la configuración.');
-      setChannels((current) => [...current.filter((item) => item.channel !== channel), { channel, enabled: Boolean(data.enabled), configured: true, updatedAt: json.data.updated_at }]);
+      const json = await response.json().catch(() => null);
+      if (!response.ok) {
+        const parsed = parseClientError(json || { status: response.status }, 'No se pudo guardar la configuración.');
+        throw new Error(parsed.description);
+      }
+      setChannels((current) => [...current.filter((item) => item.channel !== channel), { channel, enabled: Boolean(data.enabled), configured: true, updatedAt: json.data?.updated_at }]);
       showToast(`${channel === 'SMTP' ? 'SMTP' : 'WhatsApp Business'} configurado correctamente.`);
       if (channel === 'SMTP') setSmtp((current) => ({ ...current, smtpPassword: '' }));
       else setWhatsapp((current) => ({ ...current, whatsappAccessToken: '' }));
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'No se pudo guardar la configuración.', 'error');
+      const parsed = parseClientError(error, 'No se pudo guardar la configuración.');
+      showToast(parsed.description, 'error');
     } finally { setSaving(null); }
   };
 

@@ -281,9 +281,9 @@ export function AnalyticsView({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Esquemas Aislados (Tenants)</p>
-            <p className="text-2xl font-black text-white mt-1">{telem?.tenantSchemasCount || 0} schemas</p>
-            <p className="text-[11px] text-slate-400 mt-1">Multi-tenancy por Schema físico</p>
+            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Condominios y Fraccionamientos Activos</p>
+            <p className="text-2xl font-black text-white mt-1">{telem?.tenantSchemasCount || 0} activos</p>
+            <p className="text-[11px] text-slate-400 mt-1">Bases de datos independientes</p>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">

@@ -19,7 +19,8 @@ export function useResidentAuth(expectedTenantSlug?: string) {
     const tenantJson = await tenantResponse.json().catch(() => null);
     const residentJson = await residentResponse.json().catch(() => null);
     if (!tenantResponse.ok || !tenantJson?.success || !residentResponse.ok || !residentJson?.success) {
-      const err = parseClientError(residentJson || tenantJson, 'No se pudo cargar el perfil del residente.');
+      const failedStatus = !residentResponse.ok ? residentResponse.status : tenantResponse.status;
+      const err = parseClientError(residentJson || tenantJson || { status: failedStatus }, 'No se pudo cargar el perfil del residente.');
       throw new Error(err.description);
     }
     const fullResident = residentJson.data?.resident;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { parseClientError } from '@dommia/ui';
 import { GatewayFormData } from '../components/GatewayModal';
 import { crmApiFetch } from '../../auth/api';
 
@@ -65,7 +66,8 @@ export function useGateways({ onRefresh, showFeedback }: UseGatewaysProps) {
       }, 1500);
       onRefresh();
     } catch (err: any) {
-      showFeedback('error', err.message || 'Ocurrió un error');
+      const parsed = parseClientError(err, 'No se pudo registrar el gateway IoT.');
+      showFeedback('error', parsed.description);
     } finally {
       setIsSubmitting(false);
     }

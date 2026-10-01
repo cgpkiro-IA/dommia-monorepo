@@ -27,14 +27,18 @@ export async function loginGuard(email: string, password: string, tenantSlug: st
   const body = await response.json().catch(() => null);
   const data = body?.data;
   const activeTenant = data?.activeTenant;
-  if (!response.ok || !body?.success || activeTenant?.role !== 'GUARD') {
-    throw new Error('Acceso no disponible. Verifica tus datos y que tu cuenta tenga el rol de guardia.');
+  if (!response.ok || !body?.success) {
+    const errorState = parseClientError(body || { status: response.status }, 'Acceso no disponible. Verifica tus datos e intenta nuevamente.');
+    throw new Error(errorState.description);
+  }
+  if (activeTenant?.role !== 'GUARD') {
+    throw new Error('Esta cuenta no cuenta con permisos asignados de guardia de caseta.');
   }
   if (!hasAccessModule(activeTenant.modules)) {
-    throw new Error('Dommia Access QR no está habilitado para este fraccionamiento.');
+    throw new Error('El módulo de Control de Acceso no está habilitado para este fraccionamiento.');
   }
   if (typeof data?.token !== 'string' || !data.token) {
-    throw new Error('La respuesta de inicio de sesión no incluyó una credencial válida.');
+    throw new Error('No se pudo verificar la credencial de acceso. Intenta nuevamente.');
   }
   return {
     token: data.token,

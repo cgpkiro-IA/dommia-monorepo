@@ -45,7 +45,7 @@ export function TenantModal({
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900 font-heading">
-                {isEdit ? 'Modificar Fraccionamiento' : 'Alta y Aprovisionamiento de Fraccionamiento'}
+                {isEdit ? 'Modificar Fraccionamiento' : 'Alta y Registro de Fraccionamiento / Condominio'}
               </h3>
               <p className="text-xs text-slate-500">
                 {isEdit ? 'Actualiza límites, tier, dominio y módulos activos.' : 'Crea un esquema aislado en PostgreSQL.'}
@@ -78,7 +78,7 @@ export function TenantModal({
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Identificador / Subdominio (Slug) *
+              ID / Enlace del Condominio (Subdominio) *
             </label>
             <div className="flex items-center">
               <input

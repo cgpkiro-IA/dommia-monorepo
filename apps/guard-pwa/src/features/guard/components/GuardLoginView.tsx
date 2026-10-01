@@ -35,9 +35,9 @@ export function GuardLoginView({
           <h2>Acceso de guardia</h2>
           <p>Usa las credenciales asignadas por tu administración.</p>
         </div>
-        <label htmlFor="tenantSlug">IDTENANT de tu comunidad</label>
+        <label htmlFor="tenantSlug">ID de tu Fraccionamiento / Caseta</label>
         <input id="tenantSlug" name="tenantSlug" autoComplete="organization" aria-describedby="guard-tenant-help" required value={tenantSlug} onChange={(event) => onTenantSlugChange(event.target.value)} placeholder="Ej. bosques" />
-        <p id="guard-tenant-help" className="field-help">Es el código corto del fraccionamiento, no el UUID interno. Puedes abrir Guard con <code>?tenant=bosques</code> para precargarlo.</p>
+        <p id="guard-tenant-help" className="field-help">Ingresa el ID asignado a tu fraccionamiento (ej. <code>bosques</code>).</p>
         <label htmlFor="email">Correo electrónico</label>
         <input id="email" name="email" type="email" autoComplete="username" required value={email} onChange={(event) => onEmailChange(event.target.value)} placeholder="guardia@comunidad.mx" />
         <label htmlFor="password">Contraseña</label>

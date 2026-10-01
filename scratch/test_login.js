@@ -1,13 +1,13 @@
 const testLogin = async () => {
   try {
-    console.log('--- Testing Resident App Login ---');
+    console.log('--- Testing Resident App Login with guard-qa tenant ---');
     const res = await fetch('http://localhost:4000/api/v1/auth/app/resident/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        identifier: 'carlos.mendoza@gmail.com',
-        password: 'Residente2026!',
-        tenantSlug: 'demo',
+        identifier: 'ana.rivera@qa.dommia.test',
+        password: 'ResidentQa2026!',
+        tenantSlug: 'guard-qa',
         clientType: 'ANDROID'
       })
     });

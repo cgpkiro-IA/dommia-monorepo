@@ -36,13 +36,13 @@ class SessionManager(context: Context) {
             prefs.edit().putString("device_id", it).apply()
         }
 
-    var accessToken: String?
+    var accessToken: String? = null
         private set
 
-    var refreshToken: String?
+    var refreshToken: String? = null
         private set
 
-    var profile: ResidentProfile?
+    var profile: ResidentProfile? = null
         private set
 
     init {

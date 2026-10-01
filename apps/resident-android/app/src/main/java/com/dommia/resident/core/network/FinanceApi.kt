@@ -2,6 +2,7 @@ package com.dommia.resident.core.network
 
 import com.dommia.resident.core.model.AnnualCampaign
 import com.dommia.resident.core.model.AnnualCampaignQuote
+import com.dommia.resident.core.model.ApiEnvelope
 import com.dommia.resident.core.model.FinancialStatus
 import retrofit2.http.GET
 import retrofit2.http.POST

@@ -50,13 +50,13 @@ android {
         create("dev") {
             dimension = "environment"
             applicationIdSuffix = ".dev"
-            buildConfigField("String", "API_BASE_URL", '"http://10.0.2.2:4000/api/v1/"')
+            buildConfigField("String", "API_BASE_URL", "\"http://localhost:4000/api/v1/\"")
             manifestPlaceholders["usesCleartextTraffic"] = "true"
             manifestPlaceholders["appLinksHost"] = "app.dommia.com"
         }
         create("prod") {
             dimension = "environment"
-            buildConfigField("String", "API_BASE_URL", '"https://<API_DOMAIN>/api/v1/"')
+            buildConfigField("String", "API_BASE_URL", "\"https://<API_DOMAIN>/api/v1/\"")
             manifestPlaceholders["usesCleartextTraffic"] = "false"
             manifestPlaceholders["appLinksHost"] = "app.dommia.com"
         }
@@ -72,8 +72,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     packaging {
@@ -87,6 +89,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)

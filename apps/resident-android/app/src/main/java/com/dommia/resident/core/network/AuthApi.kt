@@ -15,6 +15,9 @@ interface AuthApi {
     @POST("auth/app/resident/refresh")
     suspend fun refresh(@Body request: ResidentRefreshRequest): ApiEnvelope<ResidentAuthSession>
 
+    @POST("auth/app/resident/refresh")
+    fun refreshCall(@Body request: ResidentRefreshRequest): retrofit2.Call<ApiEnvelope<ResidentAuthSession>>
+
     @POST("auth/app/resident/logout")
     suspend fun logout(): ApiEnvelope<Unit>
 
@@ -34,6 +37,7 @@ interface AuthApi {
     suspend fun changeAppPassword(@Body request: ResidentAppChangePasswordRequest): ApiEnvelope<ResidentProfile>
 }
 
+@Serializable
 data class ResidentLoginRequest(
     val identifier: String,
     val password: String,
@@ -43,10 +47,12 @@ data class ResidentLoginRequest(
     val deviceName: String? = null,
 )
 
+@Serializable
 data class ResidentRefreshRequest(
     val refreshToken: String,
 )
 
+@Serializable
 data class ResidentAuthSession(
     val accessToken: String = "",
     val refreshToken: String = "",

@@ -1,5 +1,6 @@
 package com.dommia.resident.core.network
 
+import com.dommia.resident.core.model.ApiEnvelope
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.DELETE

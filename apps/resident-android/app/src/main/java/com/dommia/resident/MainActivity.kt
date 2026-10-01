@@ -101,29 +101,32 @@ class MainActivity : ComponentActivity() {
                             resetToken = deepLink.token,
                             onCompleted = { pendingDeepLink = null },
                         )
-                        null -> when (authState) {
-                        is AuthState.Authenticated -> ResidentHomeScreen(
-                            sessionManager = sessionManager,
-                            authRepository = authRepository,
-                            accessRepository = accessRepository,
-                            contentRepository = contentRepository,
-                            operationsRepository = operationsRepository,
-                            financeRepository = financeRepository,
-                        )
-                        is AuthState.Expired -> LoginScreen(
-                            sessionManager = sessionManager,
-                            authRepository = authRepository,
-                            bannerMessage = "Tu sesión expiró. Vuelve a iniciar sesión.",
-                        )
-                        is AuthState.Loading -> LoginScreen(
-                            sessionManager = sessionManager,
-                            authRepository = authRepository,
-                            bannerMessage = authState.message.ifBlank { "Verificando sesión..." },
-                        )
-                        else -> LoginScreen(
-                            sessionManager = sessionManager,
-                            authRepository = authRepository,
-                        )
+                        null -> {
+                            val currentAuthState = authState
+                            when (currentAuthState) {
+                                is AuthState.Authenticated -> ResidentHomeScreen(
+                                    sessionManager = sessionManager,
+                                    authRepository = authRepository,
+                                    accessRepository = accessRepository,
+                                    contentRepository = contentRepository,
+                                    operationsRepository = operationsRepository,
+                                    financeRepository = financeRepository,
+                                )
+                                is AuthState.Expired -> LoginScreen(
+                                    sessionManager = sessionManager,
+                                    authRepository = authRepository,
+                                    bannerMessage = "Tu sesión expiró. Vuelve a iniciar sesión.",
+                                )
+                                is AuthState.Loading -> LoginScreen(
+                                    sessionManager = sessionManager,
+                                    authRepository = authRepository,
+                                    bannerMessage = currentAuthState.message.ifBlank { "Verificando sesión..." },
+                                )
+                                else -> LoginScreen(
+                                    sessionManager = sessionManager,
+                                    authRepository = authRepository,
+                                )
+                            }
                         }
                     }
                 }
@@ -131,7 +134,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingDeepLink = parseResidentDeepLink(intent)

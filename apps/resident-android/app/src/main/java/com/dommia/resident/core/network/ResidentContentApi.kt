@@ -1,5 +1,6 @@
 package com.dommia.resident.core.network
 
+import com.dommia.resident.core.model.ApiEnvelope
 import com.dommia.resident.core.model.CreateVisitorPassRequest
 import com.dommia.resident.core.model.ResidentNotice
 import com.dommia.resident.core.model.VisitorPass

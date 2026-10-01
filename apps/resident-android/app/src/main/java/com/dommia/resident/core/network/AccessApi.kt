@@ -3,6 +3,7 @@ package com.dommia.resident.core.network
 import com.dommia.resident.core.model.AccessCredential
 import com.dommia.resident.core.model.ActiveDelivery
 import com.dommia.resident.core.model.ActiveService
+import com.dommia.resident.core.model.ApiEnvelope
 import retrofit2.http.GET
 
 interface AccessApi {

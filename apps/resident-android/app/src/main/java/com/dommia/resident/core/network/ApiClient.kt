@@ -22,6 +22,7 @@ object ApiClient {
         val json = Json {
             ignoreUnknownKeys = true
             explicitNulls = false
+            encodeDefaults = true
         }
 
         val refreshRetrofit = Retrofit.Builder()
@@ -51,9 +52,9 @@ object ApiClient {
 
                     return try {
                         val authApi = refreshRetrofit.create(AuthApi::class.java)
-                        val refreshResponse = authApi.refresh(ResidentRefreshRequest(refreshToken))
+                        val refreshResponse = authApi.refreshCall(ResidentRefreshRequest(refreshToken)).execute().body()
 
-                        if (refreshResponse.success && refreshResponse.data != null) {
+                        if (refreshResponse != null && refreshResponse.success && refreshResponse.data != null) {
                             sessionManager.saveSession(
                                 accessToken = refreshResponse.data.accessToken,
                                 refreshToken = refreshResponse.data.refreshToken,

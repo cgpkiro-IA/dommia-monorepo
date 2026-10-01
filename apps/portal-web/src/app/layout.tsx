@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import './globals.css';
 import { Analytics } from '../components/Analytics';
+import { Providers } from '../components/Providers';
 
 export const dynamic = 'force-dynamic';
 
@@ -166,19 +167,25 @@ export default async function RootLayout({
   const nonce = (await headers()).get('x-nonce') || undefined;
 
   return (
-    <html lang="es" className="scroll-smooth">
+    <html lang="es" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <script
           type="application/ld+json"
           nonce={nonce}
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: jsonLd }}
         />
       </head>
-      <body className="min-h-screen bg-[#0B1120] text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
-        <Analytics nonce={nonce} />
-        {children}
+      <body
+        className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white transition-colors duration-200"
+        suppressHydrationWarning
+      >
+        <Providers>
+          <Analytics nonce={nonce} />
+          {children}
+        </Providers>
       </body>
     </html>
   );

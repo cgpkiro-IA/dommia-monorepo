@@ -30,14 +30,21 @@ let NoticesController = class NoticesController {
         }
         const isPublishedOnly = publishedOnly === 'true';
         const notices = await this.noticesService.getTenantNotices(slug, isPublishedOnly, audience);
+        const data = request.user.role === 'GUARD'
+            ? notices.map((notice) => ({
+                ...notice,
+                is_acknowledged_by_current_guard: Array.isArray(notice.acknowledged_guards)
+                    && notice.acknowledged_guards.some((ack) => ack.guard_id === request.user.sub),
+            }))
+            : notices;
         return {
             success: true,
-            data: notices,
-            count: notices.length,
+            data,
+            count: data.length,
         };
     }
-    async acknowledgeNoticeByGuard(slug, id, body) {
-        const notice = await this.noticesService.acknowledgeNoticeByGuard(slug, id, body.guardUserId || 'guard_shift', body.guardName || 'Guardia de Turno');
+    async acknowledgeNoticeByGuard(slug, id, request) {
+        const notice = await this.noticesService.acknowledgeNoticeByGuard(slug, id, request.user.sub);
         return {
             success: true,
             message: 'Consigna marcada como leída y confirmada.',
@@ -94,9 +101,9 @@ __decorate([
     (0, common_1.UseGuards)(access_operator_guard_1.AccessOperatorGuard),
     __param(0, (0, common_1.Param)('slug')),
     __param(1, (0, common_1.Param)('id')),
-    __param(2, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, notice_dto_1.AcknowledgeGuardNoticeDto]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], NoticesController.prototype, "acknowledgeNoticeByGuard", null);
 __decorate([

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, ShieldCheck } from 'lucide-react';
 import { TierKey } from '../../../types';
 
 interface PaymentSimulatorBoxProps {
@@ -16,32 +16,37 @@ export const PaymentSimulatorBox: React.FC<PaymentSimulatorBoxProps> = ({
   estimatedPrice,
 }) => {
   return (
-    <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3">
-      <div className="flex items-center justify-between text-xs text-slate-300">
-        <span className="font-semibold flex items-center gap-1.5">
-          <CreditCard className="w-4 h-4 text-emerald-400" />
-          <span>Suscripción Recurrente Mensual (Sandbox Stripe)</span>
+    <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800/90 space-y-3.5 shadow-inner">
+      <div className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300">
+        <span className="font-bold flex items-center gap-2 font-heading">
+          <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <span>Suscripción Recurrente Mensual</span>
         </span>
         <div className="text-right">
-          <span className="text-emerald-400 font-bold text-sm block">
+          <span className="text-emerald-600 dark:text-emerald-400 font-black text-base block font-heading">
             {hasCustomDomain && tierKey !== 'ENTERPRISE'
               ? `${estimatedPrice} + $490 MXN/mes`
               : estimatedPrice}
           </span>
           {hasCustomDomain && tierKey !== 'ENTERPRISE' && (
-            <span className="text-[10px] text-purple-300">Incluye Add-on Subdominio</span>
+            <span className="text-[10px] text-purple-600 dark:text-purple-300 font-semibold">Incluye Add-on Subdominio</span>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3 text-xs font-mono">
-        <div className="col-span-2 p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 flex items-center justify-between">
-          <span>4242 •••• •••• 4242</span>
-          <span className="text-slate-500 text-[10px]">VISA</span>
+        <div className="col-span-2 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-between shadow-xs">
+          <span className="tracking-wider">4242 •••• •••• 4242</span>
+          <span className="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold">VISA</span>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 text-center">
+        <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-center font-semibold shadow-xs">
           12/28 • CVC
         </div>
+      </div>
+
+      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 pt-1">
+        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
+        <span>Cifrado SSL 256-bit y procesamiento certificado PCI-DSS vía Stripe.</span>
       </div>
     </div>
   );

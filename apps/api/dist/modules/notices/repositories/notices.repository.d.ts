@@ -31,5 +31,6 @@ export declare class NoticesRepository {
         isPublished: boolean;
     }>): Promise<any>;
     acknowledgeByGuard(slug: string, noticeId: string, guardUserId: string, guardName: string): Promise<any>;
+    findAcknowledgingGuardName(guardUserId: string): Promise<any>;
     delete(slug: string, id: string): Promise<boolean>;
 }

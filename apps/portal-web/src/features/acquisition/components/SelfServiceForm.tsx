@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Loader2, Zap, Building, User, Mail, Lock, Globe } from 'lucide-react';
+import { Loader2, Zap, Building, User, Mail, Globe } from 'lucide-react';
 import { SelfServiceFormData, TierKey } from '../../../types';
 import { DomainPolicyBox } from './DomainPolicyBox';
-import { PaymentSimulatorBox } from './PaymentSimulatorBox';
+import { Button } from '@dommia/ui';
 
 interface SelfServiceFormProps {
   formData: SelfServiceFormData;
@@ -26,7 +26,7 @@ export const SelfServiceForm: React.FC<SelfServiceFormProps> = ({
   onSubmit,
 }) => {
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
+    <form onSubmit={onSubmit} className="space-y-6">
       {/* Invisible Honeypot */}
       <input
         type="text"
@@ -41,8 +41,8 @@ export const SelfServiceForm: React.FC<SelfServiceFormProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {/* Community Name */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-            Nombre del Fraccionamiento / Condominio *
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-heading">
+            Nombre del Fraccionamiento / Residencial *
           </label>
           <div className="relative">
             <Building className="absolute inset-y-0 left-3.5 my-auto w-4 h-4 text-slate-400" />
@@ -52,15 +52,15 @@ export const SelfServiceForm: React.FC<SelfServiceFormProps> = ({
               value={formData.communityName}
               onChange={(e) => onCommunityNameChange(e.target.value)}
               placeholder="Residencial Los Laureles"
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition-all"
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
             />
           </div>
         </div>
 
         {/* Subdomain Slug */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-            ID / Enlace Único del Condominio *
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-heading">
+            ID / Enlace Web Asignado *
           </label>
           <div className="relative">
             <Globe className="absolute inset-y-0 left-3.5 my-auto w-4 h-4 text-slate-400" />
@@ -75,14 +75,14 @@ export const SelfServiceForm: React.FC<SelfServiceFormProps> = ({
                 })
               }
               placeholder="los_laureles"
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-emerald-500"
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
             />
           </div>
         </div>
 
         {/* Admin Name */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-heading">
             Nombre del Administrador Maestro *
           </label>
           <div className="relative">
@@ -93,14 +93,14 @@ export const SelfServiceForm: React.FC<SelfServiceFormProps> = ({
               value={formData.adminName}
               onChange={(e) => onFormChange({ ...formData, adminName: e.target.value })}
               placeholder="Lic. Laura Villarreal"
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500"
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
             />
           </div>
         </div>
 
         {/* Admin Email */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-heading">
             Correo de Acceso del Administrador *
           </label>
           <div className="relative">
@@ -111,26 +111,7 @@ export const SelfServiceForm: React.FC<SelfServiceFormProps> = ({
               value={formData.adminEmail}
               onChange={(e) => onFormChange({ ...formData, adminEmail: e.target.value })}
               placeholder="admin@loslaureles.com"
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500"
-            />
-          </div>
-        </div>
-
-        {/* Admin Password */}
-        <div className="sm:col-span-2">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-            Contraseña Maestra para Dommia Communities * (Mínimo 8 caracteres)
-          </label>
-          <div className="relative">
-            <Lock className="absolute inset-y-0 left-3.5 my-auto w-4 h-4 text-slate-400" />
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={formData.adminPassword}
-              onChange={(e) => onFormChange({ ...formData, adminPassword: e.target.value })}
-              placeholder="••••••••••••"
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 font-mono"
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
             />
           </div>
         </div>
@@ -144,30 +125,24 @@ export const SelfServiceForm: React.FC<SelfServiceFormProps> = ({
         onCustomDomainChange={(hasCustom) => onFormChange({ ...formData, hasCustomDomain: hasCustom })}
       />
 
-      {/* Payment Simulator Box */}
-      <PaymentSimulatorBox
-        hasCustomDomain={formData.hasCustomDomain}
-        tierKey={tierKey}
-        estimatedPrice={estimatedPrice}
-      />
-
-      <button
+      <Button
         type="submit"
+        variant="success"
+        size="lg"
         disabled={loading}
-        className="w-full py-4 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-500 shadow-xl shadow-emerald-900/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-      >
-        {loading ? (
-          <>
+        className="w-full !py-4 font-bold text-sm shadow-xl shadow-emerald-900/30 cursor-pointer disabled:opacity-50"
+        rightIcon={
+          loading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Aprovisionando Schema y Cuenta Maestra...</span>
-          </>
-        ) : (
-          <>
+          ) : (
             <Zap className="w-4 h-4" />
-            <span>Confirmar Pago y Activar Fraccionamiento</span>
-          </>
-        )}
-      </button>
+          )
+        }
+      >
+        {loading
+          ? 'Solicitando Activación...'
+          : 'Solicitar Activación'}
+      </Button>
     </form>
   );
 };

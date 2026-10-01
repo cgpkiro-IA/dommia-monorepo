@@ -24,7 +24,7 @@ export function useAcquisition({
   selectedHouses = 85,
   estimatedPrice = '$2,990 MXN/mes',
 }: UseAcquisitionProps = {}) {
-  const [activeMode, setActiveMode] = useState<AcquisitionMode>('demo');
+  const [activeMode, setActiveMode] = useState<AcquisitionMode>('self_service');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successDemo, setSuccessDemo] = useState<DemoSuccessData | null>(null);

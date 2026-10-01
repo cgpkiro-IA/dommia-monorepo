@@ -81,8 +81,11 @@ let NoticesService = class NoticesService {
         }
         return notice;
     }
-    async acknowledgeNoticeByGuard(slug, id, guardUserId, guardName) {
+    async acknowledgeNoticeByGuard(slug, id, guardUserId) {
         const tenant = await this.validateTenant(slug);
+        const guardName = await this.noticesRepo.findAcknowledgingGuardName(guardUserId);
+        if (!guardName)
+            throw new common_1.NotFoundException('La cuenta que inició sesión ya no está activa.');
         const notice = await this.noticesRepo.acknowledgeByGuard(tenant.slug, id, guardUserId, guardName);
         if (!notice) {
             throw new common_1.NotFoundException(`Aviso con ID "${id}" no encontrado`);

@@ -1,0 +1,83 @@
+name: DommiaResident
+options:
+  bundleIdPrefix: com.dommia
+  deploymentTarget:
+    iOS: "17.0"
+configs:
+  Dev: debug
+  Staging: release
+  Prod: release
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    PRODUCT_NAME: DommiaResident
+    GENERATE_INFOPLIST_FILE: YES
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 1.0.0
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+targets:
+  DommiaResident:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: App
+      - path: Core
+      - path: Features
+      - path: Services
+    configFiles:
+      Dev: Config/Dev.xcconfig
+      Staging: Config/Staging.xcconfig
+      Prod: Config/Prod.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dommia.resident
+        INFOPLIST_KEY_CFBundleDisplayName: "DOMMIA Resident"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
+        ENABLE_TESTABILITY: YES
+      configs:
+        Dev:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEV
+        Staging:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: STAGING
+        Prod:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: PROD
+
+  DommiaResidentTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Tests
+    dependencies:
+      - target: DommiaResident
+    settings:
+      base:
+        PRODUCT_NAME: DommiaResidentTests
+        PRODUCT_BUNDLE_IDENTIFIER: com.dommia.resident.tests
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/DommiaResident.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DommiaResident
+        BUNDLE_LOADER: $(TEST_HOST)
+      configs:
+        Dev:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEV
+
+schemes:
+  DommiaResident:
+    build:
+      targets:
+        DommiaResident: all
+        DommiaResidentTests: [test]
+    run:
+      config: Dev
+    test:
+      config: Dev
+      targets:
+        - DommiaResidentTests

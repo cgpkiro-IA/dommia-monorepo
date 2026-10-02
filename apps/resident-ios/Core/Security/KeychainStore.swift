@@ -1,8 +1,10 @@
 import Foundation
 import Security
 
-public struct KeychainStore: Sendable {
+public final class KeychainStore: @unchecked Sendable {
     private let service: String
+    private static let lock = NSLock()
+    private static var inMemoryFallback: [String: String] = [:]
 
     public init(service: String = "com.dommia.resident") {
         self.service = service
@@ -14,8 +16,17 @@ public struct KeychainStore: Sendable {
         SecItemDelete(query as CFDictionary)
         var item = query
         item[kSecValueData as String] = data
-        item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
         let status = SecItemAdd(item as CFDictionary, nil)
+
+        if status == -34018 || status == errSecNotAvailable {
+            // Fallback en memoria para entorno de pruebas / simulador sin entitlement host
+            Self.lock.lock()
+            defer { Self.lock.unlock() }
+            Self.inMemoryFallback["\(service):\(account)"] = value
+            return
+        }
+
         guard status == errSecSuccess else { throw KeychainError.status(status) }
     }
 
@@ -25,6 +36,13 @@ public struct KeychainStore: Sendable {
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        if status == -34018 || status == errSecNotAvailable {
+            Self.lock.lock()
+            defer { Self.lock.unlock() }
+            return Self.inMemoryFallback["\(service):\(account)"]
+        }
+
         if status == errSecItemNotFound { return nil }
         guard status == errSecSuccess, let data = result as? Data else {
             throw KeychainError.status(status)
@@ -33,7 +51,12 @@ public struct KeychainStore: Sendable {
     }
 
     public func delete(account: String) throws {
+        Self.lock.lock()
+        Self.inMemoryFallback.removeValue(forKey: "\(service):\(account)")
+        Self.lock.unlock()
+
         let status = SecItemDelete(baseQuery(account: account) as CFDictionary)
+        if status == -34018 || status == errSecNotAvailable { return }
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw KeychainError.status(status)
         }

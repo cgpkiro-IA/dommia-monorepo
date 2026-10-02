@@ -13,7 +13,15 @@ public final class AppDependencies {
     public let finance: FinanceService
 
     public init() {
-        let client = APIClient()
+        let urlSession: URLSession
+        switch AppEnvironment.current {
+        case .dev:
+            urlSession = MockServer.makeSession()
+        default:
+            urlSession = .shared
+        }
+
+        let client = APIClient(session: urlSession)
         let sessionStore = SessionStore()
         let sessionCoordinator = AuthSessionCoordinator(client: client, store: sessionStore)
         self.client = client

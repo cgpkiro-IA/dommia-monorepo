@@ -1,0 +1,575 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		117D03CCFDC1470875602642 /* FinanceTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 900325AF51C30F6721545BB7 /* FinanceTabView.swift */; };
+		265DD59BE0554A14458F12E1 /* PasswordResetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06BA9410F1FA507543429BC0 /* PasswordResetView.swift */; };
+		35397E6D6345F80BFB14CAB2 /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E58C61E72F6AE1719944EAB /* AppDependencies.swift */; };
+		392896ED70BF17855AD2B196 /* NoticesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A3FF9AC384A966264D0DF8A /* NoticesService.swift */; };
+		3A8D2C27E77DCF486F3CE8B6 /* QRCodeHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C79F0B37AE8503DBDA361438 /* QRCodeHelper.swift */; };
+		3AE5B6E763E41D5BA17AA346 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0513A9D3FCE8B70B564E3 /* APIClient.swift */; };
+		4AF96A62B13EA4D9449DA278 /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72034E4C46E514B2B0B851C3 /* APIModels.swift */; };
+		511A640CAEB0EF12E08135B0 /* ResidentTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A2701E9F5557BB55D74937 /* ResidentTabBar.swift */; };
+		551A012B10B5D161C358F5D8 /* ResidentDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9389067E987424D7C57D6A14 /* ResidentDashboardView.swift */; };
+		5ADA4E157D614535EDB5EC67 /* NoticesTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC12363C2D14424C3B9DCDD9 /* NoticesTabView.swift */; };
+		5D682E68CB67032231BA3759 /* CredentialTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5006CFD8E46117C011B133 /* CredentialTabView.swift */; };
+		653A7AC55A84E4883EFAF41C /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7510DCB50548E808D50241A6 /* AppEnvironment.swift */; };
+		66319A6578C1F98B59A40EDE /* AppRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18E0C28AD85189CAA25170A8 /* AppRoot.swift */; };
+		7552085505B6E476578DC980 /* DommiaResidentApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD1B313B6D77CE4F9F4AC44F /* DommiaResidentApp.swift */; };
+		86CF101D521D595EB2578F60 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C9BF6F43F878B66D4E6654 /* SessionStore.swift */; };
+		87CD06F47C1AEF08A8D5BB9B /* FinanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 986F5E369EA859CB0C5AA1AF /* FinanceService.swift */; };
+		89B29B8EB6140419B479EA90 /* MockServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C4D074F013CB3DE1E9A3E4F /* MockServer.swift */; };
+		912AC20001EB83F8ED47AF83 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9491C0BE27E470903DBF1118 /* KeychainStore.swift */; };
+		954F0527CEEC3BEE53B0DC5B /* ResidentFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3666446A342E1F0A1746C3EC /* ResidentFlowTests.swift */; };
+		9BC8998FB5A7385D85453AD5 /* ChangePasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C01D411F843BE17AE05276E /* ChangePasswordView.swift */; };
+		9CF2723ED02A8E51588E145D /* InvitationsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 277A72BFFD8AC2BFCEAA28AE /* InvitationsService.swift */; };
+		9DCB6D068CF01B54C1EECBE7 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1593B7A57304D3011AE80B6 /* LoginView.swift */; };
+		BC05AC8C926BC655DB74E36C /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF7527ABFF7A75B06FFF07BC /* APIError.swift */; };
+		CAA7DF90AB1F25949638BFEB /* ResidentFeatureModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 162E721A810FD046013EEF00 /* ResidentFeatureModels.swift */; };
+		CEC8D6031FDD6F48D8814212 /* PassesTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5168BFF7F7D90616E990B8AC /* PassesTabView.swift */; };
+		D11DEEB905F1D7504B4EFABA /* AuthRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC19C5EBBF9F1A3E80141A4B /* AuthRepository.swift */; };
+		D1C297BCA5EA7306D568D779 /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95595F9E16BEEA155CD2298D /* LoginViewModel.swift */; };
+		DA294421ABA0E471C37522D0 /* DynamicQRModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1113E7660590FD93599EB6 /* DynamicQRModalView.swift */; };
+		DC5446608588907A9FDBAB82 /* DommiaTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26CACECB663E56924A10F7AC /* DommiaTheme.swift */; };
+		E1BE2C7A761ECED8ACF160DB /* AuthSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 849300146E14E67601278E69 /* AuthSessionCoordinator.swift */; };
+		E3F316C6BFB895C9AE9FC456 /* ResidentTopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD59B59EF2706A32D685CA11 /* ResidentTopBar.swift */; };
+		E8B6ED47C31E9346BF7ADC3F /* AccessService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 888FA997DE56EF00FB16CC2A /* AccessService.swift */; };
+		EA8E8095E0F2DC699AFCE886 /* ResidentDeepLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A47EC6EC93DC35F33852077 /* ResidentDeepLink.swift */; };
+		FC5B72A7D8031DCBC738B88B /* ProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B99AD5DC71BB85A10C66D4EA /* ProfileService.swift */; };
+		FE5F72A7271D9BB958345BEA /* Placeholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A89EB90AC7FE525727BB082 /* Placeholder.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B26503FA3E38713ACB210310 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CD4998D9591CC8701FA7416A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8028F1D4ED73C9B2BCD1A984;
+			remoteInfo = DommiaResident;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		06BA9410F1FA507543429BC0 /* PasswordResetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordResetView.swift; sourceTree = "<group>"; };
+		0A1113E7660590FD93599EB6 /* DynamicQRModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicQRModalView.swift; sourceTree = "<group>"; };
+		13A2701E9F5557BB55D74937 /* ResidentTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentTabBar.swift; sourceTree = "<group>"; };
+		162E721A810FD046013EEF00 /* ResidentFeatureModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentFeatureModels.swift; sourceTree = "<group>"; };
+		18E0C28AD85189CAA25170A8 /* AppRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRoot.swift; sourceTree = "<group>"; };
+		26CACECB663E56924A10F7AC /* DommiaTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DommiaTheme.swift; sourceTree = "<group>"; };
+		277A72BFFD8AC2BFCEAA28AE /* InvitationsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvitationsService.swift; sourceTree = "<group>"; };
+		2A3FF9AC384A966264D0DF8A /* NoticesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoticesService.swift; sourceTree = "<group>"; };
+		2E58C61E72F6AE1719944EAB /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
+		3666446A342E1F0A1746C3EC /* ResidentFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentFlowTests.swift; sourceTree = "<group>"; };
+		3C01D411F843BE17AE05276E /* ChangePasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordView.swift; sourceTree = "<group>"; };
+		4A47EC6EC93DC35F33852077 /* ResidentDeepLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentDeepLink.swift; sourceTree = "<group>"; };
+		4E44E4639B5CF69075230F1D /* DommiaResident.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DommiaResident.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5168BFF7F7D90616E990B8AC /* PassesTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassesTabView.swift; sourceTree = "<group>"; };
+		5C4D074F013CB3DE1E9A3E4F /* MockServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockServer.swift; sourceTree = "<group>"; };
+		72034E4C46E514B2B0B851C3 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
+		72C9BF6F43F878B66D4E6654 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
+		7510DCB50548E808D50241A6 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		7A7AAF9AD56CD7A056E0F98C /* DommiaResidentTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DommiaResidentTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8008CC9E41DE13E39A5114BE /* Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Staging.xcconfig; sourceTree = "<group>"; };
+		849300146E14E67601278E69 /* AuthSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSessionCoordinator.swift; sourceTree = "<group>"; };
+		86841919DC7F6FA8E3943F4C /* Dev.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Dev.xcconfig; sourceTree = "<group>"; };
+		888FA997DE56EF00FB16CC2A /* AccessService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessService.swift; sourceTree = "<group>"; };
+		8F5006CFD8E46117C011B133 /* CredentialTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialTabView.swift; sourceTree = "<group>"; };
+		900325AF51C30F6721545BB7 /* FinanceTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceTabView.swift; sourceTree = "<group>"; };
+		9389067E987424D7C57D6A14 /* ResidentDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentDashboardView.swift; sourceTree = "<group>"; };
+		9491C0BE27E470903DBF1118 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		95595F9E16BEEA155CD2298D /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
+		986F5E369EA859CB0C5AA1AF /* FinanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceService.swift; sourceTree = "<group>"; };
+		9A89EB90AC7FE525727BB082 /* Placeholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Placeholder.swift; sourceTree = "<group>"; };
+		AC12363C2D14424C3B9DCDD9 /* NoticesTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoticesTabView.swift; sourceTree = "<group>"; };
+		AD1B313B6D77CE4F9F4AC44F /* DommiaResidentApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DommiaResidentApp.swift; sourceTree = "<group>"; };
+		AF7527ABFF7A75B06FFF07BC /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
+		B99AD5DC71BB85A10C66D4EA /* ProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileService.swift; sourceTree = "<group>"; };
+		C1A0513A9D3FCE8B70B564E3 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		C79F0B37AE8503DBDA361438 /* QRCodeHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeHelper.swift; sourceTree = "<group>"; };
+		CC19C5EBBF9F1A3E80141A4B /* AuthRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthRepository.swift; sourceTree = "<group>"; };
+		DD59B59EF2706A32D685CA11 /* ResidentTopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResidentTopBar.swift; sourceTree = "<group>"; };
+		E9A3A62797897525C10BEEF1 /* Prod.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Prod.xcconfig; sourceTree = "<group>"; };
+		F1593B7A57304D3011AE80B6 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		04113322FBA0A2C0C53787D7 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				9389067E987424D7C57D6A14 /* ResidentDashboardView.swift */,
+				13A2701E9F5557BB55D74937 /* ResidentTabBar.swift */,
+				DD59B59EF2706A32D685CA11 /* ResidentTopBar.swift */,
+				579B967F79B62B9818F7F8E8 /* Tabs */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		26FACC9D9D593F01603A60E1 /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				849300146E14E67601278E69 /* AuthSessionCoordinator.swift */,
+				9491C0BE27E470903DBF1118 /* KeychainStore.swift */,
+				72C9BF6F43F878B66D4E6654 /* SessionStore.swift */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		3F67720878D70EC9EAD04471 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				18E0C28AD85189CAA25170A8 /* AppRoot.swift */,
+				AD1B313B6D77CE4F9F4AC44F /* DommiaResidentApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		44EABB20E56568DF23320FBA /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				888FA997DE56EF00FB16CC2A /* AccessService.swift */,
+				CC19C5EBBF9F1A3E80141A4B /* AuthRepository.swift */,
+				986F5E369EA859CB0C5AA1AF /* FinanceService.swift */,
+				277A72BFFD8AC2BFCEAA28AE /* InvitationsService.swift */,
+				2A3FF9AC384A966264D0DF8A /* NoticesService.swift */,
+				B99AD5DC71BB85A10C66D4EA /* ProfileService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		459451BACF093145EB7E9985 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				86841919DC7F6FA8E3943F4C /* Dev.xcconfig */,
+				E9A3A62797897525C10BEEF1 /* Prod.xcconfig */,
+				8008CC9E41DE13E39A5114BE /* Staging.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		47CD597A09BABFB99027B2AA /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				4F0C63B2A3D2B95F44030E75 /* AppConfig */,
+				DCA6E4F00A3FD63F7849326F /* Models */,
+				49B2A5C4D069D35D516860D7 /* Network */,
+				26FACC9D9D593F01603A60E1 /* Security */,
+				F17B41382920A990E6C68272 /* UI */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		490047CE4D66767D678D0C30 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				749AE432F66B8B38D6DB0249 /* Auth */,
+				04113322FBA0A2C0C53787D7 /* Dashboard */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		49B2A5C4D069D35D516860D7 /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				C1A0513A9D3FCE8B70B564E3 /* APIClient.swift */,
+				AF7527ABFF7A75B06FFF07BC /* APIError.swift */,
+				5C4D074F013CB3DE1E9A3E4F /* MockServer.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		4F0C63B2A3D2B95F44030E75 /* AppConfig */ = {
+			isa = PBXGroup;
+			children = (
+				2E58C61E72F6AE1719944EAB /* AppDependencies.swift */,
+				7510DCB50548E808D50241A6 /* AppEnvironment.swift */,
+			);
+			path = AppConfig;
+			sourceTree = "<group>";
+		};
+		4FCEBF006B734A280AA27C06 = {
+			isa = PBXGroup;
+			children = (
+				3F67720878D70EC9EAD04471 /* App */,
+				459451BACF093145EB7E9985 /* Config */,
+				47CD597A09BABFB99027B2AA /* Core */,
+				490047CE4D66767D678D0C30 /* Features */,
+				44EABB20E56568DF23320FBA /* Services */,
+				AA10DFA4BD43346C4F608F3A /* Tests */,
+				CBFD55F5EAD12F3C1A0E4EDE /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		579B967F79B62B9818F7F8E8 /* Tabs */ = {
+			isa = PBXGroup;
+			children = (
+				8F5006CFD8E46117C011B133 /* CredentialTabView.swift */,
+				0A1113E7660590FD93599EB6 /* DynamicQRModalView.swift */,
+				900325AF51C30F6721545BB7 /* FinanceTabView.swift */,
+				AC12363C2D14424C3B9DCDD9 /* NoticesTabView.swift */,
+				5168BFF7F7D90616E990B8AC /* PassesTabView.swift */,
+			);
+			path = Tabs;
+			sourceTree = "<group>";
+		};
+		749AE432F66B8B38D6DB0249 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				3C01D411F843BE17AE05276E /* ChangePasswordView.swift */,
+				F1593B7A57304D3011AE80B6 /* LoginView.swift */,
+				95595F9E16BEEA155CD2298D /* LoginViewModel.swift */,
+				06BA9410F1FA507543429BC0 /* PasswordResetView.swift */,
+				4A47EC6EC93DC35F33852077 /* ResidentDeepLink.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		AA10DFA4BD43346C4F608F3A /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				9A89EB90AC7FE525727BB082 /* Placeholder.swift */,
+				3666446A342E1F0A1746C3EC /* ResidentFlowTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		CBFD55F5EAD12F3C1A0E4EDE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4E44E4639B5CF69075230F1D /* DommiaResident.app */,
+				7A7AAF9AD56CD7A056E0F98C /* DommiaResidentTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DCA6E4F00A3FD63F7849326F /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				72034E4C46E514B2B0B851C3 /* APIModels.swift */,
+				162E721A810FD046013EEF00 /* ResidentFeatureModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		F17B41382920A990E6C68272 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				26CACECB663E56924A10F7AC /* DommiaTheme.swift */,
+				C79F0B37AE8503DBDA361438 /* QRCodeHelper.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8028F1D4ED73C9B2BCD1A984 /* DommiaResident */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 99851944608882CF4FC14BD4 /* Build configuration list for PBXNativeTarget "DommiaResident" */;
+			buildPhases = (
+				AFDB78672F35F66AA76B0FD7 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DommiaResident;
+			packageProductDependencies = (
+			);
+			productName = DommiaResident;
+			productReference = 4E44E4639B5CF69075230F1D /* DommiaResident.app */;
+			productType = "com.apple.product-type.application";
+		};
+		954DACDCC11F899D6D836249 /* DommiaResidentTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 754873E3956C5C4491F1456D /* Build configuration list for PBXNativeTarget "DommiaResidentTests" */;
+			buildPhases = (
+				B491147EA8B6AFA5612922B8 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7CC77586DFC19CC8659D82AB /* PBXTargetDependency */,
+			);
+			name = DommiaResidentTests;
+			packageProductDependencies = (
+			);
+			productName = DommiaResidentTests;
+			productReference = 7A7AAF9AD56CD7A056E0F98C /* DommiaResidentTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CD4998D9591CC8701FA7416A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					8028F1D4ED73C9B2BCD1A984 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 84CE31712208021E43A7862B /* Build configuration list for PBXProject "DommiaResident" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 4FCEBF006B734A280AA27C06;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = CBFD55F5EAD12F3C1A0E4EDE /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8028F1D4ED73C9B2BCD1A984 /* DommiaResident */,
+				954DACDCC11F899D6D836249 /* DommiaResidentTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AFDB78672F35F66AA76B0FD7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3AE5B6E763E41D5BA17AA346 /* APIClient.swift in Sources */,
+				BC05AC8C926BC655DB74E36C /* APIError.swift in Sources */,
+				4AF96A62B13EA4D9449DA278 /* APIModels.swift in Sources */,
+				E8B6ED47C31E9346BF7ADC3F /* AccessService.swift in Sources */,
+				35397E6D6345F80BFB14CAB2 /* AppDependencies.swift in Sources */,
+				653A7AC55A84E4883EFAF41C /* AppEnvironment.swift in Sources */,
+				66319A6578C1F98B59A40EDE /* AppRoot.swift in Sources */,
+				D11DEEB905F1D7504B4EFABA /* AuthRepository.swift in Sources */,
+				E1BE2C7A761ECED8ACF160DB /* AuthSessionCoordinator.swift in Sources */,
+				9BC8998FB5A7385D85453AD5 /* ChangePasswordView.swift in Sources */,
+				5D682E68CB67032231BA3759 /* CredentialTabView.swift in Sources */,
+				7552085505B6E476578DC980 /* DommiaResidentApp.swift in Sources */,
+				DC5446608588907A9FDBAB82 /* DommiaTheme.swift in Sources */,
+				DA294421ABA0E471C37522D0 /* DynamicQRModalView.swift in Sources */,
+				87CD06F47C1AEF08A8D5BB9B /* FinanceService.swift in Sources */,
+				117D03CCFDC1470875602642 /* FinanceTabView.swift in Sources */,
+				9CF2723ED02A8E51588E145D /* InvitationsService.swift in Sources */,
+				912AC20001EB83F8ED47AF83 /* KeychainStore.swift in Sources */,
+				9DCB6D068CF01B54C1EECBE7 /* LoginView.swift in Sources */,
+				D1C297BCA5EA7306D568D779 /* LoginViewModel.swift in Sources */,
+				89B29B8EB6140419B479EA90 /* MockServer.swift in Sources */,
+				392896ED70BF17855AD2B196 /* NoticesService.swift in Sources */,
+				5ADA4E157D614535EDB5EC67 /* NoticesTabView.swift in Sources */,
+				CEC8D6031FDD6F48D8814212 /* PassesTabView.swift in Sources */,
+				265DD59BE0554A14458F12E1 /* PasswordResetView.swift in Sources */,
+				FC5B72A7D8031DCBC738B88B /* ProfileService.swift in Sources */,
+				3A8D2C27E77DCF486F3CE8B6 /* QRCodeHelper.swift in Sources */,
+				551A012B10B5D161C358F5D8 /* ResidentDashboardView.swift in Sources */,
+				EA8E8095E0F2DC699AFCE886 /* ResidentDeepLink.swift in Sources */,
+				CAA7DF90AB1F25949638BFEB /* ResidentFeatureModels.swift in Sources */,
+				511A640CAEB0EF12E08135B0 /* ResidentTabBar.swift in Sources */,
+				E3F316C6BFB895C9AE9FC456 /* ResidentTopBar.swift in Sources */,
+				86CF101D521D595EB2578F60 /* SessionStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B491147EA8B6AFA5612922B8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FE5F72A7271D9BB958345BEA /* Placeholder.swift in Sources */,
+				954F0527CEEC3BEE53B0DC5B /* ResidentFlowTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7CC77586DFC19CC8659D82AB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8028F1D4ED73C9B2BCD1A984 /* DommiaResident */;
+			targetProxy = B26503FA3E38713ACB210310 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1618E55962BE3B449A66810E /* Staging */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8008CC9E41DE13E39A5114BE /* Staging.xcconfig */;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_TESTABILITY = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "DOMMIA Resident";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dommia.resident;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = STAGING;
+			};
+			name = Staging;
+		};
+		2AAA617A731CDFD23D74DFB5 /* Dev */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dommia.resident.tests;
+				PRODUCT_NAME = DommiaResidentTests;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEV;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DommiaResident.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DommiaResident";
+			};
+			name = Dev;
+		};
+		4199736266D9251482E819DE /* Dev */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 86841919DC7F6FA8E3943F4C /* Dev.xcconfig */;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_TESTABILITY = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "DOMMIA Resident";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dommia.resident;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEV;
+			};
+			name = Dev;
+		};
+		4D11DF355BDE97754B8DC792 /* Prod */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_NAME = DommiaResident;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Prod;
+		};
+		61FD89FB8852E2907421EE6F /* Prod */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E9A3A62797897525C10BEEF1 /* Prod.xcconfig */;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_TESTABILITY = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "DOMMIA Resident";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dommia.resident;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = PROD;
+			};
+			name = Prod;
+		};
+		7577633897BC607EDB5BC462 /* Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_NAME = DommiaResident;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Staging;
+		};
+		B25C36E08D7DA25D0E8BA24A /* Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dommia.resident.tests;
+				PRODUCT_NAME = DommiaResidentTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DommiaResident.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DommiaResident";
+			};
+			name = Staging;
+		};
+		E0E31F8CF5412373ECEBE032 /* Prod */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dommia.resident.tests;
+				PRODUCT_NAME = DommiaResidentTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DommiaResident.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DommiaResident";
+			};
+			name = Prod;
+		};
+		F6E7C695E53D115E6E41FE4E /* Dev */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_NAME = DommiaResident;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Dev;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		754873E3956C5C4491F1456D /* Build configuration list for PBXNativeTarget "DommiaResidentTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2AAA617A731CDFD23D74DFB5 /* Dev */,
+				E0E31F8CF5412373ECEBE032 /* Prod */,
+				B25C36E08D7DA25D0E8BA24A /* Staging */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Dev;
+		};
+		84CE31712208021E43A7862B /* Build configuration list for PBXProject "DommiaResident" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F6E7C695E53D115E6E41FE4E /* Dev */,
+				4D11DF355BDE97754B8DC792 /* Prod */,
+				7577633897BC607EDB5BC462 /* Staging */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Dev;
+		};
+		99851944608882CF4FC14BD4 /* Build configuration list for PBXNativeTarget "DommiaResident" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4199736266D9251482E819DE /* Dev */,
+				61FD89FB8852E2907421EE6F /* Prod */,
+				1618E55962BE3B449A66810E /* Staging */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Dev;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = CD4998D9591CC8701FA7416A /* Project object */;
+}

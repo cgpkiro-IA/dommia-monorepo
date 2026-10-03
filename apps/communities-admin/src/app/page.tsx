@@ -107,6 +107,7 @@ export default function CommunitiesAdminPage() {
         onSubmit={auth.handleLogin}
         loading={auth.loginLoading}
         error={auth.loginError}
+        success={auth.loginSuccess}
         onQuickDemo={(email, pass) => auth.setLoginForm({ email, password: pass })}
       />
     );

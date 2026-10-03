@@ -71,7 +71,7 @@ Esta parte la realiza un operador DOMMIA con una cuenta de CRM autorizada, norma
 3. Define un `slug` único, corto y sencillo, por ejemplo `lomas_del_valle`. Se usará para identificar la comunidad; no incluyas datos personales.
 4. Selecciona el plan contratado y registra el límite de viviendas acordado. No pongas un límite menor ni mayor al contrato.
 5. Activa solamente los módulos incluidos en la membresía. Entre las opciones actuales están finanzas, acceso QR, RFID, Resident PWA y notificaciones premium.
-6. Revisa la dirección que muestra el formulario. Los planes estándar usan `standar.dommia.com/<slug>`; el subdominio personalizado depende del plan/add-on y de que DNS y HTTPS estén configurados.
+6. Revisa la dirección que muestra el formulario. Los planes estándar usan `standar.dommia.com.mx/<slug>`; el subdominio personalizado depende del plan/add-on y de que DNS y HTTPS estén configurados.
 7. Guarda el alta y confirma que el tenant aparece en la lista.
 8. Registra por el canal comercial el plan, límite, módulos, fecha de inicio y evidencia de pago/contrato.
 9. **Antes de entregar el acceso**, solicita al equipo técnico el aprovisionamiento y validación de la cuenta `TENANT_ADMIN` para esta comunidad. La interfaz del CRM no completa ese paso hoy.

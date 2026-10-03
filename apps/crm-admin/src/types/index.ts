@@ -4,6 +4,7 @@ export interface PlanItem {
   name: string;
   description: string;
   monthly_price: string;
+  min_properties: number;
   max_properties: number;
   price_per_extra_property: string;
   includes_custom_domain: boolean;
@@ -15,6 +16,24 @@ export interface PlanItem {
   is_highlighted: boolean;
   sort_order: number;
   updated_at: string;
+}
+
+export interface TenantContractSummary {
+  id: string;
+  tenantId: string;
+  planTier: string | null;
+  amount: string | number | null;
+  billingInterval: 'MONTHLY' | 'ANNUAL';
+  status: string;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  hasCustomDomain: boolean | null;
+  activeAddons: unknown[] | null;
+  renewalAmount: string | number | null;
+  renewalNoticeSentAt: string | null;
+  renewalNoticeTo: string | null;
+  catalogRenewalAmount: string | number | null;
+  contractReviewRequired: boolean;
 }
 
 export interface TenantItem {

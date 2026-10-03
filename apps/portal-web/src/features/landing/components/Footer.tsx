@@ -4,6 +4,7 @@ import React from 'react';
 import { Logo } from '@dommia/ui';
 import { ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { CRM_URL } from '@/lib/app-urls';
+import { CONTACT_EMAIL, DEMO_MAILTO } from '../../../lib/contact-email';
 
 export const Footer: React.FC = () => {
   return (
@@ -81,7 +82,7 @@ export const Footer: React.FC = () => {
               Acceso Rápido
             </h4>
             <ul className="space-y-2.5 text-xs">
-              <li>
+              {process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE !== '1' && <li>
                 <a
                   href={CRM_URL}
                   target="_blank"
@@ -91,20 +92,22 @@ export const Footer: React.FC = () => {
                   <span>Portal Dommia CRM</span>
                   <ArrowUpRight className="w-3.5 h-3.5" />
                 </a>
-              </li>
+              </li>}
               <li>
                 <a href="#cotizador" className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   Cotizador por Viviendas
                 </a>
               </li>
               <li>
-                <a href="#contacto" className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <a href={process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1' ? DEMO_MAILTO : '#contacto'} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   Solicitar Demostración
                 </a>
               </li>
               <li className="pt-2">
                 <span className="text-slate-400 dark:text-slate-500 block text-[11px]">Soporte y Mesa de Ayuda:</span>
-                <span className="text-slate-800 dark:text-slate-300 font-medium">contacto@dommia.com</span>
+                {process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1'
+                  ? <a href={`mailto:${CONTACT_EMAIL}`} className="text-slate-800 dark:text-slate-300 font-medium">{CONTACT_EMAIL}</a>
+                  : <span className="text-slate-800 dark:text-slate-300 font-medium">contacto@dommia.com.mx</span>}
               </li>
             </ul>
           </div>

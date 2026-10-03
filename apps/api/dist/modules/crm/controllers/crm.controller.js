@@ -23,6 +23,7 @@ const update_stage_dto_1 = require("../dto/update-stage.dto");
 const create_gateway_dto_1 = require("../dto/create-gateway.dto");
 const self_service_provision_dto_1 = require("../dto/self-service-provision.dto");
 const update_plan_dto_1 = require("../dto/update-plan.dto");
+const reconcile_contract_dto_1 = require("../dto/reconcile-contract.dto");
 const crm_admin_guard_1 = require("../../auth/guards/crm-admin.guard");
 const auth_metadata_decorator_1 = require("../../auth/decorators/auth-metadata.decorator");
 const throttler_1 = require("@nestjs/throttler");
@@ -37,6 +38,14 @@ let CrmController = class CrmController {
         this.crmAnalyticsService = crmAnalyticsService;
         this.crmAlertsService = crmAlertsService;
         this.telegramAlertService = telegramAlertService;
+    }
+    async getPublicPlans() {
+        const plans = await this.crmService.getPublicPlans();
+        return {
+            success: true,
+            data: plans,
+            count: plans.length,
+        };
     }
     async getPlans() {
         const plans = await this.crmService.getPlans();
@@ -59,6 +68,54 @@ let CrmController = class CrmController {
         return {
             success: true,
             data: metrics,
+        };
+    }
+    async getCurrentContract(tenantId) {
+        return { success: true, data: await this.crmService.getCurrentContract(tenantId) };
+    }
+    async createInitialContract(tenantId, dto) {
+        const result = await this.crmService.createInitialContract(tenantId, dto?.billingInterval || 'MONTHLY');
+        return {
+            success: true,
+            message: result.created ? 'Snapshot creado con el precio vigente del catálogo.' : 'El tenant ya tenía un contrato activo.',
+            data: result.contract,
+            created: result.created,
+        };
+    }
+    async reconcileCurrentContract(tenantId, dto) {
+        return {
+            success: true,
+            message: 'Contrato reconciliado con los términos confirmados por el operador.',
+            data: await this.crmService.reconcileCurrentContract(tenantId, dto.amount, dto.currentPeriodEnd, dto.billingInterval || 'MONTHLY'),
+        };
+    }
+    async recordRenewalNotice(tenantId, dto) {
+        const result = await this.crmService.recordRenewalNotice(tenantId, dto.recipient, dto.noticeSent);
+        return {
+            success: true,
+            message: 'Aviso registrado; este endpoint no envía correo.',
+            data: result,
+        };
+    }
+    async sendRenewalNotice(tenantId, dto) {
+        return {
+            success: true,
+            message: 'Aviso enviado por correo y registrado.',
+            data: await this.crmService.sendRenewalNotice(tenantId, dto.recipient),
+        };
+    }
+    async previewRenewalNotice(tenantId, dto) {
+        return {
+            success: true,
+            message: 'Vista previa enviada sin modificar el contrato.',
+            data: await this.crmService.previewRenewalNotice(tenantId, dto.recipient),
+        };
+    }
+    async renewSubscription(tenantId) {
+        return {
+            success: true,
+            message: 'Contrato renovado manualmente.',
+            data: await this.crmService.renewSubscription(tenantId),
         };
     }
     async selfServiceProvision(dto) {
@@ -150,7 +207,7 @@ let CrmController = class CrmController {
         };
     }
     async acknowledgeAlert(id, request) {
-        const userEmail = request.user?.email || 'operador-crm@dommia.com';
+        const userEmail = request.user?.email || 'operador-crm@dommia.com.mx';
         const updated = await this.crmAlertsService.acknowledge(id, userEmail);
         return {
             success: true,
@@ -159,7 +216,7 @@ let CrmController = class CrmController {
         };
     }
     async resolveAlert(id, body, request) {
-        const userEmail = request.user?.email || 'operador-crm@dommia.com';
+        const userEmail = request.user?.email || 'operador-crm@dommia.com.mx';
         const updated = await this.crmAlertsService.resolve(id, userEmail, body.notes);
         return {
             success: true,
@@ -192,6 +249,15 @@ let CrmController = class CrmController {
 };
 exports.CrmController = CrmController;
 __decorate([
+    (0, common_1.Get)('public-plans'),
+    (0, auth_metadata_decorator_1.Public)(),
+    (0, common_1.UseGuards)(throttler_1.ThrottlerGuard),
+    (0, throttler_1.Throttle)({ default: { limit: 60, ttl: 60_000 } }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], CrmController.prototype, "getPublicPlans", null);
+__decorate([
     (0, common_1.Get)('plans'),
     (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
     __metadata("design:type", Function),
@@ -214,6 +280,69 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], CrmController.prototype, "getMetrics", null);
+__decorate([
+    (0, common_1.Get)('tenants/:tenantId/contract'),
+    (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
+    __param(0, (0, common_1.Param)('tenantId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], CrmController.prototype, "getCurrentContract", null);
+__decorate([
+    (0, common_1.Post)('tenants/:tenantId/contract'),
+    (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    __param(0, (0, common_1.Param)('tenantId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, reconcile_contract_dto_1.CreateInitialContractDto]),
+    __metadata("design:returntype", Promise)
+], CrmController.prototype, "createInitialContract", null);
+__decorate([
+    (0, common_1.Post)('tenants/:tenantId/contract/reconcile'),
+    (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
+    __param(0, (0, common_1.Param)('tenantId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, reconcile_contract_dto_1.ReconcileContractDto]),
+    __metadata("design:returntype", Promise)
+], CrmController.prototype, "reconcileCurrentContract", null);
+__decorate([
+    (0, common_1.Post)('tenants/:tenantId/contract/renewal-notice'),
+    (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
+    __param(0, (0, common_1.Param)('tenantId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, reconcile_contract_dto_1.RecordRenewalNoticeDto]),
+    __metadata("design:returntype", Promise)
+], CrmController.prototype, "recordRenewalNotice", null);
+__decorate([
+    (0, common_1.Post)('tenants/:tenantId/contract/renewal-notice/send'),
+    (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
+    __param(0, (0, common_1.Param)('tenantId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, reconcile_contract_dto_1.SendRenewalNoticeDto]),
+    __metadata("design:returntype", Promise)
+], CrmController.prototype, "sendRenewalNotice", null);
+__decorate([
+    (0, common_1.Post)('tenants/:tenantId/contract/renewal-notice/preview'),
+    (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard, throttler_1.ThrottlerGuard),
+    (0, throttler_1.Throttle)({ default: { limit: 3, ttl: 60_000 } }),
+    __param(0, (0, common_1.Param)('tenantId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, reconcile_contract_dto_1.SendRenewalNoticeDto]),
+    __metadata("design:returntype", Promise)
+], CrmController.prototype, "previewRenewalNotice", null);
+__decorate([
+    (0, common_1.Post)('tenants/:tenantId/contract/renew'),
+    (0, common_1.UseGuards)(crm_admin_guard_1.CrmAdminGuard),
+    __param(0, (0, common_1.Param)('tenantId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], CrmController.prototype, "renewSubscription", null);
 __decorate([
     (0, common_1.Post)('self-service-provision'),
     (0, auth_metadata_decorator_1.Public)(),

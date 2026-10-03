@@ -30,7 +30,7 @@ resident-ios/
 - `Config/Staging.xcconfig` y `Config/Prod.xcconfig` contienen placeholders HTTPS.
 - El refresh token vive en Keychain.
 - El access token vive solo en memoria.
-- `Config/DommiaResident.entitlements` prepara Universal Links para `app.dommia.com`.
+- `Config/DommiaResident.entitlements` prepara Universal Links para `app.dommia.com.mx`.
 
 ## Creacion del target en Xcode
 

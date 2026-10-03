@@ -9,6 +9,7 @@ import { TelegramAlertService } from './services/telegram-alert.service';
 import { CrmAlertsService } from './services/crm-alerts.service';
 import { CrmAnalyticsService } from './services/crm-analytics.service';
 import { AuthModule } from '../auth/auth.module';
+import { SaasMailService } from './services/saas-mail.service';
 
 @Module({
   imports: [DatabaseModule, TenantsModule, AuthModule, ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }])],
@@ -16,6 +17,7 @@ import { AuthModule } from '../auth/auth.module';
   providers: [
     CrmService,
     CrmRepository,
+    SaasMailService,
     TelegramAlertService,
     CrmAlertsService,
     CrmAnalyticsService,

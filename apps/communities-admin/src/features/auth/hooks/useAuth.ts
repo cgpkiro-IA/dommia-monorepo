@@ -13,13 +13,15 @@ export function useAuth() {
   const [mfaChallengeToken, setMfaChallengeToken] = useState<string | null>(null);
 
   const [loginForm, setLoginForm] = useState({
-    email: 'admin@laspalmas.dommia.com',
+    email: 'admin@laspalmas.dommia.com.mx',
     password: 'LasPalmas2026!',
   });
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   const acceptSession = (session: UserSession) => {
+    setLoginSuccess(false);
     setUserSession(session);
     setMfaChallengeToken(null);
     if (session.activeTenant) {
@@ -36,10 +38,22 @@ export function useAuth() {
     }
   };
 
+  const completeLogin = (session: UserSession) => {
+    if (!session.activeTenant && session.tenants.length === 0) {
+      acceptSession(session);
+      return;
+    }
+
+    setMfaChallengeToken(null);
+    setLoginSuccess(true);
+    window.setTimeout(() => acceptSession(session), 1300);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginLoading(true);
     setLoginError(null);
+    setLoginSuccess(false);
 
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
@@ -57,7 +71,7 @@ export function useAuth() {
         if (result.data?.mfaRequired) {
           setMfaChallengeToken(result.data.challengeToken);
         } else {
-          acceptSession(result.data as UserSession);
+          completeLogin(result.data as UserSession);
         }
       } else {
         setLoginError(parseClientError(result, 'Error de autenticación. Verifica tu correo y contraseña.').description);
@@ -81,7 +95,7 @@ export function useAuth() {
       });
       const result = await res.json();
       if (!res.ok || !result.success) throw new Error(result.message || 'No se pudo verificar el código.');
-      acceptSession(result.data as UserSession);
+      completeLogin(result.data as UserSession);
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : 'No se pudo verificar el código.');
     } finally {
@@ -121,6 +135,7 @@ export function useAuth() {
     setActiveTenant(null);
     setShowWorkspacePicker(false);
     setMfaChallengeToken(null);
+    setLoginSuccess(false);
   };
 
   return {
@@ -134,6 +149,7 @@ export function useAuth() {
     setLoginForm,
     loginLoading,
     loginError,
+    loginSuccess,
     handleLogin,
     handleMfaVerify,
     cancelMfa,

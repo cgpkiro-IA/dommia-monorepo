@@ -60,7 +60,7 @@ export const SelfServiceForm: React.FC<SelfServiceFormProps> = ({
         {/* Subdomain Slug */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-heading">
-            ID / Enlace Web Asignado *
+            {process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1' ? 'ID / Enlace Web Solicitado *' : 'ID / Enlace Web Asignado *'}
           </label>
           <div className="relative">
             <Globe className="absolute inset-y-0 left-3.5 my-auto w-4 h-4 text-slate-400" />
@@ -101,7 +101,7 @@ export const SelfServiceForm: React.FC<SelfServiceFormProps> = ({
         {/* Admin Email */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-heading">
-            Correo de Acceso del Administrador *
+            {process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1' ? 'Correo de contacto del administrador *' : 'Correo de Acceso del Administrador *'}
           </label>
           <div className="relative">
             <Mail className="absolute inset-y-0 left-3.5 my-auto w-4 h-4 text-slate-400" />

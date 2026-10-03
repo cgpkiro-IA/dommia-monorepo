@@ -38,16 +38,16 @@ let TenantsService = class TenantsService {
         const modules = dto.modules && dto.modules.length > 0 ? dto.modules : ['FINANCE', 'ACCESS_QR', 'RESIDENT_APP'];
         const tenantId = await this.tenantsRepo.provisionSchema(slug, dto.name, tier, maxProperties, dto.contactEmail);
         const hasCustomDomain = tier === 'ENTERPRISE' || dto.hasCustomDomain === true;
-        const customDomain = hasCustomDomain ? (dto.customDomain || `${slug}.dommia.com`) : null;
+        const customDomain = hasCustomDomain ? (dto.customDomain || `${slug}.dommia.com.mx`) : null;
         const accessUrl = hasCustomDomain
-            ? (dto.customDomain || `${slug}.dommia.com`)
-            : `standar.dommia.com/${slug}`;
+            ? (dto.customDomain || `${slug}.dommia.com.mx`)
+            : `standar.dommia.com.mx/${slug}`;
         await this.tenantsRepo.updateDomains(tenantId, hasCustomDomain, customDomain, accessUrl, modules);
         return {
             id: tenantId,
             slug,
             name: dto.name,
-            subdomain: `${slug}.dommia.com`,
+            subdomain: `${slug}.dommia.com.mx`,
             hasCustomDomain,
             customDomain,
             accessUrl,
@@ -67,10 +67,10 @@ let TenantsService = class TenantsService {
         let customDomain = dto.customDomain !== undefined ? dto.customDomain : existing.custom_domain;
         let accessUrl = dto.accessUrl !== undefined ? dto.accessUrl : existing.access_url;
         if (hasCustomDomain && !customDomain) {
-            customDomain = `${existing.slug}.dommia.com`;
+            customDomain = `${existing.slug}.dommia.com.mx`;
         }
         if (!accessUrl) {
-            accessUrl = hasCustomDomain ? (customDomain || `${existing.slug}.dommia.com`) : `standar.dommia.com/${existing.slug}`;
+            accessUrl = hasCustomDomain ? (customDomain || `${existing.slug}.dommia.com.mx`) : `standar.dommia.com.mx/${existing.slug}`;
         }
         const updated = await this.tenantsRepo.updateTenant(existing.id, {
             name: dto.name,

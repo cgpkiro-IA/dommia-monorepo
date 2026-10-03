@@ -4,9 +4,7 @@ import './globals.css';
 import { Analytics } from '../components/Analytics';
 import { Providers } from '../components/Providers';
 
-export const dynamic = 'force-dynamic';
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://dommia.com';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://dommia.com.mx';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -29,7 +27,7 @@ export const metadata: Metadata = {
     'app para condominios',
     'gestión de fraccionamientos',
   ],
-  authors: [{ name: 'DOMMIA Technologies', url: 'https://dommia.com' }],
+  authors: [{ name: 'DOMMIA Technologies', url: 'https://dommia.com.mx' }],
   creator: 'DOMMIA',
   publisher: 'DOMMIA Technologies',
   alternates: {
@@ -164,7 +162,9 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const nonce = (await headers()).get('x-nonce') || undefined;
+  const nonce = process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1'
+    ? undefined
+    : (await headers()).get('x-nonce') || undefined;
 
   return (
     <html lang="es" className="scroll-smooth" suppressHydrationWarning>

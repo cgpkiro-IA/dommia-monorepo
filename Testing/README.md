@@ -47,22 +47,31 @@ docker compose down -v && docker compose up -d
 No ejecutes el paso 5 para un reinicio normal. `-v` elimina permanentemente los datos locales de PostgreSQL y EMQX.
 
 ### B. Ejecución de Aplicaciones con Turborepo & pnpm
+
+El monorepo fija la versión de pnpm en el `package.json` raíz. Usa Corepack para ejecutarla, especialmente en Windows o cuando `pnpm` no está disponible directamente en `PATH`.
+
 ```bash
 # 1. Instalar dependencias en todo el monorepo
-pnpm install
+corepack pnpm install
 
-# 2. Compilar todos los paquetes compartidos (@dommia/shared-types, @dommia/ui)
-pnpm --filter @dommia/shared-types build
-pnpm --filter @dommia/ui build
+# 2. Levantar PostgreSQL local (requerido por el API)
+docker compose up -d postgres
 
-# 3. Levantar el Backend Core API (NestJS) en modo desarrollo con recarga automática:
-pnpm --filter @dommia/api dev
+# 3. Compilar los tipos compartidos usados por el API
+corepack pnpm --filter @dommia/shared-types build
 
-# 4. Levantar el Frontend Dommia CRM (Next.js) en modo desarrollo:
-pnpm --filter @dommia/crm-admin dev
+# 4. Levantar el Backend Core API (NestJS) en modo desarrollo con recarga automática:
+corepack pnpm --filter @dommia/api dev
+```
 
-# 5. Levantar todo el ecosistema en paralelo con Turborepo:
-pnpm dev
+NestJS carga `apps/api/.env.local` (o `apps/api/.env`). Si aún no tienes uno, copia `apps/api/.env.example` a `apps/api/.env.local` y reemplaza los placeholders; no subas ese archivo al repositorio. Para confirmar que el backend quedó disponible, abre `http://localhost:4000/api/v1/health` en otra terminal o navegador.
+
+```bash
+# 5. Levantar el Frontend Dommia CRM (Next.js) en modo desarrollo:
+corepack pnpm --filter @dommia/crm-admin dev
+
+# 6. Levantar todo el ecosistema en paralelo con Turborepo:
+corepack pnpm dev
 ```
 
 ---
@@ -76,21 +85,21 @@ Acceso mediante **Dommia CRM** ([http://localhost:3001](http://localhost:3001)):
 
 | Rol | Correo Electrónico | Contraseña | Nombre / Descripción |
 | :--- | :--- | :--- | :--- |
-| **SUPER_ADMIN** | `superadmin@dommia.com` | `DommiaPassword2026!` | Carlos Administrador Global (Acceso total al CRM, suscripciones y configuración). |
-| **COMMERCIAL_EXEC** | `ventas@dommia.com` | `DommiaPassword2026!` | Mariana Ejecutiva (Acceso a prospectos, cotizador y pipeline comercial). |
-| **SUPPORT** | `soporte@dommia.com` | `DommiaPassword2026!` | Alejandro Soporte (Tickets de soporte y monitoreo de gateways). |
+| **SUPER_ADMIN** | `superadmin@dommia.com.mx` | `DommiaPassword2026!` | Carlos Administrador Global (Acceso total al CRM, suscripciones y configuración). |
+| **COMMERCIAL_EXEC** | `ventas@dommia.com.mx` | `DommiaPassword2026!` | Mariana Ejecutiva (Acceso a prospectos, cotizador y pipeline comercial). |
+| **SUPPORT** | `soporte@dommia.com.mx` | `DommiaPassword2026!` | Alejandro Soporte (Tickets de soporte y monitoreo de gateways). |
 
 ---
 
 ### B. Nivel Fraccionamiento Demo (`Fraccionamiento Residencial Las Palmas`)
-* **Slug / Subdominio:** `demo` (`demo.dommia.com`)
+* **Slug / Subdominio:** `demo` (`demo.dommia.com.mx`)
 * **Esquema PostgreSQL:** `tenant_demo`
 * **Límite contratado:** 150 viviendas (Tier `PROFESSIONAL`)
 
 | Rol | Correo Electrónico | Contraseña | Propiedad / Contexto |
 | :--- | :--- | :--- | :--- |
-| **TENANT_ADMIN** | `admin@laspalmas.dommia.com` | `LasPalmas2026!` | Administrador oficial de Las Palmas. Gestiona residentes, casas y finanzas. |
-| **GUARD** | `guardia@laspalmas.dommia.com` | `Guardia2026!` | Personal de vigilancia en Caseta Principal Norte. Monitorea accesos y valida QR. |
+| **TENANT_ADMIN** | `admin@laspalmas.dommia.com.mx` | `LasPalmas2026!` | Administrador oficial de Las Palmas. Gestiona residentes, casas y finanzas. |
+| **GUARD** | `guardia@laspalmas.dommia.com.mx` | `Guardia2026!` | Personal de vigilancia en Caseta Principal Norte. Monitorea accesos y valida QR. |
 | **RESIDENT (Al corriente)** | `carlos.mendoza@gmail.com` | `Residente2026!` | **Paseo de los Olivos 101**. Propietario al corriente con TAG activo e invitaciones vigentes. |
 | **RESIDENT (Familiar)** | `elena.mendoza@gmail.com` | `Residente2026!` | **Paseo de los Olivos 101**. Residente secundaria. |
 | **RESIDENT (Moroso)** | `roberto.garza@gmail.com` | `Residente2026!` | **Paseo de los Olivos 102**. Propietario con 3 meses de adeudo (para probar bloqueos de acceso). |
@@ -134,7 +143,7 @@ Las rutas administrativas están protegidas. Obtén una sesión para cada rol qu
 ```bash
 CRM_LOGIN=$(curl -s -X POST http://localhost:4000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"superadmin@dommia.com","password":"DommiaPassword2026!"}')
+  -d '{"email":"superadmin@dommia.com.mx","password":"DommiaPassword2026!"}')
 export CRM_TOKEN=$(echo "$CRM_LOGIN" | jq -r '.data.token')
 ```
 
@@ -236,7 +245,7 @@ curl -s -X POST http://localhost:4000/api/v1/crm/prospects \
 
 ### Probar Contratación Inmediata (Self-Service Zero-Touch Provisioning)
 ```bash
-# 1. Contratación estándar (sin add-on de dominio -> standar.dommia.com/san_marino):
+# 1. Contratación estándar (sin add-on de dominio -> standar.dommia.com.mx/san_marino):
 curl -s -X POST http://localhost:4000/api/v1/crm/self-service-provision \
   -H "Content-Type: application/json" \
   -d '{
@@ -250,7 +259,7 @@ curl -s -X POST http://localhost:4000/api/v1/crm/self-service-provision \
     "hasCustomDomain": false
   }'
 
-# 2. Contratación con Add-on de Subdominio Personalizado (+ $490 MXN/mes -> arboledas_sur.dommia.com):
+# 2. Contratación con Add-on de Subdominio Personalizado (+ $490 MXN/mes -> arboledas_sur.dommia.com.mx):
 curl -s -X POST http://localhost:4000/api/v1/crm/self-service-provision \
   -H "Content-Type: application/json" \
   -d '{
@@ -287,7 +296,7 @@ curl -s -X PUT http://localhost:4000/api/v1/crm/plans/<PLAN_UUID> \
 TENANT_LOGIN=$(curl -s -X POST http://localhost:4000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@laspalmas.dommia.com",
+    "email": "admin@laspalmas.dommia.com.mx",
     "password": "LasPalmas2026!"
   }')
 export TENANT_TOKEN=$(echo "$TENANT_LOGIN" | jq -r '.data.token')

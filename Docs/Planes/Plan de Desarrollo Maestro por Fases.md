@@ -223,7 +223,7 @@ flowchart TD
   - Avance y retroceso rápido de etapa con persistencia en base de datos (`PATCH /api/v1/crm/prospects/:id/stage`).
   - Botón directo en prospectos ganados para aprovisionar fraccionamiento pre-llenando sus datos.
 - [x] **Dommia CRM - Aprovisionamiento de Fraccionamientos:**
-  - Formulario de contratación: Razón social, subdominio (`{slug}.dommia.com`), límite de casas contratadas (límite duro), selección de módulos activos (Finanzas, QR Dinámico, RFID, Residentes PWA).
+  - Formulario de contratación: Razón social, subdominio (`{slug}.dommia.com.mx`), límite de casas contratadas (límite duro), selección de módulos activos (Finanzas, QR Dinámico, RFID, Residentes PWA).
   - Creación automática del Schema en PostgreSQL (`provision_tenant_schema`) y aislamiento estricto verificado.
 - [x] **Dommia CRM - Inventario y Telemetría IoT:**
   - Registro de Gateways con UUID único, firmware, notas y fraccionamiento vinculado (`POST /api/v1/crm/gateways`).
@@ -235,15 +235,15 @@ flowchart TD
   - Tab 5 en CRM Maestro: **"Planes & Módulos"** (`apps/crm-admin`) para visualizar los 4 tiers y modal de edición en vivo sin alterar código ni reiniciar servicios.
   - Recálculo dinámico de MRR y ARR en el backend (`apps/api`) consultando directamente `public.saas_plans` y sumando ingresos recurrentes por add-ons contratados.
 - [x] **Política de Dominios Adaptada al Modelo de Negocio:**
-  - **Dominio Estándar Compartido:** `standar.dommia.com/{slug}` asignado por defecto en planes Básico, Estándar y Profesional sin costo extra.
-  - **Add-on de Subdominio Personalizado:** Opción contratada (+ $490 MXN/mes) para habilitar `{slug}.dommia.com` en planes menores.
-  - **Inclusión 100% Gratuita en Enterprise:** Subdominio propio `{slug}.dommia.com` bonificado automáticamente en el paquete Enterprise.
+  - **Dominio Estándar Compartido:** `standar.dommia.com.mx/{slug}` asignado por defecto en planes Básico, Estándar y Profesional sin costo extra.
+  - **Add-on de Subdominio Personalizado:** Opción contratada (+ $490 MXN/mes) para habilitar `{slug}.dommia.com.mx` en planes menores.
+  - **Inclusión 100% Gratuita en Enterprise:** Subdominio propio `{slug}.dommia.com.mx` bonificado automáticamente en el paquete Enterprise.
   - Reflejo del modelo en el Cotizador, Formulario de Auto-Activación y visualización diferenciada de etiquetas en el listado de fraccionamientos de CRM Maestro.
 
 #### Criterios de Aceptación Verificados:
 - Un prospecto que solicita demo se registra en el pipeline comercial de Dommia CRM en tiempo real bajo esquema blindado sin entrega de archivos ni credenciales desprotegidas.
 - La contratación directa aprovisiona el condominio en menos de 100ms, generando credenciales encriptadas y cerrando la venta como `WON`.
-- La activación de un fraccionamiento crea su esquema en base de datos (`tenant_<slug>`), asigna la URL de acceso correspondiente (`standar.dommia.com/{slug}` o subdominio personalizado) y aísla los datos por completo.
+- La activación de un fraccionamiento crea su esquema en base de datos (`tenant_<slug>`), asigna la URL de acceso correspondiente (`standar.dommia.com.mx/{slug}` o subdominio personalizado) y aísla los datos por completo.
 - Los precios, topes de viviendas y costos de add-ons de los planes SaaS son editables desde CRM Maestro y recalculan las finanzas (MRR/ARR) automáticamente.
 - Si un Gateway pierde conexión por más de 90 segundos, Dommia CRM cambia dinámicamente su estado a `OFFLINE` y emite una alerta operativa.
 

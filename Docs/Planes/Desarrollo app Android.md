@@ -126,7 +126,7 @@ No guardes secretos en `local.properties` versionado, `BuildConfig` ni recursos 
 - Los endpoints de activación y reset mantienen el contrato existente: `POST auth/resident/activate` y `POST auth/resident/password-reset`. No se deben cambiar a rutas PWA nuevas ni registrar sus tokens en logs.
 - El secreto `RESIDENT_APP_TOKEN_SECRET` no pertenece a Android; se configura únicamente en el backend mediante Secret Manager.
 - Push móvil usa `POST/DELETE auth/app/resident/devices/push-token` con `deviceId` persistente por instalación. `fcm-token` permanece como alias compatible para clientes Android existentes; la plataforma se deriva de `clientType` en el JWT. La tabla actual es `public.resident_push_tokens`; no se añade una migración para este contrato.
-- El host de App Links se configura actualmente como `app.dommia.com` en `manifestPlaceholders["appLinksHost"]` para DEV y PROD. Debe reemplazarse por el dominio web productivo acordado si es diferente.
+- El host de App Links es `app.dommia.com.mx` en `manifestPlaceholders["appLinksHost"]` para DEV y PROD. El sitio debe servir `/.well-known/assetlinks.json` con el package name y la huella SHA-256 del certificado de firma correspondiente.
 - El application ID efectivo es `com.dommia.resident` para PROD release y `com.dommia.resident.dev.debug` para DEV debug, debido a los sufijos de flavor y build type.
 - La firma PROD usa la huella SHA-256 de Play App Signing. DEV usa la huella del keystore debug si se desea verificar App Links en dispositivos de prueba.
 - Ninguna huella de firma, token de activación, token de reset ni secreto de backend se guarda en el repositorio.

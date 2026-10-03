@@ -54,7 +54,9 @@ export const AcquisitionSection: React.FC<AcquisitionSectionProps> = ({
             Comienza a Operar con DOMMIA
           </h2>
           <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
-            Elige el camino ideal para tu comunidad: solicita una demostración guiada para tu mesa directiva o activa tu fraccionamiento de forma inmediata.
+            {process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1'
+              ? 'Solicita una demostración para tu mesa directiva o consulta la activación de tu comunidad con nuestro equipo.'
+              : 'Elige el camino ideal para tu comunidad: solicita una demostración guiada para tu mesa directiva o activa tu fraccionamiento de forma inmediata.'}
           </p>
 
           {/* Mode Switcher */}
@@ -75,7 +77,9 @@ export const AcquisitionSection: React.FC<AcquisitionSectionProps> = ({
           <div className="mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 flex items-center gap-3 text-xs text-slate-600 dark:text-slate-300 shadow-inner">
             <ShieldCheck className="w-5 h-5 text-emerald-500 dark:text-emerald-400 shrink-0" />
             <span>
-              <strong className="text-slate-900 dark:text-white">Entorno Seguro y Protegido:</strong> Las demostraciones se realizan en sesiones virtuales privadas bajo estricto acuerdo de confidencialidad. Los datos y el software permanecen aislados sin exposición pública.
+              {process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1'
+                ? 'Al enviar la solicitud se abrirá tu aplicación de correo con un mensaje dirigido a info@dommia.com.mx. Revísalo y envíalo para que podamos responderte.'
+                : <><strong className="text-slate-900 dark:text-white">Entorno Seguro y Protegido:</strong> Las demostraciones se realizan en sesiones virtuales privadas bajo estricto acuerdo de confidencialidad. Los datos y el software permanecen aislados sin exposición pública.</>}
             </span>
           </div>
 

@@ -18,6 +18,7 @@ const telegram_alert_service_1 = require("./services/telegram-alert.service");
 const crm_alerts_service_1 = require("./services/crm-alerts.service");
 const crm_analytics_service_1 = require("./services/crm-analytics.service");
 const auth_module_1 = require("../auth/auth.module");
+const saas_mail_service_1 = require("./services/saas-mail.service");
 let CrmModule = class CrmModule {
 };
 exports.CrmModule = CrmModule;
@@ -28,6 +29,7 @@ exports.CrmModule = CrmModule = __decorate([
         providers: [
             crm_service_1.CrmService,
             crm_repository_1.CrmRepository,
+            saas_mail_service_1.SaasMailService,
             telegram_alert_service_1.TelegramAlertService,
             crm_alerts_service_1.CrmAlertsService,
             crm_analytics_service_1.CrmAnalyticsService,

@@ -18,9 +18,9 @@ CREATE TABLE IF NOT EXISTS public.users (
 -- Seed Global Users (Password: DommiaPassword2026! - crypt hashed)
 INSERT INTO public.users (email, password_hash, first_name, last_name, role)
 VALUES 
-    ('superadmin@dommia.com', crypt('DommiaPassword2026!', gen_salt('bf', 8)), 'Carlos', 'Administrador Global', 'SUPER_ADMIN'),
-    ('ventas@dommia.com', crypt('DommiaPassword2026!', gen_salt('bf', 8)), 'Mariana', 'Ejecutiva Comercial', 'COMMERCIAL_EXEC'),
-    ('soporte@dommia.com', crypt('DommiaPassword2026!', gen_salt('bf', 8)), 'Alejandro', 'Soporte Técnico', 'SUPPORT')
+    ('superadmin@dommia.com.mx', crypt('DommiaPassword2026!', gen_salt('bf', 8)), 'Carlos', 'Administrador Global', 'SUPER_ADMIN'),
+    ('ventas@dommia.com.mx', crypt('DommiaPassword2026!', gen_salt('bf', 8)), 'Mariana', 'Ejecutiva Comercial', 'COMMERCIAL_EXEC'),
+    ('soporte@dommia.com.mx', crypt('DommiaPassword2026!', gen_salt('bf', 8)), 'Alejandro', 'Soporte Técnico', 'SUPPORT')
 ON CONFLICT (email) DO NOTHING;
 
 -- 2. Seed Demo Properties in tenant_demo

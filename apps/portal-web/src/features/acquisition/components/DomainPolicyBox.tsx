@@ -3,6 +3,7 @@
 import React from 'react';
 import { TierKey } from '../../../types';
 import { Globe, Check } from 'lucide-react';
+import { STATIC_PLAN_CATALOG } from '../../calculator/static-plan-catalog';
 
 interface DomainPolicyBoxProps {
   slug: string;
@@ -17,6 +18,9 @@ export const DomainPolicyBox: React.FC<DomainPolicyBoxProps> = ({
   tierKey,
   onCustomDomainChange,
 }) => {
+  const domainIncluded = tierKey === 'ENTERPRISE' || (process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1'
+    && STATIC_PLAN_CATALOG.some((plan) => plan.code === tierKey && plan.includesCustomDomain));
+
   return (
     <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800/90 space-y-3.5 shadow-inner">
       <div className="flex items-center justify-between text-xs">
@@ -26,9 +30,9 @@ export const DomainPolicyBox: React.FC<DomainPolicyBoxProps> = ({
             Configuración de Dominio y Acceso Web
           </span>
         </div>
-        {tierKey === 'ENTERPRISE' ? (
+        {domainIncluded ? (
           <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/40 text-[10px] font-black uppercase">
-            Incluido en Enterprise
+            Incluido en tu plan
           </span>
         ) : (
           <span className="px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/40 text-[10px] font-bold uppercase">
@@ -37,24 +41,24 @@ export const DomainPolicyBox: React.FC<DomainPolicyBoxProps> = ({
         )}
       </div>
 
-      {tierKey === 'ENTERPRISE' ? (
+      {domainIncluded ? (
         <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/30 text-xs">
           <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-bold mb-1">
             <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
             <span>Subdominio exclusivo incluido en tu plan</span>
           </div>
           <p className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-            Enlace de acceso: <span className="text-slate-900 dark:text-white font-bold underline">https://{slug || 'tu_fraccionamiento'}.dommia.com</span>
+            {process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1' ? 'Enlace propuesto: ' : 'Enlace de acceso: '}<span className="text-slate-900 dark:text-white font-bold underline">https://{slug || 'tu_fraccionamiento'}.dommia.com.mx</span>
           </p>
         </div>
       ) : (
         <div className="space-y-3">
           <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-xs shadow-xs">
             <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">
-              Enlace Estándar de Acceso (Sin costo adicional):
+              {process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1' ? 'Enlace estándar propuesto (sin costo adicional):' : 'Enlace Estándar de Acceso (Sin costo adicional):'}
             </p>
             <p className="text-blue-600 dark:text-blue-400 font-mono text-[11px] font-semibold">
-              https://standar.dommia.com/{slug || 'tu_fraccionamiento'}
+              https://standar.dommia.com.mx/{slug || 'tu_fraccionamiento'}
             </p>
           </div>
 
@@ -75,7 +79,7 @@ export const DomainPolicyBox: React.FC<DomainPolicyBoxProps> = ({
               <p className="text-slate-600 dark:text-slate-400 text-[11px] mt-1">
                 {hasCustomDomain ? (
                   <span>
-                    Acceso activo: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">https://{slug || 'tu_fraccionamiento'}.dommia.com</strong>
+                    {process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1' ? 'Enlace propuesto: ' : 'Acceso activo: '}<strong className="text-emerald-600 dark:text-emerald-400 font-mono">https://{slug || 'tu_fraccionamiento'}.dommia.com.mx</strong>
                   </span>
                 ) : (
                   <span>Otorga a tu comunidad un enlace propio y exclusivo para colonos y administradores.</span>

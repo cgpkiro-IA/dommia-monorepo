@@ -7,6 +7,7 @@ import { UpdateStageDto } from '../dto/update-stage.dto';
 import { CreateGatewayDto } from '../dto/create-gateway.dto';
 import { SelfServiceProvisionDto } from '../dto/self-service-provision.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
+import { CreateInitialContractDto, ReconcileContractDto, RecordRenewalNoticeDto, SendRenewalNoticeDto } from '../dto/reconcile-contract.dto';
 import { CreateCrmAlertDto, GatewayHeartbeatDto, ResolveCrmAlertDto, TestTelegramNotificationDto, UpdateGatewayDto, UpdateTelegramConfigDto } from '../dto/crm.dto';
 export declare class CrmController {
     private readonly crmService;
@@ -14,6 +15,11 @@ export declare class CrmController {
     private readonly crmAlertsService;
     private readonly telegramAlertService;
     constructor(crmService: CrmService, crmAnalyticsService: CrmAnalyticsService, crmAlertsService: CrmAlertsService, telegramAlertService: TelegramAlertService);
+    getPublicPlans(): Promise<{
+        success: boolean;
+        data: any[];
+        count: number;
+    }>;
     getPlans(): Promise<{
         success: boolean;
         data: any[];
@@ -34,6 +40,7 @@ export declare class CrmController {
                 churnRate: number;
                 tierBreakdown: Record<string, number>;
                 activeSubscriptionsCount: number;
+                unverifiedSubscriptionContractsCount: number;
             };
             finances: {
                 currency: string;
@@ -42,6 +49,7 @@ export declare class CrmController {
                 churnRate: number;
                 tierBreakdown: Record<string, number>;
                 activeSubscriptionsCount: number;
+                unverifiedSubscriptionContractsCount: number;
             };
             communities: {
                 totalTenants: number;
@@ -63,6 +71,44 @@ export declare class CrmController {
             activeTenants: number;
             onlineGateways: number;
         };
+    }>;
+    getCurrentContract(tenantId: string): Promise<{
+        success: boolean;
+        data: any;
+    }>;
+    createInitialContract(tenantId: string, dto: CreateInitialContractDto): Promise<{
+        success: boolean;
+        message: string;
+        data: any;
+        created: boolean;
+    }>;
+    reconcileCurrentContract(tenantId: string, dto: ReconcileContractDto): Promise<{
+        success: boolean;
+        message: string;
+        data: any;
+    }>;
+    recordRenewalNotice(tenantId: string, dto: RecordRenewalNoticeDto): Promise<{
+        success: boolean;
+        message: string;
+        data: any;
+    }>;
+    sendRenewalNotice(tenantId: string, dto: SendRenewalNoticeDto): Promise<{
+        success: boolean;
+        message: string;
+        data: any;
+    }>;
+    previewRenewalNotice(tenantId: string, dto: SendRenewalNoticeDto): Promise<{
+        success: boolean;
+        message: string;
+        data: {
+            preview: boolean;
+            recipient: string;
+        };
+    }>;
+    renewSubscription(tenantId: string): Promise<{
+        success: boolean;
+        message: string;
+        data: any;
     }>;
     selfServiceProvision(dto: SelfServiceProvisionDto): Promise<{
         success: boolean;

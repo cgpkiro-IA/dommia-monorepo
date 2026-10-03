@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
+const staticExport = process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1';
+
 const nextConfig = {
+  ...(staticExport ? { output: 'export' } : {}),
   distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
   transpilePackages: ['@dommia/ui', '@dommia/shared-types'],
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
-  async headers() {
+  ...(!staticExport && { async headers() {
     return [
       {
         source: '/(.*)',
@@ -28,7 +31,7 @@ const nextConfig = {
         ],
       },
     ];
-  },
+  } }),
 };
 
 module.exports = nextConfig;

@@ -40,6 +40,11 @@ services:
       RESIDENT_APP_TOKEN_SECRET: ${RESIDENT_APP_TOKEN_SECRET:-dommia-local-resident-app-auth-secret-change-me}
       RESIDENT_APP_URL: ${RESIDENT_APP_URL:-http://localhost:3003}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004}
+      SAAS_SMTP_HOST: ${SAAS_SMTP_HOST:-smtp.porkbun.com}
+      SAAS_SMTP_PORT: ${SAAS_SMTP_PORT:-587}
+      SAAS_SMTP_USER: ${SAAS_SMTP_USER:-}
+      SAAS_SMTP_PASSWORD: ${SAAS_SMTP_PASSWORD:-}
+      SAAS_SMTP_FROM: ${SAAS_SMTP_FROM:-}
     ports:
       - "${API_PORT:-4000}:4000"
 

@@ -296,9 +296,14 @@ export class AuthService {
     this.residentRateLimiter.assertAllowed(action, identifier, 8, 15 * 60 * 1000);
   }
 
+  private assertAdminLoginRateLimit(email: string) {
+    const limit = this.config.get<string>('NODE_ENV') === 'development' ? 50 : 8;
+    this.residentRateLimiter.assertAllowed('admin-login', email, limit, 15 * 60 * 1000);
+  }
+
   async login(dto: LoginDto): Promise<AuthSession | MfaLoginChallenge> {
     const email = dto.email.trim().toLowerCase();
-    this.residentRateLimiter.assertAllowed('admin-login', email, 8, 15 * 60 * 1000);
+    this.assertAdminLoginRateLimit(email);
 
     // Verify password through repository
     const user = await this.authRepo.findUserByEmailAndPassword(email, dto.password);

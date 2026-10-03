@@ -34,6 +34,21 @@ function getCorsOrigins(config: ConfigService) {
     : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004'];
 }
 
+function isDommiaTenantOrigin(origin: string) {
+  let parsedOrigin: URL;
+  try {
+    parsedOrigin = new URL(origin);
+  } catch {
+    return false;
+  }
+  const tenantLabel = parsedOrigin.hostname.slice(0, -'.dommia.com.mx'.length);
+  return parsedOrigin.protocol === 'https:'
+    && parsedOrigin.origin === origin
+    && parsedOrigin.port === ''
+    && /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(tenantLabel)
+    && parsedOrigin.hostname.endsWith('.dommia.com.mx');
+}
+
 async function bootstrap() {
   const logger = new Logger('DommiaAPI');
   const app = await NestFactory.create(AppModule, { rawBody: true });
@@ -55,7 +70,9 @@ async function bootstrap() {
 
   // CORS
   app.enableCors({
-    origin: (origin, callback) => callback(null, Boolean(origin && corsOrigins.includes(origin))),
+    origin: (origin, callback) => callback(null, Boolean(
+      origin && (corsOrigins.includes(origin) || isDommiaTenantOrigin(origin)),
+    )),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

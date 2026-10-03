@@ -317,7 +317,7 @@ Nunca almacenar exclusivamente en Redis:
 ## Global Schema (public)
 
 - **saas_plans:** Catálogo dinámico de tiers (`BASIC`, `STANDARD`, `PROFESSIONAL`, `ENTERPRISE`), precios mensuales, topes de vivienda y módulos/add-ons permitidos.
-- **tenants:** Fraccionamientos registrados con identificación de esquema (`tenant_<slug>`), banderas de dominio propio (`has_custom_domain`), dominio asignado (`custom_domain`) y URL de acceso (`access_url`: estándar `standar.dommia.com/{slug}` o subdominio exclusivo `{slug}.dommia.com`).
+- **tenants:** Fraccionamientos registrados con identificación de esquema (`tenant_<slug>`), banderas de dominio propio (`has_custom_domain`), dominio asignado (`custom_domain`) y URL de acceso (`access_url`: estándar `standar.dommia.com.mx/{slug}` o subdominio exclusivo `{slug}.dommia.com.mx`).
 - **subscriptions:** Contratos activos, IDs de pasarela Stripe, fechas de vigencia y cobros recurrentes de planes y add-ons.
 - **crm_prospects:** Pipeline comercial de ventas consultivas (LEAD -> WON).
 - **gateway_inventory:** Inventario de hardware IoT y monitoreo de heartbeats.
@@ -329,9 +329,9 @@ Nunca almacenar exclusivamente en Redis:
 
 ## Política de Enrutamiento y Dominios
 
-1. **Dominio Estándar Compartido:** `standar.dommia.com/{slug}` para planes BASIC, STANDARD y PROFESSIONAL.
-2. **Subdominio Personalizado Add-on:** `{slug}.dommia.com` disponible como módulo de pago mensual adicional (+ $490 MXN/mes).
-3. **Subdominio Personalizado Enterprise:** `{slug}.dommia.com` bonificado 100% sin costo adicional en plan ENTERPRISE.
+1. **Dominio Estándar Compartido:** `standar.dommia.com.mx/{slug}` para planes BASIC, STANDARD y PROFESSIONAL.
+2. **Subdominio Personalizado Add-on:** `{slug}.dommia.com.mx` disponible como módulo de pago mensual adicional (+ $490 MXN/mes).
+3. **Subdominio Personalizado Enterprise:** `{slug}.dommia.com.mx` bonificado 100% sin costo adicional en plan ENTERPRISE.
 
 ## Tenant Schema
 

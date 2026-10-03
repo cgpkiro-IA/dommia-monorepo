@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   XCircle, 
   CheckCircle2, 
@@ -42,8 +42,36 @@ const values = [
 ];
 
 export const WhatWeAre: React.FC = () => {
+  const comparisonRef = useRef<HTMLDivElement>(null);
+  const valuesRef = useRef<HTMLDivElement>(null);
+  const [comparisonRevealed, setComparisonRevealed] = useState(false);
+  const [valuesRevealed, setValuesRevealed] = useState(false);
+
+  useEffect(() => {
+    const comparison = comparisonRef.current;
+    const valuesGrid = valuesRef.current;
+    if (!comparison || !valuesGrid || !('IntersectionObserver' in window)) {
+      setComparisonRevealed(true);
+      setValuesRevealed(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        if (entry.target === comparison) setComparisonRevealed(true);
+        if (entry.target === valuesGrid) setValuesRevealed(true);
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.12 });
+
+    observer.observe(comparison);
+    observer.observe(valuesGrid);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section id="filosofia" className="py-24 bg-slate-50 dark:bg-[#070D18] relative border-t border-slate-200 dark:border-slate-800/80 overflow-hidden transition-colors duration-200">
+    <section id="filosofia" className="philosophy-section py-24 bg-slate-50 dark:bg-[#070D18] relative border-t border-slate-200 dark:border-slate-800/80 overflow-hidden transition-colors duration-200">
       {/* Background glow */}
       <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-[140px] pointer-events-none -z-10" />
 
@@ -63,15 +91,18 @@ export const WhatWeAre: React.FC = () => {
         </div>
 
         {/* Comparison Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20">
+        <div
+          ref={comparisonRef}
+          className={`philosophy-comparison grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20${comparisonRevealed ? ' is-revealed' : ''}`}
+        >
           {/* Lo que NO somos */}
-          <div className="p-8 rounded-3xl bg-rose-50/80 dark:bg-rose-950/15 border border-rose-200 dark:border-rose-500/25 shadow-lg shadow-rose-950/5 relative">
+          <div className="philosophy-comparison-card philosophy-comparison-card--fragmented p-8 rounded-3xl bg-rose-50/80 dark:bg-rose-950/15 border border-rose-200 dark:border-rose-500/25 shadow-lg shadow-rose-950/5 relative">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 rounded-2xl bg-rose-500/15 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                 <XCircle className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">
+                <span className="philosophy-kicker philosophy-kicker--negative text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">
                   El Modelo Tradicional Fragmentado
                 </span>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white font-heading">
@@ -80,7 +111,7 @@ export const WhatWeAre: React.FC = () => {
               </div>
             </div>
 
-            <ul className="space-y-4">
+            <ul className="philosophy-points space-y-4">
               <li className="flex items-start gap-3 text-slate-700 dark:text-slate-300 text-sm">
                 <XCircle className="w-5 h-5 text-rose-500 dark:text-rose-400 shrink-0 mt-0.5" />
                 <span>
@@ -109,7 +140,7 @@ export const WhatWeAre: React.FC = () => {
           </div>
 
           {/* Lo que SOMOS */}
-          <div className="p-8 rounded-3xl bg-blue-50/80 dark:bg-blue-950/25 border border-blue-200 dark:border-blue-500/35 shadow-xl shadow-blue-950/5 relative overflow-hidden">
+          <div className="philosophy-comparison-card philosophy-comparison-card--unified p-8 rounded-3xl bg-blue-50/80 dark:bg-blue-950/25 border border-blue-200 dark:border-blue-500/35 shadow-xl shadow-blue-950/5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="flex items-center gap-3 mb-6">
@@ -117,7 +148,7 @@ export const WhatWeAre: React.FC = () => {
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
+                <span className="philosophy-kicker philosophy-kicker--positive text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
                   La Plataforma Operativa Integral
                 </span>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white font-heading">
@@ -126,7 +157,7 @@ export const WhatWeAre: React.FC = () => {
               </div>
             </div>
 
-            <ul className="space-y-4">
+            <ul className="philosophy-points space-y-4">
               <li className="flex items-start gap-3 text-slate-800 dark:text-slate-200 text-sm">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <span>
@@ -163,19 +194,23 @@ export const WhatWeAre: React.FC = () => {
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div
+            ref={valuesRef}
+            className={`philosophy-values-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4${valuesRevealed ? ' is-revealed' : ''}`}
+          >
             {values.map((v, i) => {
               const Icon = v.icon;
               return (
                 <div
                   key={i}
-                  className="p-5 rounded-2xl bg-white/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 hover:border-blue-500/40 transition-colors shadow-xs"
+                  className="philosophy-value-card p-5 rounded-2xl bg-white/90 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 shadow-xs"
+                  style={{ animationDelay: `${i * 55}ms` }}
                 >
                   <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/15 border border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
                     <Icon className="w-5 h-5" />
                   </div>
                   <h4 className="text-sm font-bold text-slate-900 dark:text-white font-heading">{v.title}</h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">{v.description}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">{v.description}</p>
                 </div>
               );
             })}

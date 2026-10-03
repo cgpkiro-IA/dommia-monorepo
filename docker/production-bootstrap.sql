@@ -38,6 +38,9 @@ $$;
 \ir migrations/022_resident_push_tokens.sql
 \ir migrations/023_tenant_monthly_financial_reports.sql
 \ir migrations/024_guard_access_points.sql
+\ir migrations/025_saas_plan_min_properties.sql
+\ir migrations/026_saas_subscription_contracts.sql
+\ir migrations/027_dommia_domain_mx.sql
 
 DELETE FROM public.gateway_inventory
 WHERE uuid = 'gw-caseta-norte-laspalmas-01';
@@ -74,6 +77,9 @@ INSERT INTO public.schema_migrations (version, filename) VALUES
   ('021', 'migrations/021_resident_app_refresh_sessions.sql'),
   ('022', 'migrations/022_resident_push_tokens.sql'),
   ('023', 'migrations/023_tenant_monthly_financial_reports.sql'),
-  ('024', 'migrations/024_guard_access_points.sql');
+  ('024', 'migrations/024_guard_access_points.sql'),
+  ('025', 'migrations/025_saas_plan_min_properties.sql'),
+  ('026', 'migrations/026_saas_subscription_contracts.sql'),
+  ('027', 'migrations/027_dommia_domain_mx.sql');
 
 COMMIT;

@@ -52,13 +52,13 @@ android {
             applicationIdSuffix = ".dev"
             buildConfigField("String", "API_BASE_URL", "\"http://localhost:4000/api/v1/\"")
             manifestPlaceholders["usesCleartextTraffic"] = "true"
-            manifestPlaceholders["appLinksHost"] = "app.dommia.com"
+            manifestPlaceholders["appLinksHost"] = "app.dommia.com.mx"
         }
         create("prod") {
             dimension = "environment"
-            buildConfigField("String", "API_BASE_URL", "\"https://<API_DOMAIN>/api/v1/\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://api.dommia.com.mx/api/v1/\"")
             manifestPlaceholders["usesCleartextTraffic"] = "false"
-            manifestPlaceholders["appLinksHost"] = "app.dommia.com"
+            manifestPlaceholders["appLinksHost"] = "app.dommia.com.mx"
         }
     }
 

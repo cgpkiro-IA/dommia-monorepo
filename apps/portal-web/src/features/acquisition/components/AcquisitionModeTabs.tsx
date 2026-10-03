@@ -25,7 +25,7 @@ export const AcquisitionModeTabs: React.FC<AcquisitionModeTabsProps> = ({
         }`}
       >
         <Zap className="w-4 h-4" />
-        <span>Contratar y Activar de Inmediato</span>
+        <span>{process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1' ? 'Solicitar Activación' : 'Contratar y Activar de Inmediato'}</span>
       </button>
 
       <button

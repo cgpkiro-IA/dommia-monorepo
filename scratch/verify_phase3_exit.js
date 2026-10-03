@@ -17,7 +17,7 @@ const run = async () => {
   const login = await request('/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'admin@laspalmas.dommia.com', password: 'LasPalmas2026!', tenantSlug: 'demo' }),
+    body: JSON.stringify({ email: 'admin@laspalmas.dommia.com.mx', password: 'LasPalmas2026!', tenantSlug: 'demo' }),
   });
   if (!login.json.data?.token) throw new Error('Admin login failed');
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${login.json.data.token}` };

@@ -71,11 +71,19 @@ export async function prepareGuardQa() {
         '022_resident_push_tokens.sql',
         '023_tenant_monthly_financial_reports.sql',
         '024_guard_access_points.sql',
+        '025_saas_plan_min_properties.sql',
+        '026_saas_subscription_contracts.sql',
+        '027_dommia_domain_mx.sql',
       ];
       for (const migrationName of migrations) {
         const migration = await readFile(resolve(repositoryRoot, 'docker/migrations', migrationName), 'utf8');
         await pool.query(migration);
       }
+      const subscriptionMigration = await readFile(
+        resolve(repositoryRoot, 'docker/migrations/026_saas_subscription_contracts.sql'),
+        'utf8',
+      );
+      await pool.query(subscriptionMigration);
       await pool.query(seed);
     })();
   }
@@ -117,6 +125,26 @@ export async function signTenantToken(email, role) {
     role,
     tenantId: tenant.rows[0].id,
     tenantSlug,
+    exp: Date.now() + 5 * 60 * 1000,
+  })).toString('base64url');
+  const secret = process.env.AUTH_TOKEN_SECRET;
+  assert.ok(secret && secret.length >= 32, 'AUTH_TOKEN_SECRET debe estar configurado para las pruebas.');
+  const signature = createHmac('sha256', secret)
+    .update(claims)
+    .digest('base64url');
+  return `${claims}.${signature}`;
+}
+
+export async function signCrmToken(email, role = 'SUPER_ADMIN') {
+  const user = await pool.query(
+    'SELECT id FROM public.users WHERE lower(email) = lower($1) AND role = $2 AND is_active = TRUE',
+    [email, role],
+  );
+  assert.equal(user.rowCount, 1, `Debe existir el usuario CRM QA ${email} con rol ${role}.`);
+  const claims = Buffer.from(JSON.stringify({
+    sub: user.rows[0].id,
+    email,
+    role,
     exp: Date.now() + 5 * 60 * 1000,
   })).toString('base64url');
   const secret = process.env.AUTH_TOKEN_SECRET;

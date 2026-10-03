@@ -12,6 +12,10 @@ import {
 
 import { trackEvent } from '../../../lib/analytics';
 import { API_BASE } from '@/lib/api-url';
+import { STATIC_PLAN_CATALOG } from '../../calculator/static-plan-catalog';
+import { contactMailto } from '../../../lib/contact-email';
+
+const staticMode = process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1';
 
 interface UseAcquisitionProps {
   selectedTier?: string;
@@ -100,6 +104,18 @@ export function useAcquisition({
   // Submit Demo Request
   const handleDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (staticMode) {
+      window.location.href = contactMailto('Solicitud de demostración DOMMIA', [
+        `Nombre: ${demoForm.name}`,
+        `Correo: ${demoForm.email}`,
+        `Teléfono: ${demoForm.phone}`,
+        `Comunidad: ${demoForm.communityName}`,
+        `Viviendas: ${demoForm.estimatedHouses}`,
+        `Plan de interés: ${selectedTier} (${estimatedPrice})`,
+        `Notas: ${demoForm.notes || 'Sin notas'}`,
+      ]);
+      return;
+    }
     setLoading(true);
     setErrorMessage(null);
 
@@ -141,6 +157,18 @@ export function useAcquisition({
   // Submit Self-Service Activation
   const handleSelfServiceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (staticMode) {
+      window.location.href = contactMailto('Solicitud de activación DOMMIA', [
+        `Comunidad: ${selfServiceForm.communityName}`,
+        `Identificador: ${selfServiceForm.slug}`,
+        `Administrador: ${selfServiceForm.adminName}`,
+        `Correo: ${selfServiceForm.adminEmail}`,
+        `Viviendas: ${selfServiceForm.maxProperties}`,
+        `Plan de interés: ${selectedTier} (${estimatedPrice})`,
+        `Subdominio propio: ${selfServiceForm.hasCustomDomain || STATIC_PLAN_CATALOG.some((plan) => plan.code === mapTierToKey(selectedTier) && plan.includesCustomDomain) ? 'Sí' : 'No'}`,
+      ]);
+      return;
+    }
     setLoading(true);
     setErrorMessage(null);
 

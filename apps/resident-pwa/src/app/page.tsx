@@ -35,7 +35,7 @@ const DEFAULT_RESIDENT_PROFILE: ResidentProfile = {
   id: 'current_resident',
   propertyId: 'a0000000-0000-0000-0000-000000000142',
   name: 'Lic. Carlos Villarreal',
-  email: 'carlos.villarreal@dommia.com',
+  email: 'carlos.villarreal@dommia.com.mx',
   phone: '+52 81 2345 6789',
   communitySlug: 'valle_real',
   communityName: 'Fracc. Valle Real',

@@ -48,7 +48,7 @@ export function TenantsTable({ tenants, onEditTenant }: TenantsTableProps) {
                     <div className="space-y-0.5">
                       <span className="inline-flex items-center gap-1 font-mono text-xs text-blue-700 bg-blue-50/70 px-2 py-0.5 rounded border border-blue-200">
                         <Globe className="w-3 h-3 text-blue-500" />
-                        {t.access_url || `standar.dommia.com/${t.slug}`}
+                        {t.access_url || `standar.dommia.com.mx/${t.slug}`}
                       </span>
                       <span className="block text-[10px] text-slate-500 font-medium">Dominio Estándar Compartido</span>
                     </div>

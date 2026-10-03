@@ -39,7 +39,7 @@ export default function CrmDashboardPage() {
   };
 
   const prospects = useProspects(feedbackProps);
-  const tenants = useTenants(feedbackProps);
+  const tenants = useTenants({ ...feedbackProps, plans: dashboard.plans });
   const gateways = useGateways(feedbackProps);
   const plans = usePlans(feedbackProps);
 
@@ -62,7 +62,7 @@ export default function CrmDashboardPage() {
           analytics.refresh();
           alerts.refresh();
         }}
-        onOpenNewTenant={() => tenants.setIsTenantModalOpen(true)}
+        onOpenNewTenant={tenants.openCreateTenant}
         userEmail={auth.session.user.email}
         onLogout={auth.logout}
       />
@@ -143,7 +143,10 @@ export default function CrmDashboardPage() {
         isOpen={tenants.isTenantModalOpen}
         onClose={() => tenants.setIsTenantModalOpen(false)}
         form={tenants.tenantForm}
+        plans={tenants.planCatalog}
+        tenantId={tenants.editingTenant?.id}
         onChange={tenants.setTenantForm}
+        onTierChange={tenants.handleTierChange}
         onSubmit={tenants.handleSaveTenant}
         isSubmitting={tenants.isSubmitting}
         isEdit={!!tenants.editingTenant}

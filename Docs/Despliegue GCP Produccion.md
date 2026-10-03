@@ -1,8 +1,12 @@
 # Despliegue de DOMMIA en Google Cloud
 
-**Estado:** Guía base para preparar producción. No ejecutar el primer despliegue hasta cerrar los bloqueos indicados en esta guía.
+**Estado:** Portal público estático publicado en Firebase Hosting. El despliegue de API, CRM, Communities, Resident, Guard y Cloud SQL en Cloud Run sigue pendiente de cerrar los bloqueos indicados en esta guía.
 **Alcance:** MVP digital de DOMMIA. Cloud Run, Cloud SQL for PostgreSQL, Artifact Registry y Secret Manager.
 **Entornos:** DEV local con Docker Compose; PROD en un proyecto GCP separado.
+
+### Portal público en Firebase Hosting
+
+El Portal de captación tiene una publicación estática independiente del despliegue SaaS en Cloud Run. Al 1 de octubre de 2026, `dommia.com.mx` responde con la landing de DOMMIA. El sitio Firebase es `dommia-saas-ef543`; los comandos, modo estático y límites de captación están en [`apps/portal-web/README.md`](../apps/portal-web/README.md). Esta publicación no implica que API, CRM, Communities, Resident, Guard o Cloud SQL estén desplegados en producción.
 
 ## 1. Decisión de despliegue
 
@@ -19,9 +23,26 @@ Producción se divide en seis servicios Cloud Run independientes:
 
 La API será el único servicio con acceso a Cloud SQL y Secret Manager. Los frontends no deben recibir credenciales de base de datos ni secretos del API. Cloud Run debe conectar con Cloud SQL mediante la integración administrada de Cloud SQL; no publicar PostgreSQL en una IP pública.
 
+### Dominios oficiales de PROD
+
+| Uso | Host HTTPS | Destino |
+| --- | --- | --- |
+| Portal público y dominio canónico | `dommia.com.mx` | Portal |
+| API | `api.dommia.com.mx` | API |
+| CRM | `crm.dommia.com.mx` | CRM |
+| Administración de comunidades | `communities.dommia.com.mx` | Communities |
+| App Resident y enlaces móviles | `app.dommia.com.mx` | Resident |
+| Operación de caseta | `guard.dommia.com.mx` | Guard |
+| Acceso estándar de tenants | `standar.dommia.com.mx/<slug>` | Communities |
+| Subdominios propios | `<slug>.dommia.com.mx` | Communities, según plan y DNS |
+
+Configura DNS y certificados TLS para cada host. El wildcard de tenants requiere cobertura TLS para `*.dommia.com.mx` y una capa de ruteo que soporte hosts wildcard, por ejemplo un External Application Load Balancer; no asumas que un mapping directo de Cloud Run lo cubre. Publica `/.well-known/assetlinks.json` y `/.well-known/apple-app-site-association` en `app.dommia.com.mx` antes de habilitar Android App Links y Apple Universal Links; esos archivos deben llevar los identificadores y firmas reales de cada app.
+
+Si DOMMIA conserva control sobre `dommia.com`, mantén redirecciones HTTPS 301 desde las URLs web antiguas y alias/reenvío de correo durante la transición. La migración 027 actualiza hosts guardados de primera parte en la base, pero no cambia DNS, cuentas de correo, emails de usuarios ni correos de contacto.
+
 EMQX, MQTT, gateways, RFID y apertura física quedan fuera del MVP. El `docker-compose.yml` actual sirve para desarrollo local y no es una topología de producción.
 
-Usa un proyecto GCP dedicado, por ejemplo `dommia-prod`, una región aprobada por el negocio y dominios HTTPS distintos para Portal, API, CRM, Communities, Resident y Guard. Los nombres concretos de proyecto, región y dominios aún deben definirse.
+Usa un proyecto GCP dedicado, por ejemplo `dommia-prod`, una región aprobada por el negocio y el mapa de dominios oficiales indicado arriba.
 
 ## 2. Separación DEV y PROD
 
@@ -132,18 +153,18 @@ Build variables de frontend, definidas antes de `next build`:
 
 | Variable | Apps | Valor PROD |
 | --- | --- | --- |
-| `NEXT_PUBLIC_API_URL` | CRM, Communities, Portal, Resident y Guard. | `https://<API_DOMAIN>/api/v1`. |
-| `NEXT_PUBLIC_SITE_URL` | Portal. | URL HTTPS canónica del sitio público. |
-| `NEXT_PUBLIC_PORTAL_URL` | CRM. | URL HTTPS canónica del Portal público. |
-| `NEXT_PUBLIC_CRM_URL` | Portal y Communities. | URL HTTPS canónica del CRM. |
-| `NEXT_PUBLIC_COMMUNITIES_URL` | CRM. | URL HTTPS canónica de Communities. |
-| `NEXT_PUBLIC_RESIDENT_APP_URL` | Communities. | URL HTTPS pública de Resident. |
+| `NEXT_PUBLIC_API_URL` | CRM, Communities, Portal, Resident y Guard. | `https://api.dommia.com.mx/api/v1`. |
+| `NEXT_PUBLIC_SITE_URL` | Portal. | `https://dommia.com.mx`. |
+| `NEXT_PUBLIC_PORTAL_URL` | CRM. | `https://dommia.com.mx`. |
+| `NEXT_PUBLIC_CRM_URL` | Portal y Communities. | `https://crm.dommia.com.mx`. |
+| `NEXT_PUBLIC_COMMUNITIES_URL` | CRM. | `https://communities.dommia.com.mx`. |
+| `NEXT_PUBLIC_RESIDENT_APP_URL` | Communities. | `https://app.dommia.com.mx`. |
 | `NEXT_PUBLIC_GA_ID` | Portal, opcional. | Identificador de Google Analytics, si se habilita. No es secreto. |
 | `NEXT_PUBLIC_GTM_ID` | Portal, opcional. | Identificador de Google Tag Manager, si se habilita. No es secreto. |
 
 Los valores `NEXT_PUBLIC_*` son públicos y quedan visibles en el navegador. Nunca pongas una contraseña, token privado o llave de cifrado en una variable con ese prefijo.
 
-El job de build PROD debe asignar `NEXT_PUBLIC_API_URL=https://<API_DOMAIN>/api/v1` a los cinco frontends. Asigna además `NEXT_PUBLIC_SITE_URL` y `NEXT_PUBLIC_CRM_URL` a Portal; `NEXT_PUBLIC_PORTAL_URL` y `NEXT_PUBLIC_COMMUNITIES_URL` a CRM; `NEXT_PUBLIC_CRM_URL` y `NEXT_PUBLIC_RESIDENT_APP_URL` a Communities. Resident y Guard solo requieren `NEXT_PUBLIC_API_URL`. No heredes ni uses los `.env.local` de DEV para construir imágenes PROD. Estos valores son configuración pública de build, no secretos de Secret Manager.
+El job de build PROD asigna `NEXT_PUBLIC_API_URL=https://api.dommia.com.mx/api/v1` a los cinco frontends. Asigna además `NEXT_PUBLIC_SITE_URL=https://dommia.com.mx` y `NEXT_PUBLIC_CRM_URL=https://crm.dommia.com.mx` a Portal; `NEXT_PUBLIC_PORTAL_URL=https://dommia.com.mx` y `NEXT_PUBLIC_COMMUNITIES_URL=https://communities.dommia.com.mx` a CRM; `NEXT_PUBLIC_CRM_URL=https://crm.dommia.com.mx` y `NEXT_PUBLIC_RESIDENT_APP_URL=https://app.dommia.com.mx` a Communities. Resident y Guard solo requieren `NEXT_PUBLIC_API_URL`. Configura `RESIDENT_APP_URL=https://app.dommia.com.mx` en el API, `API_BASE_URL=https://api.dommia.com.mx/api/v1` en las apps móviles y `RESIDENT_APP_LINK_HOST=app.dommia.com.mx` en sus builds. No heredes ni uses los `.env.local` de DEV para construir imágenes PROD. Estos valores son configuración pública de build, no secretos de Secret Manager.
 
 ## 5. Preparación de GCP
 
@@ -154,8 +175,9 @@ El job de build PROD debe asignar `NEXT_PUBLIC_API_URL=https://<API_DOMAIN>/api/
 5. Crea Artifact Registry y almacena una imagen separada por workspace. Construye desde la raíz del monorepo para que el build pueda resolver `packages/shared-types` y `packages/ui`.
 6. Crea las versiones iniciales de Secret Manager y vincúlalas al servicio API. No uses archivos `.env` en la imagen.
 7. Configura Cloud Run con la cuenta de servicio del API, conexión a Cloud SQL, variables de entorno y secretos. Los cinco frontends no deben recibir secretos.
-8. Configura dominios HTTPS y certificados. Define `CORS_ORIGINS` con los mismos orígenes exactos que sirven los frontends.
-9. Configura alertas de errores 5xx, latencia, instancias, disponibilidad del API y capacidad/conexiones de Cloud SQL. El health check actual comprueba PostgreSQL; no confirma conectividad MQTT.
+8. Configura DNS y certificados HTTPS para `dommia.com.mx`, `api.dommia.com.mx`, `crm.dommia.com.mx`, `communities.dommia.com.mx`, `app.dommia.com.mx`, `guard.dommia.com.mx`, `standar.dommia.com.mx` y `*.dommia.com.mx`. Define `CORS_ORIGINS=https://dommia.com.mx,https://crm.dommia.com.mx,https://communities.dommia.com.mx,https://app.dommia.com.mx,https://guard.dommia.com.mx,https://standar.dommia.com.mx` para los orígenes fijos. El API además admite HTTPS en subdominios de un solo nivel bajo `.dommia.com.mx` para los tenants. Todo dominio personalizado externo debe agregarse como origen exacto; no uses `*`.
+9. Publica los archivos Android/iOS de asociación de dominios en `https://app.dommia.com.mx/.well-known/` y verifica los enlaces desde dispositivos físicos.
+10. Configura alertas de errores 5xx, latencia, instancias, disponibilidad del API y capacidad/conexiones de Cloud SQL. El health check actual comprueba PostgreSQL; no confirma conectividad MQTT.
 
 ### Archivos que deben llevarse al proceso de producción
 
@@ -188,6 +210,10 @@ docker/migrations/020_tenant_finance_schema_completion.sql
 docker/migrations/021_resident_app_refresh_sessions.sql
 docker/migrations/022_resident_push_tokens.sql
 docker/migrations/023_tenant_monthly_financial_reports.sql
+docker/migrations/024_guard_access_points.sql
+docker/migrations/025_saas_plan_min_properties.sql
+docker/migrations/026_saas_subscription_contracts.sql
+docker/migrations/027_dommia_domain_mx.sql
 ```
 
 `production-bootstrap.sql` incluye `init-db/01-init.sql` y cada migración mediante `\ir`, relativo al directorio del propio script. Debe estar presente la carpeta completa `docker/` con la estructura anterior. `validate-schema.sql` se ejecuta por separado después del bootstrap.
@@ -205,11 +231,11 @@ $required = @(
 	"docker/validate-schema.sql"
 ) + (Get-ChildItem -Path ".\docker\migrations" -Filter "*.sql" | Where-Object {
 	$version = 0
-	[int]::TryParse($_.BaseName.Split('_')[0], [ref]$version) -and $version -ge 3 -and $version -le 21
+	[int]::TryParse($_.BaseName.Split('_')[0], [ref]$version) -and $version -ge 3 -and $version -le 27
 } | ForEach-Object { $_.FullName })
 $missing = $required | Where-Object { -not (Test-Path $_) }
 if ($missing) { $missing; throw "Faltan artefactos SQL de producción." }
-if ($required.Count -ne 22) { throw "Se esperaban 22 artefactos SQL, se encontraron $($required.Count)." }
+if ($required.Count -ne 28) { throw "Se esperaban 28 artefactos SQL, se encontraron $($required.Count)." }
 Write-Output "Artefactos SQL presentes: $($required.Count)."
 ```
 
@@ -263,16 +289,16 @@ Cuando termine, inicia sesión en CRM con el correo y contraseña recién defini
 
 - **Build de Cloud Run:** el repositorio no contiene Dockerfiles ni configuración Cloud Build por aplicación. Antes de desplegar, define una receta reproducible por workspace que compile dependencias compartidas y ejecute `pnpm start` en el contenedor. Los scripts de `start` de las cinco PWAs ya dejaron de fijar puertos locales; Next.js puede usar el `PORT` que inyecta Cloud Run.
 - **Configuración del build frontend:** las cinco apps ya consumen `NEXT_PUBLIC_API_URL` desde sus resolvers por aplicación y los enlaces entre productos usan variables públicas dedicadas. Antes de PROD, configura las variables `NEXT_PUBLIC_*` de la matriz por aplicación y verifica que los bundles apunten a dominios HTTPS, nunca a `localhost`.
-- **Bootstrap de PostgreSQL:** usa [`docker/production-bootstrap.sql`](../docker/production-bootstrap.sql) una sola vez y únicamente contra una base nueva y vacía. Aplica el baseline y las migraciones 003–023, registra las versiones aplicadas y elimina el tenant demo que crea el baseline común. No ejecutes `02-seed-demo-users.sql` en PROD.
+- **Bootstrap de PostgreSQL:** usa [`docker/production-bootstrap.sql`](../docker/production-bootstrap.sql) una sola vez y únicamente contra una base nueva y vacía. Aplica el baseline y las migraciones 003–027, registra las versiones aplicadas y elimina el tenant demo que crea el baseline común. No ejecutes `02-seed-demo-users.sql` en PROD.
 - **Evidencia financiera:** crea y valida el bucket privado, IAM de la cuenta de servicio y `GCS_FINANCE_EVIDENCE_BUCKET` antes de habilitar la rendición mensual. DEV puede usar `.local/financial-evidence`; PROD no.
-- **Migraciones:** el bootstrap es solo para una base nueva. En una base existente aplica únicamente migraciones pendientes, en orden y con `ON_ERROR_STOP`. Después ejecuta [`docker/validate-schema.sql`](../docker/validate-schema.sql). No apliques DDL desde una request ni apuntes pruebas QA a PROD.
-- **CORS y dominios:** registra los dominios finales antes de desplegar el API. Un frontend construido con URL de API equivocada requiere una nueva imagen.
+- **Migraciones:** el bootstrap es solo para una base nueva. En una base existente aplica únicamente migraciones pendientes, en orden y con `ON_ERROR_STOP`; la 027 cambia solo hosts propios antiguos `*.dommia.com` y conserva dominios externos de clientes. Los correos de usuarios/tenants no se cambian automáticamente. Después ejecuta [`docker/validate-schema.sql`](../docker/validate-schema.sql). No apliques DDL desde una request ni apuntes pruebas QA a PROD.
+- **CORS y dominios:** los hosts oficiales están definidos arriba. Aún hay que crear DNS, certificados y ruteo wildcard, publicar los archivos `.well-known` de App/Universal Links, definir la allowlist exacta de orígenes fijos y registrar los dominios personalizados externos antes de desplegar. Un frontend construido con URL de API equivocada requiere una nueva imagen.
 - **Secretos criptográficos:** define y respalda `MFA_ENCRYPTION_KEY` y `NOTIFICATIONS_ENCRYPTION_KEY` antes de guardar datos cifrados en PROD. Si se pierden o cambian sin migración, no se podrán descifrar los valores existentes.
 
 ## 7. Secuencia de despliegue
 
 1. Cierra los bloqueos anteriores y revisa el plan vigente de MVP.
-2. Provisiona proyecto, permisos, Artifact Registry, Cloud SQL, secretos, dominios y alertas.
+2. Provisiona proyecto, permisos, Artifact Registry, Cloud SQL, secretos, DNS/certificados/mappings para los hosts oficiales y alertas.
 3. Ejecuta el bootstrap productivo limpio, valida el esquema y crea el primer `SUPER_ADMIN` con el comando de un solo uso. Después entra a CRM, revisa los planes y aprovisiona el primer tenant.
 4. Construye las seis imágenes desde el monorepo. Para cada frontend, define sus `NEXT_PUBLIC_*` de PROD antes del build.
 5. Despliega API primero. Comprueba `https://<API_DOMAIN>/api/v1/health`, login administrativo y conexión a Cloud SQL.
@@ -287,7 +313,8 @@ Cuando termine, inicia sesión en CRM con el correo y contraseña recién defini
 - [ ] Se creó el primer `SUPER_ADMIN` con el comando de un solo uso; no se cargaron usuarios demo.
 - [ ] La API no inicia si falta configuración PostgreSQL, `AUTH_TOKEN_SECRET`, `RESIDENT_APP_TOKEN_SECRET`, `MFA_ENCRYPTION_KEY`, `RESIDENT_APP_URL`, `CORS_ORIGINS` o `GCS_FINANCE_EVIDENCE_BUCKET`, ni si las llaves/orígenes tienen formato inválido.
 - [ ] El bucket financiero bloquea acceso público; la cuenta de servicio API puede cargar/leer evidencias y un residente solo descarga copias redactadas autorizadas por el API.
-- [ ] CORS permite solo orígenes HTTPS aprobados.
+- [ ] CORS permite los orígenes HTTPS fijos aprobados, los subdominios tenant oficiales y ningún dominio externo no registrado.
+- [ ] Todos los hosts oficiales, wildcard de tenants y archivos `.well-known` tienen DNS/TLS verificado; Android App Links e iOS Universal Links pasan una prueba en dispositivo.
 - [ ] Cloud Run usa la cuenta de servicio correcta y PostgreSQL no tiene exposición pública innecesaria.
 - [ ] Las cinco PWAs llaman a `NEXT_PUBLIC_API_URL` de PROD y escuchan en el `PORT` de Cloud Run.
 - [ ] No se ejecutaron semillas demo en la base productiva.

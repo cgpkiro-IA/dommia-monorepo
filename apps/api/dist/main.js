@@ -33,6 +33,21 @@ function getCorsOrigins(config) {
         ? configuredOrigins
         : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004'];
 }
+function isDommiaTenantOrigin(origin) {
+    let parsedOrigin;
+    try {
+        parsedOrigin = new URL(origin);
+    }
+    catch {
+        return false;
+    }
+    const tenantLabel = parsedOrigin.hostname.slice(0, -'.dommia.com.mx'.length);
+    return parsedOrigin.protocol === 'https:'
+        && parsedOrigin.origin === origin
+        && parsedOrigin.port === ''
+        && /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(tenantLabel)
+        && parsedOrigin.hostname.endsWith('.dommia.com.mx');
+}
 async function bootstrap() {
     const logger = new common_1.Logger('DommiaAPI');
     const app = await core_1.NestFactory.create(app_module_1.AppModule, { rawBody: true });
@@ -46,7 +61,7 @@ async function bootstrap() {
         forbidNonWhitelisted: true,
     }));
     app.enableCors({
-        origin: (origin, callback) => callback(null, Boolean(origin && corsOrigins.includes(origin))),
+        origin: (origin, callback) => callback(null, Boolean(origin && (corsOrigins.includes(origin) || isDommiaTenantOrigin(origin)))),
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
         credentials: true,
     });

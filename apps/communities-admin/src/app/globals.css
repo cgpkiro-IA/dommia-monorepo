@@ -13,3 +13,372 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+.login-screen {
+  isolation: isolate;
+  min-height: 100svh;
+  background: #090b12;
+}
+
+.login-liquid-scene {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 12%, #151d31 0%, #090b12 72%);
+}
+
+.login-liquid-scene::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(7, 9, 16, 0.06), rgba(7, 9, 16, 0.46));
+  content: '';
+}
+
+.login-liquid-orb {
+  position: absolute;
+  width: clamp(19rem, 42vw, 34rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(3px);
+  opacity: 0.9;
+  will-change: transform;
+}
+
+.login-liquid-orb--cyan {
+  top: 8%;
+  left: max(-10rem, calc(50% - 39rem));
+  background: linear-gradient(135deg, #08d7ee 4%, #0878ff 76%);
+  animation: login-liquid-drift-a 22s ease-in-out infinite alternate;
+}
+
+.login-liquid-orb--green {
+  top: 17%;
+  right: max(-9rem, calc(50% - 38rem));
+  width: clamp(16rem, 30vw, 25rem);
+  background: linear-gradient(145deg, #00ffa8 8%, #00c8d6 86%);
+  animation: login-liquid-drift-b 19s ease-in-out infinite alternate;
+}
+
+.login-liquid-orb--magenta {
+  right: max(-10rem, calc(50% - 31rem));
+  bottom: -17rem;
+  width: clamp(18rem, 36vw, 29rem);
+  background: linear-gradient(145deg, #ed24d0 4%, #852cff 86%);
+  animation: login-liquid-drift-c 24s ease-in-out infinite alternate;
+}
+
+.login-brand,
+.login-heading,
+.login-copy,
+.login-glass-panel {
+  animation: login-fade-up 650ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.login-brand-mark {
+  box-shadow: 0 0 34px rgba(24, 159, 255, 0.38), 0 12px 32px rgba(28, 104, 255, 0.22);
+  animation: login-mark-float 4s ease-in-out infinite alternate;
+}
+
+.login-heading {
+  animation-delay: 65ms;
+}
+
+.login-copy {
+  animation-delay: 125ms;
+}
+
+.login-glass-panel {
+  border-color: rgba(209, 231, 255, 0.15);
+  background: rgba(15, 19, 31, 0.68);
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.46), inset 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(26px) saturate(145%);
+  -webkit-backdrop-filter: blur(26px) saturate(145%);
+  animation-delay: 175ms;
+}
+
+.login-glass-panel--success {
+  display: grid;
+  min-height: 360px;
+  place-items: center;
+}
+
+.login-success {
+  display: flex;
+  min-height: 290px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.login-success-mark {
+  display: grid;
+  width: 4.25rem;
+  height: 4.25rem;
+  place-items: center;
+  border: 1px solid rgba(56, 241, 165, 0.72);
+  border-radius: 50%;
+  background: rgba(3, 205, 130, 0.12);
+  box-shadow: 0 0 24px rgba(0, 255, 168, 0.26), inset 0 0 18px rgba(0, 255, 168, 0.08);
+  color: #48efab;
+  animation: login-success-pop 600ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.login-success-mark svg path {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: login-check-draw 480ms ease-out 220ms forwards;
+}
+
+.login-success-title {
+  margin-top: 1.25rem;
+  color: #48efab;
+  font-size: 1.125rem;
+  font-weight: 800;
+  animation: login-fade-up 450ms cubic-bezier(0.23, 1, 0.32, 1) 120ms both;
+}
+
+.login-success-copy {
+  margin-top: 0.4rem;
+  color: #a6b2c6;
+  font-size: 0.75rem;
+  animation: login-fade-up 450ms cubic-bezier(0.23, 1, 0.32, 1) 190ms both;
+}
+
+.login-success-dots {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 1.25rem;
+}
+
+.login-success-dots span {
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 50%;
+  background: #48efab;
+  animation: login-success-pulse 850ms ease-in-out infinite;
+}
+
+.login-success-dots span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.login-success-dots span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.login-error {
+  animation: login-control-enter 450ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.login-field {
+  animation: login-control-enter 520ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  transition: transform 180ms ease;
+}
+
+.login-field--email {
+  animation-delay: 190ms;
+}
+
+.login-field--password {
+  animation-delay: 260ms;
+}
+
+.login-field-icon {
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.login-field:focus-within .login-field-icon {
+  transform: scale(1.1);
+  color: #68ddff;
+}
+
+.login-input {
+  border-color: rgba(105, 206, 255, 0.27);
+  background: rgba(7, 11, 21, 0.48);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.login-input:focus-visible {
+  border-color: rgba(67, 216, 255, 0.95);
+  background: rgba(7, 11, 21, 0.72);
+  box-shadow: 0 0 0 3px rgba(48, 196, 255, 0.12), 0 0 24px rgba(35, 190, 255, 0.16);
+}
+
+.login-submit {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(105deg, #10cde9 0%, #176eff 52%, #a82ce5 100%);
+  box-shadow: 0 12px 32px rgba(30, 122, 255, 0.28);
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 180ms ease, filter 180ms ease;
+  animation: login-control-enter 520ms cubic-bezier(0.23, 1, 0.32, 1) 330ms both;
+}
+
+.login-submit:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+.login-submit-arrow {
+  transition: transform 180ms ease;
+}
+
+.login-submit:focus-visible,
+.login-demo-option:focus-visible {
+  outline: 2px solid #76e8ff;
+  outline-offset: 3px;
+}
+
+.login-demo-option {
+  border-color: rgba(180, 203, 235, 0.12);
+  background: rgba(8, 12, 22, 0.42);
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.login-demo-list {
+  animation: login-control-enter 520ms cubic-bezier(0.23, 1, 0.32, 1) 400ms both;
+}
+
+.login-demo-option--multi {
+  animation: login-control-enter 520ms cubic-bezier(0.23, 1, 0.32, 1) 470ms both;
+}
+
+.login-demo-option--single {
+  animation: login-control-enter 520ms cubic-bezier(0.23, 1, 0.32, 1) 540ms both;
+}
+
+.login-demo-option svg {
+  transition: transform 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .login-field:hover {
+    transform: translateY(-1px);
+  }
+
+  .login-field:hover .login-input {
+    border-color: rgba(105, 206, 255, 0.48);
+  }
+
+  .login-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 38px rgba(30, 122, 255, 0.38);
+    filter: saturate(1.12);
+  }
+
+  .login-submit:hover .login-submit-arrow {
+    transform: translateX(3px);
+  }
+
+  .login-demo-option:hover {
+    transform: translateX(3px);
+    border-color: rgba(70, 206, 255, 0.38);
+  }
+
+  .login-demo-option:hover svg {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes login-liquid-drift-a {
+  to { transform: translate3d(2rem, 1.5rem, 0) scale(1.06); }
+}
+
+@keyframes login-liquid-drift-b {
+  to { transform: translate3d(-1.5rem, 2rem, 0) scale(0.94); }
+}
+
+@keyframes login-liquid-drift-c {
+  to { transform: translate3d(-2rem, -1rem, 0) scale(1.08); }
+}
+
+@keyframes login-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes login-control-enter {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes login-mark-float {
+  to { transform: translateY(-3px); }
+}
+
+@keyframes login-success-pop {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes login-check-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes login-success-pulse {
+  0%, 80%, 100% { opacity: 0.32; transform: scale(0.84); }
+  40% { opacity: 1; transform: scale(1.12); }
+}
+
+@media (max-width: 640px) {
+  .login-liquid-orb--cyan {
+    top: 10%;
+    left: -12rem;
+  }
+
+  .login-liquid-orb--green {
+    top: 16%;
+    right: -10rem;
+  }
+
+  .login-liquid-orb--magenta {
+    right: -11rem;
+    bottom: -10rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-liquid-orb,
+  .login-brand,
+  .login-brand-mark,
+  .login-heading,
+  .login-copy,
+  .login-glass-panel,
+  .login-error,
+  .login-field,
+  .login-submit,
+  .login-demo-list,
+  .login-demo-option,
+  .login-success-mark,
+  .login-success-title,
+  .login-success-copy,
+  .login-success-dots span {
+    animation: none;
+  }
+
+  .login-success-mark svg path {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+
+  .login-submit,
+  .login-input,
+  .login-demo-option,
+  .login-demo-option svg,
+  .login-field-icon {
+    transition: none;
+  }
+
+  .login-field:hover,
+  .login-submit:hover:not(:disabled),
+  .login-submit:active:not(:disabled),
+  .login-demo-option:hover {
+    transform: none;
+  }
+
+  .login-field:focus-within .login-field-icon,
+  .login-submit:hover .login-submit-arrow,
+  .login-demo-option:hover svg {
+    transform: none;
+  }
+}

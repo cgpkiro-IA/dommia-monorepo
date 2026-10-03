@@ -99,6 +99,7 @@ export declare class AuthService {
     }>;
     private validateResidentPassword;
     private assertResidentRateLimit;
+    private assertAdminLoginRateLimit;
     login(dto: LoginDto): Promise<AuthSession | MfaLoginChallenge>;
     private createAuthSession;
     verifyMfaLogin(challengeToken: string, code: string): Promise<AuthSession>;

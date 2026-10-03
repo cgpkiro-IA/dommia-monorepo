@@ -26,6 +26,7 @@ WORKDIR /app
 
 COPY --from=build /runtime/ ./
 COPY --from=build /workspace/apps/api/dist ./dist
+COPY --from=build /workspace/apps/api/email-logo.png ./email-logo.png
 
 EXPOSE 4000
 

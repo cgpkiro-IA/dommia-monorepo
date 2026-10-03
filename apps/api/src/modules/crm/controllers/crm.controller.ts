@@ -21,6 +21,7 @@ import { UpdateStageDto } from '../dto/update-stage.dto';
 import { CreateGatewayDto } from '../dto/create-gateway.dto';
 import { SelfServiceProvisionDto } from '../dto/self-service-provision.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
+import { CreateInitialContractDto, ReconcileContractDto, RecordRenewalNoticeDto, SendRenewalNoticeDto } from '../dto/reconcile-contract.dto';
 import { CrmAdminGuard } from '../../auth/guards/crm-admin.guard';
 import { Public, Roles } from '../../auth/decorators/auth-metadata.decorator';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
@@ -35,6 +36,19 @@ export class CrmController {
     private readonly crmAlertsService: CrmAlertsService,
     private readonly telegramAlertService: TelegramAlertService,
   ) {}
+
+  @Get('public-plans')
+  @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  async getPublicPlans() {
+    const plans = await this.crmService.getPublicPlans();
+    return {
+      success: true,
+      data: plans,
+      count: plans.length,
+    };
+  }
 
   @Get('plans')
   @UseGuards(CrmAdminGuard)
@@ -65,6 +79,80 @@ export class CrmController {
     return {
       success: true,
       data: metrics,
+    };
+  }
+
+  @Get('tenants/:tenantId/contract')
+  @UseGuards(CrmAdminGuard)
+  async getCurrentContract(@Param('tenantId') tenantId: string) {
+    return { success: true, data: await this.crmService.getCurrentContract(tenantId) };
+  }
+
+  @Post('tenants/:tenantId/contract')
+  @UseGuards(CrmAdminGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async createInitialContract(@Param('tenantId') tenantId: string, @Body() dto: CreateInitialContractDto) {
+    const result = await this.crmService.createInitialContract(tenantId, dto?.billingInterval || 'MONTHLY');
+    return {
+      success: true,
+      message: result.created ? 'Snapshot creado con el precio vigente del catálogo.' : 'El tenant ya tenía un contrato activo.',
+      data: result.contract,
+      created: result.created,
+    };
+  }
+
+  @Post('tenants/:tenantId/contract/reconcile')
+  @UseGuards(CrmAdminGuard)
+  async reconcileCurrentContract(@Param('tenantId') tenantId: string, @Body() dto: ReconcileContractDto) {
+    return {
+      success: true,
+      message: 'Contrato reconciliado con los términos confirmados por el operador.',
+      data: await this.crmService.reconcileCurrentContract(tenantId, dto.amount, dto.currentPeriodEnd, dto.billingInterval || 'MONTHLY'),
+    };
+  }
+
+  @Post('tenants/:tenantId/contract/renewal-notice')
+  @UseGuards(CrmAdminGuard)
+  async recordRenewalNotice(
+    @Param('tenantId') tenantId: string,
+    @Body() dto: RecordRenewalNoticeDto,
+  ) {
+    const result = await this.crmService.recordRenewalNotice(tenantId, dto.recipient, dto.noticeSent);
+    return {
+      success: true,
+      message: 'Aviso registrado; este endpoint no envía correo.',
+      data: result,
+    };
+  }
+
+  @Post('tenants/:tenantId/contract/renewal-notice/send')
+  @UseGuards(CrmAdminGuard)
+  async sendRenewalNotice(@Param('tenantId') tenantId: string, @Body() dto: SendRenewalNoticeDto) {
+    return {
+      success: true,
+      message: 'Aviso enviado por correo y registrado.',
+      data: await this.crmService.sendRenewalNotice(tenantId, dto.recipient),
+    };
+  }
+
+  @Post('tenants/:tenantId/contract/renewal-notice/preview')
+  @UseGuards(CrmAdminGuard, ThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  async previewRenewalNotice(@Param('tenantId') tenantId: string, @Body() dto: SendRenewalNoticeDto) {
+    return {
+      success: true,
+      message: 'Vista previa enviada sin modificar el contrato.',
+      data: await this.crmService.previewRenewalNotice(tenantId, dto.recipient),
+    };
+  }
+
+  @Post('tenants/:tenantId/contract/renew')
+  @UseGuards(CrmAdminGuard)
+  async renewSubscription(@Param('tenantId') tenantId: string) {
+    return {
+      success: true,
+      message: 'Contrato renovado manualmente.',
+      data: await this.crmService.renewSubscription(tenantId),
     };
   }
 
@@ -219,7 +307,7 @@ export class CrmController {
     @Param('id') id: string,
     @Req() request: { user?: { email: string } },
   ) {
-    const userEmail = request.user?.email || 'operador-crm@dommia.com';
+    const userEmail = request.user?.email || 'operador-crm@dommia.com.mx';
     const updated = await this.crmAlertsService.acknowledge(id, userEmail);
     return {
       success: true,
@@ -235,7 +323,7 @@ export class CrmController {
     @Body() body: ResolveCrmAlertDto,
     @Req() request: { user?: { email: string } },
   ) {
-    const userEmail = request.user?.email || 'operador-crm@dommia.com';
+    const userEmail = request.user?.email || 'operador-crm@dommia.com.mx';
     const updated = await this.crmAlertsService.resolve(id, userEmail, body.notes);
     return {
       success: true,

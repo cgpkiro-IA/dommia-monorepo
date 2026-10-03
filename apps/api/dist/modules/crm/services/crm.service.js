@@ -14,13 +14,16 @@ exports.CrmService = void 0;
 const common_1 = require("@nestjs/common");
 const crm_repository_1 = require("../repositories/crm.repository");
 const tenants_service_1 = require("../../tenants/services/tenants.service");
+const saas_mail_service_1 = require("./saas-mail.service");
 let CrmService = CrmService_1 = class CrmService {
     crmRepo;
     tenantsService;
+    saasMail;
     logger = new common_1.Logger(CrmService_1.name);
-    constructor(crmRepo, tenantsService) {
+    constructor(crmRepo, tenantsService, saasMail) {
         this.crmRepo = crmRepo;
         this.tenantsService = tenantsService;
+        this.saasMail = saasMail;
     }
     async createProspect(dto) {
         if (dto.honeypot) {
@@ -94,6 +97,9 @@ let CrmService = CrmService_1 = class CrmService {
     async getPlans() {
         return this.crmRepo.findAllPlans();
     }
+    async getPublicPlans() {
+        return this.crmRepo.findPublicPlans();
+    }
     async updatePlan(idOrTier, dto) {
         let plan = await this.crmRepo.findPlanById(idOrTier);
         if (!plan) {
@@ -101,6 +107,11 @@ let CrmService = CrmService_1 = class CrmService {
         }
         if (!plan) {
             throw new common_1.NotFoundException(`Plan con identificador "${idOrTier}" no encontrado.`);
+        }
+        const minProperties = dto.minProperties ?? Number(plan.min_properties);
+        const maxProperties = dto.maxProperties ?? Number(plan.max_properties);
+        if (minProperties > maxProperties) {
+            throw new common_1.BadRequestException('El mínimo de viviendas no puede superar el máximo del plan.');
         }
         return this.crmRepo.updatePlan(plan.id, dto);
     }
@@ -121,7 +132,12 @@ let CrmService = CrmService_1 = class CrmService {
         for (const tenant of raw.activeTenants) {
             const tierPrice = planPriceMap[tenant.tier] ?? (tenant.tier === 'BASIC' ? 1490 : tenant.tier === 'STANDARD' ? 2990 : 4990);
             const addOnDomainPrice = (tenant.has_custom_domain && tenant.tier !== 'ENTERPRISE') ? 490 : 0;
-            mrr += (tierPrice + addOnDomainPrice);
+            const hasVerifiedContractAmount = tenant.subscription_amount !== null
+                && tenant.subscription_amount !== undefined
+                && !tenant.contract_review_required;
+            mrr += hasVerifiedContractAmount
+                ? Number(tenant.subscription_amount) / (tenant.subscription_billing_interval === 'ANNUAL' ? 12 : 1)
+                : tierPrice + addOnDomainPrice;
             if (tenant.tier && tierBreakdown[tenant.tier] !== undefined) {
                 tierBreakdown[tenant.tier]++;
             }
@@ -158,6 +174,7 @@ let CrmService = CrmService_1 = class CrmService {
             churnRate: 0.0,
             tierBreakdown,
             activeSubscriptionsCount: raw.activeTenants.length,
+            unverifiedSubscriptionContractsCount: raw.activeTenants.filter((tenant) => tenant.subscription_id && (tenant.subscription_amount === null || tenant.contract_review_required)).length,
         };
         const communities = {
             totalTenants: raw.activeTenants.length,
@@ -195,7 +212,7 @@ let CrmService = CrmService_1 = class CrmService {
         const plan = await this.crmRepo.findPlanByCode(tier);
         const maxHouses = plan ? Number(plan.maxProperties) : (tier === 'BASIC' ? 50 : tier === 'STANDARD' ? 100 : 250);
         const hasCustomDomain = tier === 'ENTERPRISE' || dto.hasCustomDomain === true;
-        const customDomain = hasCustomDomain ? `${slug}.dommia.com` : null;
+        const customDomain = hasCustomDomain ? `${slug}.dommia.com.mx` : null;
         const newTenant = await this.tenantsService.create({
             slug,
             name: dto.communityName,
@@ -207,9 +224,10 @@ let CrmService = CrmService_1 = class CrmService {
         });
         let basePrice = plan ? Number(plan.monthlyPrice) : (tier === 'BASIC' ? 1490 : tier === 'STANDARD' ? 2990 : 4990);
         const addOns = [];
-        if (hasCustomDomain && tier !== 'ENTERPRISE') {
-            basePrice += 490;
-            addOns.push({ type: 'CUSTOM_DOMAIN', name: 'Subdominio Personalizado', price: 490 });
+        if (hasCustomDomain && tier !== 'ENTERPRISE' && !plan?.includesCustomDomain) {
+            const domainAddonPrice = plan ? Number(plan.customDomainAddonPrice) : 490;
+            basePrice += domainAddonPrice;
+            addOns.push({ type: 'CUSTOM_DOMAIN', name: 'Subdominio Personalizado', price: domainAddonPrice });
         }
         await this.crmRepo.recordSubscription({
             tenantId: newTenant.id,
@@ -241,11 +259,129 @@ let CrmService = CrmService_1 = class CrmService {
             schema: newTenant.schema,
         };
     }
+    async getCurrentContract(tenantId) {
+        const contract = await this.crmRepo.findCurrentContract(tenantId);
+        if (!contract)
+            throw new common_1.NotFoundException(`No hay un contrato activo para el tenant ${tenantId}.`);
+        return contract;
+    }
+    async createInitialContract(tenantId, billingInterval = 'MONTHLY') {
+        const result = await this.crmRepo.createInitialContract(tenantId, billingInterval);
+        if ('conflict' in result) {
+            if (result.conflict === 'not_found')
+                throw new common_1.NotFoundException('Fraccionamiento no encontrado o inactivo.');
+            throw new common_1.ConflictException('El tier del fraccionamiento no tiene un plan activo en el catálogo.');
+        }
+        return result;
+    }
+    async reconcileCurrentContract(tenantId, amount, currentPeriodEnd, billingInterval) {
+        const periodEnd = new Date(currentPeriodEnd);
+        if (!Number.isFinite(periodEnd.getTime()) || periodEnd.getTime() <= Date.now()) {
+            throw new common_1.BadRequestException('La fecha pagada hasta debe ser posterior a hoy.');
+        }
+        const result = await this.crmRepo.reconcileCurrentContract(tenantId, amount, periodEnd, billingInterval);
+        if ('conflict' in result) {
+            if (result.conflict === 'not_found')
+                throw new common_1.NotFoundException('Fraccionamiento no encontrado o inactivo.');
+            throw new common_1.ConflictException('El contrato ya tiene un monto verificado y no requiere reconciliación.');
+        }
+        return result.contract;
+    }
+    async recordRenewalNotice(tenantId, recipient, noticeSent) {
+        if (!noticeSent)
+            throw new common_1.BadRequestException('Confirma que el aviso se envió antes de registrarlo.');
+        if (!recipient || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.trim())) {
+            throw new common_1.BadRequestException('Proporciona un correo válido como destinatario del aviso registrado.');
+        }
+        const current = await this.crmRepo.findCurrentContract(tenantId);
+        if (!current)
+            throw new common_1.NotFoundException(`No hay un contrato activo para el tenant ${tenantId}.`);
+        if (current.amount === null || current.contractReviewRequired) {
+            throw new common_1.ConflictException('El contrato requiere reconciliación antes de registrar un aviso de renovación.');
+        }
+        if (!current.currentPeriodEnd || new Date(current.currentPeriodEnd).getTime() <= Date.now()) {
+            throw new common_1.ConflictException('El periodo actual ya venció; no se puede registrar un aviso previo.');
+        }
+        const contract = await this.crmRepo.recordRenewalNotice(tenantId, recipient);
+        if (!contract) {
+            throw new common_1.NotFoundException('No se encontró un contrato activo con un plan vigente para registrar el aviso.');
+        }
+        const amount = Number(contract.renewalAmount).toLocaleString('es-MX', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        const renewalDate = new Date(contract.currentPeriodEnd).toLocaleDateString('es-MX');
+        return {
+            ...contract,
+            suggestedNoticeText: `Te informamos que, a partir de la renovación de tu suscripción el ${renewalDate}, la tarifa ${contract.billingInterval === 'ANNUAL' ? 'anual' : 'mensual'} será de $${amount} MXN.`,
+            emailSent: false,
+        };
+    }
+    async sendRenewalNotice(tenantId, recipient) {
+        if (!recipient || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.trim())) {
+            throw new common_1.BadRequestException('Proporciona un correo válido para enviar el aviso.');
+        }
+        const result = await this.crmRepo.sendRenewalNotice(tenantId, recipient.trim(), async (notice) => {
+            await this.saasMail.sendRenewalNotice(recipient.trim(), notice);
+        });
+        if ('conflict' in result) {
+            const messages = {
+                not_found: 'No hay un contrato activo para este fraccionamiento.',
+                reconciliation_required: 'El contrato debe reconciliarse antes de enviar el aviso.',
+                expired: 'El periodo actual ya venció; el aviso previo no se puede enviar.',
+                plan_unavailable: 'El plan ya no está disponible en el catálogo.',
+                no_increase: 'La tarifa vigente no aumentó; no se requiere aviso de incremento.',
+                already_sent: 'El aviso de esta tarifa ya fue enviado y registrado.',
+            };
+            throw new common_1.ConflictException(messages[result.conflict]);
+        }
+        return { ...result.notice, emailSent: true };
+    }
+    async previewRenewalNotice(tenantId, recipient) {
+        const contract = await this.crmRepo.findCurrentContract(tenantId);
+        if (!contract)
+            throw new common_1.NotFoundException('No hay un contrato activo para este fraccionamiento.');
+        if (contract.amount === null || contract.contractReviewRequired) {
+            throw new common_1.ConflictException('El contrato requiere reconciliación antes de enviar una prueba.');
+        }
+        if (!contract.currentPeriodEnd || new Date(contract.currentPeriodEnd).getTime() <= Date.now()) {
+            throw new common_1.ConflictException('El periodo actual ya venció.');
+        }
+        if (contract.catalogRenewalAmount === null || Number(contract.catalogRenewalAmount) <= Number(contract.amount)) {
+            throw new common_1.ConflictException('No hay un aumento de tarifa para mostrar en la vista previa.');
+        }
+        await this.saasMail.sendRenewalNotice(recipient, {
+            tenantName: contract.tenantName,
+            currentAmount: Number(contract.amount),
+            renewalAmount: Number(contract.catalogRenewalAmount),
+            billingInterval: contract.billingInterval,
+            currentPeriodEnd: new Date(contract.currentPeriodEnd),
+            preview: true,
+        });
+        return { preview: true, recipient };
+    }
+    async renewSubscription(tenantId) {
+        const result = await this.crmRepo.renewSubscription(tenantId);
+        if ('conflict' in result) {
+            const messages = {
+                not_found: `No hay un contrato activo para el tenant ${tenantId}.`,
+                not_due: 'El periodo actual todavía no vence; la renovación solo está permitida al vencimiento.',
+                reconciliation_required: 'El contrato no tiene un importe histórico verificado. Debe reconciliarse explícitamente antes de renovar.',
+                plan_unavailable: 'El plan del contrato no está activo en el catálogo; no se puede calcular la renovación.',
+                notice_required: 'El aumento requiere un aviso registrado antes del vencimiento y un importe de renovación notificado.',
+            };
+            if (result.conflict === 'not_found')
+                throw new common_1.NotFoundException(messages[result.conflict]);
+            throw new common_1.ConflictException(messages[result.conflict]);
+        }
+        return result.successor;
+    }
 };
 exports.CrmService = CrmService;
 exports.CrmService = CrmService = CrmService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [crm_repository_1.CrmRepository,
-        tenants_service_1.TenantsService])
+        tenants_service_1.TenantsService,
+        saas_mail_service_1.SaasMailService])
 ], CrmService);
 //# sourceMappingURL=crm.service.js.map

@@ -39,15 +39,19 @@ export class FinanceSchedulerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private scheduleNextRun() {
+  private scheduleNextRun(target?: Date) {
     const now = new Date();
-    const nextRun = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
-    const delay = Math.max(nextRun.getTime() - now.getTime(), 1000);
+    const nextRun = target ?? new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
+    const delay = Math.max(nextRun.getTime() - now.getTime(), 0);
 
     this.timer = setTimeout(async () => {
+      if (Date.now() < nextRun.getTime()) {
+        this.scheduleNextRun(nextRun);
+        return;
+      }
       await this.runMonthlyBilling(nextRun.getFullYear(), nextRun.getMonth() + 1);
       this.scheduleNextRun();
-    }, delay);
+    }, Math.min(delay, 2_147_483_647));
 
     this.logger.log(`Next monthly billing scheduled for ${nextRun.toISOString()}.`);
   }

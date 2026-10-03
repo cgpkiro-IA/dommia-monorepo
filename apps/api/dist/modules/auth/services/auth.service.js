@@ -240,9 +240,13 @@ let AuthService = AuthService_1 = class AuthService {
     assertResidentRateLimit(action, identifier) {
         this.residentRateLimiter.assertAllowed(action, identifier, 8, 15 * 60 * 1000);
     }
+    assertAdminLoginRateLimit(email) {
+        const limit = this.config.get('NODE_ENV') === 'development' ? 50 : 8;
+        this.residentRateLimiter.assertAllowed('admin-login', email, limit, 15 * 60 * 1000);
+    }
     async login(dto) {
         const email = dto.email.trim().toLowerCase();
-        this.residentRateLimiter.assertAllowed('admin-login', email, 8, 15 * 60 * 1000);
+        this.assertAdminLoginRateLimit(email);
         const user = await this.authRepo.findUserByEmailAndPassword(email, dto.password);
         if (!user) {
             throw new common_1.UnauthorizedException('Credenciales inválidas. Verifica tu correo y contraseña.');

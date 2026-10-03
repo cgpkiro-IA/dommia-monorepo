@@ -64,7 +64,7 @@ export function TopNavbar({
                 Plan {activeTenant?.tier || 'STANDARD'}
               </span>
               <span className="text-slate-400 font-mono text-[11px]">
-                ({activeTenant?.accessUrl || `${activeTenant?.slug}.dommia.com`})
+                ({activeTenant?.accessUrl || `${activeTenant?.slug}.dommia.com.mx`})
               </span>
             </div>
           </div>

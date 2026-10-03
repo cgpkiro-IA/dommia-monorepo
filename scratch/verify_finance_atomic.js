@@ -11,7 +11,7 @@ const verifyAtomicPayment = async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: 'admin@laspalmas.dommia.com',
+      email: 'admin@laspalmas.dommia.com.mx',
       password: 'LasPalmas2026!',
       tenantSlug: 'demo',
     }),

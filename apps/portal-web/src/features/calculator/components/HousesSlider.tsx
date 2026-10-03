@@ -2,12 +2,15 @@
 
 import React from 'react';
 import { ArrowRight, Home, Sparkles } from 'lucide-react';
-import { TierInfo } from '../../../types';
+import { PublicPlanCatalogItem, TierInfo } from '../../../types';
 import { Button } from '@dommia/ui';
 
 interface HousesSliderProps {
   houses: number;
   tierInfo: TierInfo;
+  planCatalog: PublicPlanCatalogItem[];
+  minHouses: number;
+  maxHouses: number;
   onHousesChange: (houses: number) => void;
   onApplyTier: () => void;
 }
@@ -15,14 +18,25 @@ interface HousesSliderProps {
 export const HousesSlider: React.FC<HousesSliderProps> = ({
   houses,
   tierInfo,
+  planCatalog,
+  minHouses,
+  maxHouses,
   onHousesChange,
   onApplyTier,
 }) => {
-  const presets = [35, 90, 220, 380];
-  const percentage = Math.round(((houses - 15) / (450 - 15)) * 100);
+  const presets = planCatalog
+    .map((plan) => ({
+      code: plan.code,
+      name: plan.name,
+      houses: Math.round((plan.minProperties + plan.maxProperties) / 2),
+    }))
+    .filter((preset, index, all) => all.findIndex((candidate) => candidate.houses === preset.houses) === index);
+  const percentage = maxHouses === minHouses
+    ? 0
+    : Math.round(((houses - minHouses) / (maxHouses - minHouses)) * 100);
 
   return (
-    <div className="lg:col-span-5 p-7 sm:p-9 rounded-3xl bg-white/95 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/80 shadow-xl dark:shadow-2xl relative overflow-hidden transition-colors">
+    <div className="calculator-input-panel lg:col-span-5 p-7 sm:p-9 rounded-3xl bg-white/95 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/80 shadow-xl dark:shadow-2xl relative overflow-hidden transition-colors">
       <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="mb-7">
@@ -52,10 +66,12 @@ export const HousesSlider: React.FC<HousesSliderProps> = ({
           <input
             id="house-slider"
             type="range"
-            min="15"
-            max="450"
-            step="5"
+            min={minHouses}
+            max={maxHouses}
+            step="1"
             value={houses}
+            aria-label="Número de viviendas del fraccionamiento"
+            aria-valuetext={`${houses} viviendas`}
             onChange={(e) => onHousesChange(Number(e.target.value))}
             style={{
               background: `linear-gradient(to right, #2563EB 0%, #3B82F6 ${percentage}%, #CBD5E1 ${percentage}%, #CBD5E1 100%)`,
@@ -65,10 +81,13 @@ export const HousesSlider: React.FC<HousesSliderProps> = ({
         </div>
 
         <div className="flex justify-between items-center text-[11px] text-slate-500 dark:text-slate-400 mt-2 font-mono">
-          <span>15 casas</span>
-          <span>100</span>
-          <span>250</span>
-          <span>450+ casas</span>
+          <span>{minHouses.toLocaleString('es-MX')} casas</span>
+          <span>{maxHouses.toLocaleString('es-MX')} casas</span>
+        </div>
+        <div id="house-plan-limits" className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[10px] text-slate-500 dark:text-slate-400">
+          {planCatalog.map((plan) => (
+            <span key={plan.code}>{plan.name}: {plan.minProperties}–{plan.maxProperties} viviendas</span>
+          ))}
         </div>
       </div>
 
@@ -79,41 +98,43 @@ export const HousesSlider: React.FC<HousesSliderProps> = ({
         <div className="grid grid-cols-4 gap-2">
           {presets.map((preset) => (
             <button
-              key={preset}
+              key={preset.code}
               type="button"
-              onClick={() => onHousesChange(preset)}
+              aria-label={`${preset.name}: ${preset.houses} viviendas`}
+              aria-pressed={houses === preset.houses}
+              onClick={() => onHousesChange(preset.houses)}
               className={`py-2 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${
-                houses === preset
+                houses === preset.houses
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 scale-105 border border-blue-400/40'
                   : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700/40 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              {preset} v.
+              {preset.houses} v.
             </button>
           ))}
         </div>
       </div>
 
-      <div className="mt-7 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/90 shadow-inner">
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1.5">
+      <div className="calculator-estimate mt-7 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/90 shadow-inner">
+        <p className="calculator-estimate-label text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1.5">
           Inversión mensual estimada:
         </p>
         {tierInfo.isCustom ? (
           <div>
-            <p className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400 font-heading">Cotización Especial</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Diseñado a medida según casetas, carriles e integración RFID</p>
+            <p className="calculator-estimate-price text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400 font-heading">Cotización Especial</p>
+            <p className="calculator-estimate-detail text-xs text-slate-500 dark:text-slate-400 mt-1">Diseñado a medida según casetas, carriles e integración RFID</p>
           </div>
         ) : (
           <div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-heading tracking-tight">
+              <span className="calculator-estimate-price text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-heading tracking-tight">
                 ${tierInfo.priceMonthly.toLocaleString('es-MX')}
               </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">MXN / Mes + IVA</span>
+              <span className="calculator-estimate-unit text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">MXN / Mes + IVA</span>
             </div>
             <div className="flex items-center gap-1.5 mt-2">
               <Sparkles className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+              <p className="calculator-estimate-per-home text-xs text-emerald-600 dark:text-emerald-400 font-bold">
                 ≈ ${tierInfo.pricePerHouse} MXN mensuales por casa o lote
               </p>
             </div>
@@ -125,7 +146,7 @@ export const HousesSlider: React.FC<HousesSliderProps> = ({
         variant="primary"
         size="lg"
         onClick={onApplyTier}
-        className="mt-6 w-full group !py-4 font-bold text-sm shadow-xl shadow-blue-600/25 cursor-pointer"
+        className="calculator-cta mt-6 w-full group !py-4 font-bold text-sm shadow-xl shadow-blue-600/25 cursor-pointer"
         rightIcon={<ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
       >
         Solicitar Demostración con este Plan

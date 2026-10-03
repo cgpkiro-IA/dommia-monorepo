@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { 
-  Radio, 
   CreditCard, 
   Car,
   HardDrive,
@@ -12,67 +11,55 @@ import {
 } from 'lucide-react';
 import { Button, Badge } from '@dommia/ui';
 import { LiquidFeatureCards } from './LiquidFeatureCards';
+import { ConnectedCommunityScene } from './ConnectedCommunityScene';
+import { DEMO_MAILTO } from '../../../lib/contact-email';
 
 export const Hero: React.FC = () => {
   return (
-    <section className="relative pt-32 pb-20 md:pt-44 md:pb-32 overflow-hidden bg-gradient-to-b from-slate-100/80 via-white to-slate-50 dark:from-[#070D18] dark:via-[#0B1120] dark:to-[#070D18] transition-colors duration-200">
-      {/* Dynamic Ambient Background Glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-gradient-to-tr from-blue-400/20 via-indigo-500/15 to-transparent dark:from-blue-600/20 dark:via-indigo-600/15 dark:to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
-      <div className="absolute top-1/3 left-1/6 w-[400px] h-[400px] bg-cyan-400/15 dark:bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none -z-10" />
-      <div className="absolute bottom-10 right-1/6 w-[450px] h-[450px] bg-blue-500/10 dark:bg-blue-700/10 rounded-full blur-[140px] pointer-events-none -z-10" />
-      
-      {/* Subtle geometric dot grid pattern */}
-      <div 
-        className="absolute inset-0 opacity-[0.03] dark:opacity-[0.04] pointer-events-none -z-10"
-        style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, #2563EB 1px, transparent 0)`,
-          backgroundSize: '32px 32px',
-        }}
-      />
-
+    <section className="hero-landing relative pt-28 pb-16 md:pt-32 md:pb-20 overflow-hidden bg-gradient-to-b from-slate-100/80 via-white to-slate-50 dark:from-[#070D18] dark:via-[#0B1120] dark:to-[#070D18] transition-colors duration-200">
+      <div className="hero-atmosphere absolute inset-0 pointer-events-none -z-10" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-4xl mx-auto">
-          {/* Eyebrow Pill */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 text-xs font-bold tracking-wide uppercase mb-8 shadow-sm shadow-blue-500/10 dark:shadow-blue-950/50 backdrop-blur-md">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping" />
-            <span>DOMUS + TECNOLOGÍA • EL SISTEMA OPERATIVO DE TU COMUNIDAD</span>
+        <div className="hero-intro-grid grid items-center gap-5 md:grid-cols-[0.95fr_1.05fr] md:gap-3 lg:gap-8">
+          <div className="hero-copy mx-auto max-w-2xl text-center md:mx-0 md:text-left">
+            <div className="hero-eyebrow inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 text-xs font-bold tracking-wide uppercase mb-7 shadow-sm shadow-blue-500/10 dark:shadow-blue-950/50 backdrop-blur-md">
+              <span className="hero-live-dot flex h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+              <span>El sistema operativo de tu comunidad</span>
+            </div>
+
+            <h1 className="hero-title text-4xl sm:text-5xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.04] mb-6 font-heading">
+              <span className="block">Gestión inteligente.</span>
+              <span className="hero-title-accent block">Control total.</span>
+              <span className="block">Cero complicaciones.</span>
+            </h1>
+
+            <p className="hero-description text-base sm:text-lg text-slate-600 dark:text-slate-300 font-normal leading-relaxed mb-8 max-w-xl mx-auto md:mx-0">
+              <strong className="text-slate-900 dark:text-white font-semibold">DOMMIA</strong> conecta administración, finanzas, accesos vehiculares y experiencia residencial en una plataforma confiable, incluso cuando falla internet en caseta.
+            </p>
+
+            <div className="hero-actions flex flex-col items-center justify-center gap-3 min-[640px]:flex-row md:justify-start xl:items-start">
+              <a href="#cotizador" className="w-full min-[640px]:w-auto">
+                <Button variant="primary" size="lg" className="hero-primary-cta w-full min-[640px]:w-auto shadow-xl shadow-blue-600/30">
+                  <Sliders className="w-5 h-5 mr-2" />
+                  <span>Cotizador Dinámico de Tiers</span>
+                </Button>
+              </a>
+
+              <a href={process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1' ? DEMO_MAILTO : '#contacto'} className="w-full min-[640px]:w-auto">
+                <Button variant="dark-outline" size="lg" className="hero-secondary-cta w-full min-[640px]:w-auto">
+                  <span>Solicitar Demostración</span>
+                  <ChevronRight className="w-4 h-4 ml-1.5 text-blue-500 dark:text-blue-400" />
+                </Button>
+              </a>
+            </div>
           </div>
 
-          {/* Main Title (H1) */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.1] mb-6 font-heading">
-            Gestión Inteligente.{' '}
-            <span className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 dark:from-blue-400 dark:via-blue-500 dark:to-cyan-400 bg-clip-text text-transparent block sm:inline">
-              Control Total.
-            </span>{' '}
-            Cero Complicaciones.
-          </h1>
-
-          {/* Elevator Pitch & Value Proposition */}
-          <p className="text-base sm:text-xl text-slate-600 dark:text-slate-300 font-normal leading-relaxed mb-10 max-w-3xl mx-auto">
-            <strong className="text-slate-900 dark:text-white font-semibold">DOMMIA</strong> conecta administración vecinal, cobranza bancaria automatizada con Stripe, control de acceso vehicular RFID de alta velocidad y app comunitaria con{' '}
-            <span className="text-blue-600 dark:text-blue-300 font-medium underline decoration-blue-400/50 underline-offset-4">
-              arquitectura tolerante a fallos de internet en caseta
-            </span>.
-          </p>
-
-          {/* Action CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <a href="#cotizador" className="w-full sm:w-auto">
-              <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-xl shadow-blue-600/30">
-                <Sliders className="w-5 h-5 mr-2" />
-                <span>Cotizador Dinámico de Tiers</span>
-              </Button>
-            </a>
-
-            <a href="#contacto" className="w-full sm:w-auto">
-              <Button variant="dark-outline" size="lg" className="w-full sm:w-auto">
-                <span>Solicitar Demostración con Asesor</span>
-                <ChevronRight className="w-4 h-4 ml-1.5 text-blue-500 dark:text-blue-400" />
-              </Button>
-            </a>
+          <div className="hero-visual relative mx-auto w-full max-w-[680px]">
+            <div className="hero-visual-halo absolute inset-0 pointer-events-none" />
+            <ConnectedCommunityScene />
           </div>
+        </div>
 
-          {/* Liquid Feature Cards (4 Pillars with Liquid color-shifting glow) */}
+        <div className="hero-benefits mt-7 md:mt-2">
           <LiquidFeatureCards />
         </div>
 
@@ -86,7 +73,7 @@ export const Hero: React.FC = () => {
                 <div className="w-3 h-3 rounded-full bg-amber-500/80" />
                 <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
                 <span className="ml-2 font-mono text-[11px] text-slate-600 dark:text-slate-400 hidden sm:inline">
-                  https://bosques.dommia.com — Dommia Communities
+                  https://bosques.dommia.com.mx — Dommia Communities
                 </span>
               </div>
               <div className="flex items-center gap-2">

@@ -67,3 +67,517 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 input[type="range"] {
   accent-color: #2563EB;
 }
+
+.hero-landing {
+  isolation: isolate;
+}
+
+.hero-atmosphere {
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at 76% 25%, rgba(6, 182, 212, 0.13), transparent 31%),
+    radial-gradient(ellipse at 95% 54%, rgba(16, 185, 129, 0.08), transparent 34%);
+}
+
+.hero-visual {
+  height: clamp(380px, 39vw, 510px);
+}
+
+.hero-visual-halo {
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(14, 165, 233, 0.18), rgba(16, 185, 129, 0.06) 42%, transparent 72%);
+  filter: blur(30px);
+  transform: scale(1.08);
+}
+
+.portal-community-scene {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.portal-community-scene::before {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(30, 116, 154, 0.13), transparent 70%);
+  content: '';
+  pointer-events: none;
+}
+
+.portal-network-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-eyebrow,
+.hero-title,
+.hero-description,
+.hero-actions,
+.hero-visual {
+  animation: hero-content-enter 720ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.hero-title {
+  animation-delay: 70ms;
+  text-wrap: balance;
+}
+
+.hero-description {
+  animation-delay: 145ms;
+  text-wrap: pretty;
+}
+
+.hero-actions {
+  animation-delay: 220ms;
+}
+
+.hero-visual {
+  animation-delay: 110ms;
+}
+
+.hero-title-accent {
+  color: #2563eb;
+}
+
+.dark .hero-title-accent {
+  color: #67d8e8;
+}
+
+.hero-live-dot {
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45);
+  animation: hero-live-pulse 2.8s ease-out infinite;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hero-actions a {
+    transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .hero-actions a:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes hero-content-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hero-live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.42); }
+  75%, 100% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+}
+
+@media (max-width: 767px) {
+  .hero-visual {
+    height: min(88vw, 380px);
+    min-height: 320px;
+  }
+
+  .hero-atmosphere {
+    background:
+      radial-gradient(ellipse at 50% 46%, rgba(6, 182, 212, 0.12), transparent 42%),
+      radial-gradient(ellipse at 88% 62%, rgba(16, 185, 129, 0.07), transparent 35%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-eyebrow,
+  .hero-title,
+  .hero-description,
+  .hero-actions,
+  .hero-visual {
+    animation: none;
+  }
+
+  .hero-live-dot {
+    animation: none;
+  }
+
+  .hero-actions a {
+    transition: none;
+  }
+
+  .hero-actions a:hover {
+    transform: none;
+  }
+}
+
+.philosophy-comparison-card,
+.philosophy-value-card {
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.philosophy-kicker--positive {
+  color: #0756aa;
+}
+
+.dark .philosophy-kicker--positive {
+  color: #7ab7ff;
+}
+
+.dark .philosophy-kicker--negative {
+  color: #ff8095;
+}
+
+.philosophy-value-card p {
+  color: #52637a;
+}
+
+.dark .philosophy-value-card p {
+  color: #bdc9d9;
+}
+
+.calculator-input-panel,
+.calculator-plan-card {
+  transition: border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.calculator-catalog-status,
+.calculator-catalog-error {
+  display: flex;
+  max-width: 42rem;
+  min-height: 5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-inline: auto;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #d9e3f1;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.86);
+  color: #42526a;
+  text-align: center;
+}
+
+.dark .calculator-catalog-status,
+.dark .calculator-catalog-error {
+  border-color: #26364d;
+  background: rgba(15, 23, 42, 0.86);
+  color: #d2dbea;
+}
+
+.calculator-catalog-error {
+  flex-wrap: wrap;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.dark .calculator-catalog-error {
+  border-color: #7f1d1d;
+  color: #fecaca;
+}
+
+.calculator-catalog-error button {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.65rem;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.calculator-catalog-error button:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 3px;
+}
+
+.calculator-estimate {
+  --calculator-accent: #4f91ff;
+  color: #f8fafc;
+  border-color: color-mix(in srgb, var(--calculator-accent) 44%, #284058);
+  background: linear-gradient(128deg, #0b1728 0%, #10243a 62%, #16334a 100%);
+  transition: border-color 220ms ease, background-color 220ms ease;
+}
+
+.calculator-estimate::after {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--calculator-accent) 24%, transparent), transparent 48%);
+  content: '';
+  pointer-events: none;
+}
+
+.calculator-estimate > * {
+  position: relative;
+  z-index: 1;
+}
+
+.calculator-estimate-label,
+.calculator-estimate-unit,
+.calculator-estimate-detail {
+  color: #bec9d8;
+}
+
+.calculator-estimate-price {
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.calculator-estimate-per-home {
+  color: #62e6b3;
+}
+
+.calculator-plan-content,
+.calculator-security-banner {
+  position: relative;
+  z-index: 1;
+}
+
+.calculator-plan-card[data-tier='enterprise'] {
+  border-color: #bd74f3;
+  background: linear-gradient(145deg, #fff 0%, #fcf8ff 62%, #f7efff 100%);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.22), 0 16px 42px rgba(126, 34, 206, 0.16);
+}
+
+.dark .calculator-plan-card[data-tier='enterprise'] {
+  border-color: #a855f7;
+  background: linear-gradient(145deg, #171326 0%, #1d1730 62%, #261735 100%);
+  box-shadow: 0 0 0 1px rgba(192, 132, 252, 0.24), 0 18px 48px rgba(88, 28, 135, 0.32);
+}
+
+.calculator-plan-card[data-tier='enterprise'] .calculator-plan-aura {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 94% 0%, rgba(192, 132, 252, 0.19), transparent 46%);
+}
+
+.calculator-plan-card[data-tier='enterprise'] .calculator-plan-icon {
+  border-color: rgba(168, 85, 247, 0.34);
+  color: #8b35c5;
+}
+
+.dark .calculator-plan-card[data-tier='enterprise'] .calculator-plan-icon {
+  color: #d8a4ff;
+}
+
+.enterprise-benefit {
+  border-color: rgba(168, 85, 247, 0.34);
+  background: linear-gradient(105deg, rgba(245, 235, 255, 0.94), rgba(255, 255, 255, 0.84));
+}
+
+.dark .enterprise-benefit {
+  border-color: rgba(192, 132, 252, 0.36);
+  background: linear-gradient(105deg, rgba(88, 28, 135, 0.34), rgba(30, 25, 48, 0.9));
+}
+
+.enterprise-benefit-icon {
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  background: rgba(168, 85, 247, 0.12);
+  color: #7e22ce;
+}
+
+.dark .enterprise-benefit-icon {
+  border-color: rgba(192, 132, 252, 0.35);
+  background: rgba(168, 85, 247, 0.2);
+  color: #e0b8ff;
+}
+
+.enterprise-benefit-kicker {
+  color: #7020a4;
+}
+
+.dark .enterprise-benefit-kicker {
+  color: #d8a4ff;
+}
+
+.enterprise-benefit-title {
+  color: #34114e;
+}
+
+.dark .enterprise-benefit-title {
+  color: #fff;
+}
+
+.enterprise-benefit-saving {
+  color: #087e5b;
+}
+
+.dark .enterprise-benefit-saving {
+  color: #66e0b2;
+}
+
+.enterprise-fireworks {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.enterprise-firework-burst {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+}
+
+.enterprise-firework-spark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--spark-color);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--spark-color) 72%, transparent);
+  opacity: 0;
+}
+
+#cotizador[data-tier='basic'] .calculator-estimate {
+  --calculator-accent: #94a3b8;
+}
+
+#cotizador[data-tier='standard'] .calculator-estimate {
+  --calculator-accent: #4f91ff;
+}
+
+#cotizador[data-tier='professional'] .calculator-estimate {
+  --calculator-accent: #9b92ff;
+}
+
+#cotizador[data-tier='enterprise'] .calculator-estimate {
+  --calculator-accent: #da82ff;
+}
+
+#cotizador[data-tier='enterprise'] .calculator-estimate {
+  border-color: rgba(218, 130, 255, 0.56);
+}
+
+.calculator-estimate .calculator-estimate-price,
+.calculator-estimate .calculator-estimate-label,
+.calculator-estimate .calculator-estimate-unit,
+.calculator-estimate .calculator-estimate-detail,
+.calculator-estimate .calculator-estimate-per-home {
+  transition: color 220ms ease;
+}
+
+input[type='range'] {
+  touch-action: pan-y;
+}
+
+input[type='range']:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 5px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .philosophy-comparison-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .philosophy-comparison-card--fragmented:hover {
+    border-color: rgba(244, 63, 94, 0.48);
+    box-shadow: 0 8px 22px rgba(136, 19, 55, 0.1);
+  }
+
+  .philosophy-comparison-card--unified:hover {
+    border-color: rgba(37, 99, 235, 0.52);
+    box-shadow: 0 8px 22px rgba(29, 78, 216, 0.12);
+  }
+
+  .philosophy-value-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(37, 99, 235, 0.38);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  }
+
+  .calculator-input-panel:hover {
+    border-color: rgba(37, 99, 235, 0.4);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .philosophy-comparison.is-revealed .philosophy-comparison-card {
+    animation: philosophy-panel-enter 520ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .philosophy-comparison.is-revealed .philosophy-comparison-card--unified {
+    animation-delay: 90ms;
+  }
+
+  .philosophy-comparison.is-revealed .philosophy-points li {
+    animation: philosophy-point-enter 360ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .philosophy-comparison.is-revealed .philosophy-points li:nth-child(2) { animation-delay: 45ms; }
+  .philosophy-comparison.is-revealed .philosophy-points li:nth-child(3) { animation-delay: 90ms; }
+  .philosophy-comparison.is-revealed .philosophy-points li:nth-child(4) { animation-delay: 135ms; }
+
+  .philosophy-values-grid.is-revealed .philosophy-value-card {
+    animation: philosophy-panel-enter 480ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .calculator-plan-card {
+    animation: calculator-plan-enter 360ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .calculator-plan-card[data-tier='enterprise'] {
+    animation: calculator-enterprise-arrive 920ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .calculator-feature-item {
+    animation: calculator-feature-enter 300ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .enterprise-firework-spark {
+    animation: enterprise-firework 980ms cubic-bezier(0.23, 1, 0.32, 1) both;
+    animation-delay: var(--spark-delay);
+  }
+}
+
+@keyframes philosophy-panel-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes philosophy-point-enter {
+  from { opacity: 0; transform: translateX(-5px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes calculator-plan-enter {
+  from { opacity: 0.45; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes calculator-feature-enter {
+  from { opacity: 0.65; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes calculator-enterprise-arrive {
+  0% { opacity: 0.7; transform: translateY(8px); box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+  42% { opacity: 1; transform: translateY(0); box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.42), 0 0 42px rgba(168, 85, 247, 0.28); }
+  100% { opacity: 1; transform: translateY(0); box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.22), 0 16px 42px rgba(126, 34, 206, 0.16); }
+}
+
+@keyframes enterprise-firework {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(0.35); }
+  14% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--spark-x), var(--spark-y)) rotate(110deg) scale(0.2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .philosophy-comparison-card,
+  .philosophy-value-card,
+  .calculator-input-panel,
+  .calculator-plan-card,
+  .calculator-feature-item {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+
+  .calculator-catalog-status svg {
+    animation: none;
+  }
+}

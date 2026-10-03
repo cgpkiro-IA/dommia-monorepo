@@ -25,7 +25,7 @@ BEGIN
         INSERT INTO public.tenants (
             slug, name, subdomain, tier, max_properties, contact_email, access_url
         ) VALUES (
-            v_clean_slug, p_name, v_clean_slug || '.dommia.com', p_tier, p_max_properties, p_contact_email, 'standar.dommia.com/' || v_clean_slug
+            v_clean_slug, p_name, v_clean_slug || '.dommia.com.mx', p_tier, p_max_properties, p_contact_email, 'standar.dommia.com.mx/' || v_clean_slug
         ) RETURNING id INTO v_tenant_id;
     END IF;
 
@@ -184,15 +184,15 @@ $$ LANGUAGE plpgsql;
 -- ==============================================================================
 -- 2. Provision schemas for ALL Official Communities
 -- ==============================================================================
-SELECT public.provision_tenant_schema('demo', 'Fraccionamiento Residencial Las Palmas', 'PROFESSIONAL', 150, 'contacto@laspalmas.dommia.com');
-SELECT public.provision_tenant_schema('valle_real', 'Fraccionamiento Valle Real', 'STANDARD', 80, 'administracion@vallereal.dommia.com');
+SELECT public.provision_tenant_schema('demo', 'Fraccionamiento Residencial Las Palmas', 'PROFESSIONAL', 150, 'contacto@laspalmas.dommia.com.mx');
+SELECT public.provision_tenant_schema('valle_real', 'Fraccionamiento Valle Real', 'STANDARD', 80, 'administracion@vallereal.dommia.com.mx');
 SELECT public.provision_tenant_schema('cumbres', 'Fracc. Cumbres del Valle', 'BASIC', 50, 'contacto@cumbresdelvalle.com');
 SELECT public.provision_tenant_schema('bosques', 'Privada Bosques del Reino', 'ENTERPRISE', 300, 'gerencia@bosquesdelreino.mx');
-SELECT public.provision_tenant_schema('valle_oriente', 'Residencial Valle Oriente', 'STANDARD', 120, 'contacto@valleoriente.dommia.com');
+SELECT public.provision_tenant_schema('valle_oriente', 'Residencial Valle Oriente', 'STANDARD', 120, 'contacto@valleoriente.dommia.com.mx');
 
 -- Update URLs, domains, and active modules for each tenant
 UPDATE public.tenants SET
-    access_url = 'http://demo.dommia.com',
+    access_url = 'https://demo.dommia.com.mx',
     has_custom_domain = false,
     custom_domain = NULL,
     modules = '["FINANCE", "ACCESS_QR", "RESIDENT_APP", "IOT_GATEWAY"]'::jsonb,
@@ -200,17 +200,17 @@ UPDATE public.tenants SET
 WHERE slug = 'demo';
 
 UPDATE public.tenants SET
-    access_url = 'standar.dommia.com/valle_real',
+    access_url = 'standar.dommia.com.mx/valle_real',
     has_custom_domain = false,
-    custom_domain = 'vallereal.dommia.com',
+    custom_domain = 'vallereal.dommia.com.mx',
     modules = '["FINANCE", "ACCESS_QR", "RESIDENT_APP", "IOT_GATEWAY"]'::jsonb,
     is_active = true
 WHERE slug = 'valle_real';
 
 UPDATE public.tenants SET
-    access_url = 'standar.dommia.com/cumbres',
+    access_url = 'standar.dommia.com.mx/cumbres',
     has_custom_domain = false,
-    custom_domain = 'cumbres.dommia.com',
+    custom_domain = 'cumbres.dommia.com.mx',
     modules = '["FINANCE", "ACCESS_QR", "RESIDENT_APP"]'::jsonb,
     is_active = true
 WHERE slug = 'cumbres';
@@ -224,9 +224,9 @@ UPDATE public.tenants SET
 WHERE slug = 'bosques';
 
 UPDATE public.tenants SET
-    access_url = 'standar.dommia.com/valle_oriente',
+    access_url = 'standar.dommia.com.mx/valle_oriente',
     has_custom_domain = false,
-    custom_domain = 'valleoriente.dommia.com',
+    custom_domain = 'valleoriente.dommia.com.mx',
     modules = '["FINANCE", "ACCESS_QR", "RESIDENT_APP", "IOT_GATEWAY"]'::jsonb,
     is_active = true
 WHERE slug = 'valle_oriente';
@@ -285,8 +285,8 @@ ON CONFLICT (id) DO UPDATE SET street = EXCLUDED.street;
 
 -- 4.2 Residents
 INSERT INTO tenant_valle_real.residents (id, property_id, first_name, last_name, email, phone, role, is_primary, password_hash, is_active) VALUES
-('b0000000-0000-0000-0000-000000000142', 'a0000000-0000-0000-0000-000000000142', 'Carlos', 'Villarreal', 'carlos.villarreal@dommia.com', '+52 81 2345 6789', 'OWNER', true, crypt('Dommia2026!', gen_salt('bf', 8)), true),
-('b0000000-0000-0000-0000-000000000143', 'a0000000-0000-0000-0000-000000000142', 'Sofía', 'Villarreal', 'sofia.villarreal@dommia.com', '+52 81 2345 6780', 'FAMILY_MEMBER', false, crypt('Dommia2026!', gen_salt('bf', 8)), true),
+('b0000000-0000-0000-0000-000000000142', 'a0000000-0000-0000-0000-000000000142', 'Carlos', 'Villarreal', 'carlos.villarreal@dommia.com.mx', '+52 81 2345 6789', 'OWNER', true, crypt('Dommia2026!', gen_salt('bf', 8)), true),
+('b0000000-0000-0000-0000-000000000143', 'a0000000-0000-0000-0000-000000000142', 'Sofía', 'Villarreal', 'sofia.villarreal@dommia.com.mx', '+52 81 2345 6780', 'FAMILY_MEMBER', false, crypt('Dommia2026!', gen_salt('bf', 8)), true),
 ('b0000000-0000-0000-0000-000000000101', 'a0000000-0000-0000-0000-000000000101', 'Martín', 'González', 'martin.gonzalez@correo.com', '+52 81 8000 1111', 'OWNER', true, crypt('Dommia2026!', gen_salt('bf', 8)), true),
 ('b0000000-0000-0000-0000-000000000102', 'a0000000-0000-0000-0000-000000000102', 'Lucía', 'Garza', 'lucia.garza@correo.com', '+52 81 8000 2222', 'OWNER', true, crypt('Dommia2026!', gen_salt('bf', 8)), true),
 ('b0000000-0000-0000-0000-000000000103', 'a0000000-0000-0000-0000-000000000103', 'Javier', 'Hernández', 'javier.hernandez@correo.com', '+52 81 8000 3333', 'TENANT', true, crypt('Dommia2026!', gen_salt('bf', 8)), true),
@@ -414,47 +414,47 @@ VALUES ('Acceso Exclusivo de Carga Pesada por Caseta Poniente', 'A partir del lu
 -- Create dedicated admins for each community
 INSERT INTO public.users (email, password_hash, first_name, last_name, role, is_active)
 VALUES
-('admin@vallereal.dommia.com', crypt('Dommia2026!', gen_salt('bf', 8)), 'Ing. Ricardo', 'Sánchez', 'TENANT_ADMIN', true),
-('admin@cumbres.dommia.com', crypt('Dommia2026!', gen_salt('bf', 8)), 'Lic. Marcela', 'Peña', 'TENANT_ADMIN', true),
-('admin@bosques.dommia.com', crypt('Dommia2026!', gen_salt('bf', 8)), 'Lic. Eugenio', 'Elizondo', 'TENANT_ADMIN', true),
-('admin@valleoriente.dommia.com', crypt('Dommia2026!', gen_salt('bf', 8)), 'C.P. Mónica', 'Treviño', 'TENANT_ADMIN', true)
+('admin@vallereal.dommia.com.mx', crypt('Dommia2026!', gen_salt('bf', 8)), 'Ing. Ricardo', 'Sánchez', 'TENANT_ADMIN', true),
+('admin@cumbres.dommia.com.mx', crypt('Dommia2026!', gen_salt('bf', 8)), 'Lic. Marcela', 'Peña', 'TENANT_ADMIN', true),
+('admin@bosques.dommia.com.mx', crypt('Dommia2026!', gen_salt('bf', 8)), 'Lic. Eugenio', 'Elizondo', 'TENANT_ADMIN', true),
+('admin@valleoriente.dommia.com.mx', crypt('Dommia2026!', gen_salt('bf', 8)), 'C.P. Mónica', 'Treviño', 'TENANT_ADMIN', true)
 ON CONFLICT (email) DO UPDATE SET is_active = true;
 
--- Ensure Roberto Garza (admin@laspalmas.dommia.com) has multi-tenant permissions across ALL 5 communities!
+-- Ensure Roberto Garza (admin@laspalmas.dommia.com.mx) has multi-tenant permissions across ALL 5 communities!
 -- This allows testing switching between workspaces in Communities Admin immediately.
-DELETE FROM public.user_tenants WHERE user_id = (SELECT id FROM public.users WHERE email = 'admin@laspalmas.dommia.com');
+DELETE FROM public.user_tenants WHERE user_id = (SELECT id FROM public.users WHERE email = 'admin@laspalmas.dommia.com.mx');
 
 INSERT INTO public.user_tenants (user_id, tenant_id, role)
 SELECT u.id, t.id, 'TENANT_ADMIN'
 FROM public.users u
 CROSS JOIN public.tenants t
-WHERE u.email = 'admin@laspalmas.dommia.com';
+WHERE u.email = 'admin@laspalmas.dommia.com.mx';
 
 -- Link each specific admin to their own community
 INSERT INTO public.user_tenants (user_id, tenant_id, role)
 SELECT u.id, t.id, 'TENANT_ADMIN'
 FROM public.users u
 JOIN public.tenants t ON t.slug = 'valle_real'
-WHERE u.email = 'admin@vallereal.dommia.com'
+WHERE u.email = 'admin@vallereal.dommia.com.mx'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.user_tenants (user_id, tenant_id, role)
 SELECT u.id, t.id, 'TENANT_ADMIN'
 FROM public.users u
 JOIN public.tenants t ON t.slug = 'cumbres'
-WHERE u.email = 'admin@cumbres.dommia.com'
+WHERE u.email = 'admin@cumbres.dommia.com.mx'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.user_tenants (user_id, tenant_id, role)
 SELECT u.id, t.id, 'TENANT_ADMIN'
 FROM public.users u
 JOIN public.tenants t ON t.slug = 'bosques'
-WHERE u.email = 'admin@bosques.dommia.com'
+WHERE u.email = 'admin@bosques.dommia.com.mx'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.user_tenants (user_id, tenant_id, role)
 SELECT u.id, t.id, 'TENANT_ADMIN'
 FROM public.users u
 JOIN public.tenants t ON t.slug = 'valle_oriente'
-WHERE u.email = 'admin@valleoriente.dommia.com'
+WHERE u.email = 'admin@valleoriente.dommia.com.mx'
 ON CONFLICT DO NOTHING;

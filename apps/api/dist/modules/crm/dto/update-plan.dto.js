@@ -15,6 +15,7 @@ class UpdatePlanDto {
     name;
     description;
     monthlyPrice;
+    minProperties;
     maxProperties;
     pricePerExtraProperty;
     includesCustomDomain;
@@ -41,6 +42,12 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], UpdatePlanDto.prototype, "monthlyPrice", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], UpdatePlanDto.prototype, "minProperties", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(1),

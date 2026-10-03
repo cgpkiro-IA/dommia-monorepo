@@ -24,6 +24,20 @@ export interface TierInfo {
   accentBadge: string;
 }
 
+export interface PublicPlanCatalogItem {
+  code: TierKey;
+  name: string;
+  description: string | null;
+  monthlyPrice: number | string;
+  minProperties: number;
+  maxProperties: number;
+  includesCustomDomain: boolean;
+  customDomainAddonPrice: number | string;
+  standardDomainPattern: string;
+  isHighlighted: boolean;
+  sortOrder: number;
+}
+
 export interface DemoFormData {
   name: string;
   email: string;

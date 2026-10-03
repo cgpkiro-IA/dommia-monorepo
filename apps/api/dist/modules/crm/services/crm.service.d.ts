@@ -5,11 +5,13 @@ import { UpdateStageDto } from '../dto/update-stage.dto';
 import { CreateGatewayDto } from '../dto/create-gateway.dto';
 import { SelfServiceProvisionDto } from '../dto/self-service-provision.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
+import { SaasMailService } from './saas-mail.service';
 export declare class CrmService {
     private readonly crmRepo;
     private readonly tenantsService;
+    private readonly saasMail;
     private readonly logger;
-    constructor(crmRepo: CrmRepository, tenantsService: TenantsService);
+    constructor(crmRepo: CrmRepository, tenantsService: TenantsService, saasMail: SaasMailService);
     createProspect(dto: CreateProspectDto): Promise<any>;
     findAllProspects(): Promise<any[]>;
     updateProspectStage(id: string, dto: UpdateStageDto): Promise<any>;
@@ -23,6 +25,7 @@ export declare class CrmService {
         notes?: string;
     }): Promise<any>;
     getPlans(): Promise<any[]>;
+    getPublicPlans(): Promise<any[]>;
     updatePlan(idOrTier: string, dto: UpdatePlanDto): Promise<any>;
     getMetrics(): Promise<{
         financials: {
@@ -32,6 +35,7 @@ export declare class CrmService {
             churnRate: number;
             tierBreakdown: Record<string, number>;
             activeSubscriptionsCount: number;
+            unverifiedSubscriptionContractsCount: number;
         };
         finances: {
             currency: string;
@@ -40,6 +44,7 @@ export declare class CrmService {
             churnRate: number;
             tierBreakdown: Record<string, number>;
             activeSubscriptionsCount: number;
+            unverifiedSubscriptionContractsCount: number;
         };
         communities: {
             totalTenants: number;
@@ -76,4 +81,18 @@ export declare class CrmService {
         currency: string;
         schema: string;
     }>;
+    getCurrentContract(tenantId: string): Promise<any>;
+    createInitialContract(tenantId: string, billingInterval?: 'MONTHLY' | 'ANNUAL'): Promise<{
+        contract: any;
+        created: boolean;
+        conflict?: undefined;
+    }>;
+    reconcileCurrentContract(tenantId: string, amount: number, currentPeriodEnd: string, billingInterval: 'MONTHLY' | 'ANNUAL'): Promise<any>;
+    recordRenewalNotice(tenantId: string, recipient: string, noticeSent: boolean): Promise<any>;
+    sendRenewalNotice(tenantId: string, recipient: string): Promise<any>;
+    previewRenewalNotice(tenantId: string, recipient: string): Promise<{
+        preview: boolean;
+        recipient: string;
+    }>;
+    renewSubscription(tenantId: string): Promise<any>;
 }

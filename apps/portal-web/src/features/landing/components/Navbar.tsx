@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Logo, Button, ThemeToggle } from '@dommia/ui';
 import { ChevronRight, Menu, X, ArrowUpRight } from 'lucide-react';
 import { CRM_URL } from '@/lib/app-urls';
+import { DEMO_MAILTO } from '@/lib/contact-email';
 
 export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -69,7 +70,7 @@ export const Navbar: React.FC = () => {
             {/* Theme Switcher */}
             <ThemeToggle variant="dropdown" />
 
-            <a
+            {process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE !== '1' && <a
               href={CRM_URL}
               target="_blank"
               rel="noopener noreferrer"
@@ -77,9 +78,9 @@ export const Navbar: React.FC = () => {
             >
               <span>Acceso Admins</span>
               <ArrowUpRight className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-            </a>
+            </a>}
 
-            <a href="#contacto" className="shrink-0">
+            <a href={process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1' ? DEMO_MAILTO : '#contacto'} className="shrink-0">
               <Button
                 variant="primary"
                 size="sm"
@@ -142,16 +143,16 @@ export const Navbar: React.FC = () => {
               Contacto & Demo
             </a>
             <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2.5">
-              <a
+              {process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE !== '1' && <a
                 href={CRM_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-center w-full py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl uppercase tracking-wider"
               >
                 Acceso a Administradores
-              </a>
+              </a>}
               <a
-                href="#contacto"
+                href={process.env.NEXT_PUBLIC_PORTAL_STATIC_MODE === '1' ? DEMO_MAILTO : '#contacto'}
                 onClick={() => setMobileMenuOpen(false)}
                 className="block text-center w-full py-3 text-xs font-bold text-white bg-blue-600 rounded-xl shadow-lg shadow-blue-600/30"
               >

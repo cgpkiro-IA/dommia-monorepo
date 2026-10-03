@@ -10,7 +10,9 @@ const INITIAL_PLAN_FORM: PlanFormData = {
   name: '',
   description: '',
   monthlyPrice: 0,
+  minProperties: 1,
   maxProperties: 0,
+  includedModules: [],
   includesCustomDomain: false,
   customDomainAddonPrice: 490,
 };
@@ -32,7 +34,9 @@ export function usePlans({ onRefresh, showFeedback }: UsePlansProps) {
       name: plan.name,
       description: plan.description || '',
       monthlyPrice: Number(plan.monthly_price),
+      minProperties: plan.min_properties,
       maxProperties: plan.max_properties,
+      includedModules: Array.isArray(plan.included_modules) ? plan.included_modules : [],
       includesCustomDomain: plan.includes_custom_domain,
       customDomainAddonPrice: Number(plan.custom_domain_addon_price),
     });

@@ -4,6 +4,7 @@ import React from 'react';
 import { Button } from '@dommia/ui';
 import { Globe, Crown, Home, Check, Edit3 } from 'lucide-react';
 import { PlanItem } from '../../../types';
+import { getPlanModuleLabel } from '../module-catalog';
 
 interface PlansGridProps {
   plans: PlanItem[];
@@ -21,8 +22,8 @@ export function PlansGrid({ plans, onEditPlan }: PlansGridProps) {
         <div className="text-xs space-y-1">
           <h4 className="font-bold text-slate-900 text-sm">Política de Acceso y Subdominios de DOMMIA</h4>
           <p className="text-slate-600 leading-relaxed">
-            Por regla de negocio, los planes <span className="font-semibold text-slate-900">Básico, Estándar y Profesional</span> se alojan en el dominio compartido oficial <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 text-blue-700 font-mono font-bold">standar.dommia.com/&#123;slug&#125;</code>.
-            El subdominio propio <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 text-blue-700 font-mono font-bold">&#123;slug&#125;.dommia.com</code> se comercializa como un <strong>Add-on opcional con costo extra mensual</strong>. Únicamente el paquete <span className="font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded font-bold">ENTERPRISE</span> incluye subdominio propio gratis de cortesía.
+            Por regla de negocio, los planes <span className="font-semibold text-slate-900">Básico, Estándar y Profesional</span> se alojan en el dominio compartido oficial <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 text-blue-700 font-mono font-bold">standar.dommia.com.mx/&#123;slug&#125;</code>.
+            El subdominio propio <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 text-blue-700 font-mono font-bold">&#123;slug&#125;.dommia.com.mx</code> se comercializa como un <strong>Add-on opcional con costo extra mensual</strong>. Únicamente el paquete <span className="font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded font-bold">ENTERPRISE</span> incluye subdominio propio gratis de cortesía.
           </p>
         </div>
       </div>
@@ -98,13 +99,13 @@ export function PlansGrid({ plans, onEditPlan }: PlansGridProps) {
                         Subdominio Propio Incluido
                       </span>
                       <p className="text-[11px] font-mono text-slate-600 font-medium">
-                        &#123;slug&#125;.dommia.com
+                        &#123;slug&#125;.dommia.com.mx
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-1">
                       <p className="text-[11px] text-slate-600 font-medium">
-                        Estándar: <span className="font-mono text-slate-800">standar.dommia.com</span>
+                        Estándar: <span className="font-mono text-slate-800">standar.dommia.com.mx</span>
                       </p>
                       <span className="inline-block text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded font-semibold">
                         Add-on Subdominio: +${Number(p.custom_domain_addon_price).toLocaleString('es-MX')} MXN/mes
@@ -125,7 +126,7 @@ export function PlansGrid({ plans, onEditPlan }: PlansGridProps) {
                         className="inline-flex items-center gap-1 text-[10px] font-medium bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200"
                       >
                         <Check className="w-2.5 h-2.5 text-emerald-600" />
-                        {mod.replace('_', ' ')}
+                        {getPlanModuleLabel(mod)}
                       </span>
                     ))}
                   </div>

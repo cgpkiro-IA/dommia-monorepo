@@ -17,6 +17,11 @@ export class UpdatePlanDto {
   @IsNumber()
   @Min(1)
   @IsOptional()
+  minProperties?: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
   maxProperties?: number;
 
   @IsNumber()

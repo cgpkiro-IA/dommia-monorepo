@@ -59,7 +59,7 @@ export function WorkspacePicker({
 
                 <div className="text-xs text-slate-400 font-mono flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span>{t.accessUrl || `${t.slug}.dommia.com`}</span>
+                  <span>{t.accessUrl || `${t.slug}.dommia.com.mx`}</span>
                 </div>
               </div>
 

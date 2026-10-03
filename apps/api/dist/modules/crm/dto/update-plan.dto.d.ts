@@ -2,6 +2,7 @@ export declare class UpdatePlanDto {
     name?: string;
     description?: string;
     monthlyPrice?: number;
+    minProperties?: number;
     maxProperties?: number;
     pricePerExtraProperty?: number;
     includesCustomDomain?: boolean;

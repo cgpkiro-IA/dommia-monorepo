@@ -1,0 +1,7 @@
+User-Agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+
+Host: https://dommia.com.mx
+Sitemap: https://dommia.com.mx/sitemap.xml

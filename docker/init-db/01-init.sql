@@ -107,18 +107,20 @@ CREATE TABLE IF NOT EXISTS public.saas_plans (
     name VARCHAR(150) NOT NULL,
     description TEXT,
     monthly_price NUMERIC(10,2) NOT NULL,
+    min_properties INT NOT NULL DEFAULT 1,
     max_properties INT NOT NULL DEFAULT 50,
     price_per_extra_property NUMERIC(10,2) NOT NULL DEFAULT 20.00,
     includes_custom_domain BOOLEAN NOT NULL DEFAULT false,
     custom_domain_addon_price NUMERIC(10,2) NOT NULL DEFAULT 490.00,
-    standard_domain_pattern VARCHAR(120) NOT NULL DEFAULT 'standar.dommia.com/{slug}',
+    standard_domain_pattern VARCHAR(120) NOT NULL DEFAULT 'standar.dommia.com.mx/{slug}',
     included_modules JSONB NOT NULL DEFAULT '[]'::jsonb,
     available_addons JSONB NOT NULL DEFAULT '[]'::jsonb,
     is_active BOOLEAN NOT NULL DEFAULT true,
     is_highlighted BOOLEAN NOT NULL DEFAULT false,
     sort_order INT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT saas_plans_min_max_check CHECK (min_properties >= 1 AND min_properties <= max_properties)
 );
 
 -- Subscriptions (Stripe Customer y Tiers)
@@ -127,11 +129,21 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
     tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
     stripe_customer_id VARCHAR(128),
     stripe_subscription_id VARCHAR(128),
+    plan_tier VARCHAR(64),
+    amount NUMERIC(12,2),
+    billing_interval VARCHAR(16) DEFAULT 'MONTHLY',
+    has_custom_domain BOOLEAN,
+    active_addons JSONB,
+    renewal_amount NUMERIC(12,2),
+    renewal_notice_sent_at TIMESTAMPTZ,
+    renewal_notice_to VARCHAR(255),
+    contract_review_required BOOLEAN NOT NULL DEFAULT false,
     status VARCHAR(64) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, PAST_DUE, CANCELED, TRIALING
     current_period_start TIMESTAMPTZ,
     current_period_end TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT subscriptions_billing_interval_check CHECK (billing_interval IN ('MONTHLY', 'ANNUAL'))
 );
 
 -- Gateway Inventory (Monitoreo y telemetría de hardware de caseta)
@@ -189,7 +201,7 @@ BEGIN
     INSERT INTO public.tenants (
         slug, name, subdomain, tier, max_properties, contact_email
     ) VALUES (
-        lower(p_slug), p_name, lower(p_slug) || '.dommia.com', p_tier, p_max_properties, p_contact_email
+        lower(p_slug), p_name, lower(p_slug) || '.dommia.com.mx', p_tier, p_max_properties, p_contact_email
     ) RETURNING id INTO v_tenant_id;
 
     -- 2. Create dedicated schema
@@ -425,7 +437,7 @@ BEGIN
     -- 4.1 Seed SaaS Plans
     IF NOT EXISTS (SELECT 1 FROM public.saas_plans WHERE code = 'BASIC') THEN
         INSERT INTO public.saas_plans (
-            code, name, description, monthly_price, max_properties, price_per_extra_property,
+            code, name, description, monthly_price, min_properties, max_properties, price_per_extra_property,
             includes_custom_domain, custom_domain_addon_price, standard_domain_pattern,
             included_modules, available_addons, is_active, is_highlighted, sort_order
         ) VALUES 
@@ -434,13 +446,14 @@ BEGIN
             'Dommia Inicial / Básico',
             'Ideal para cotos pequeños y privadas de hasta 50 casas que buscan digitalizar accesos QR y administración vecinal.',
             1490.00,
+            15,
             50,
             25.00,
             false,
             490.00,
-            'standar.dommia.com/{slug}',
+            'standar.dommia.com.mx/{slug}',
             '["directory", "finance", "resident_pwa", "dynamic_qr", "guard_console"]'::jsonb,
-            '[{"code": "CUSTOM_DOMAIN", "name": "Subdominio Propio ({slug}.dommia.com)", "price": 490}, {"code": "RFID_UHF", "name": "Antenas RFID Vehiculares", "price": 750}]'::jsonb,
+            '[{"code": "CUSTOM_DOMAIN", "name": "Subdominio Propio ({slug}.dommia.com.mx)", "price": 490}, {"code": "RFID_UHF", "name": "Antenas RFID Vehiculares", "price": 750}]'::jsonb,
             true,
             false,
             1
@@ -450,13 +463,14 @@ BEGIN
             'Dommia Estándar',
             'Para fraccionamientos consolidados de hasta 150 viviendas con control de visitas recurrente y pasarela de cobros.',
             2990.00,
+            51,
             150,
             20.00,
             false,
             490.00,
-            'standar.dommia.com/{slug}',
+            'standar.dommia.com.mx/{slug}',
             '["directory", "finance", "resident_pwa", "dynamic_qr", "guard_console", "notices", "incidents"]'::jsonb,
-            '[{"code": "CUSTOM_DOMAIN", "name": "Subdominio Propio ({slug}.dommia.com)", "price": 490}, {"code": "RFID_UHF", "name": "Antenas RFID Vehiculares", "price": 850}]'::jsonb,
+            '[{"code": "CUSTOM_DOMAIN", "name": "Subdominio Propio ({slug}.dommia.com.mx)", "price": 490}, {"code": "RFID_UHF", "name": "Antenas RFID Vehiculares", "price": 850}]'::jsonb,
             true,
             true,
             2
@@ -466,13 +480,14 @@ BEGIN
             'Dommia Profesional',
             'Automatización vehicular total por RFID UHF (< 0.3s), pasarela fintech Stripe/SPEI y bloqueo automático de pluma a morosos.',
             4990.00,
+            151,
             300,
             18.00,
             false,
             490.00,
-            'standar.dommia.com/{slug}',
+            'standar.dommia.com.mx/{slug}',
             '["directory", "finance", "resident_pwa", "dynamic_qr", "guard_console", "rfid_uhf", "stripe_fintech", "iot_gateway", "delinquent_block"]'::jsonb,
-            '[{"code": "CUSTOM_DOMAIN", "name": "Subdominio Propio ({slug}.dommia.com)", "price": 490}, {"code": "EXTRA_GATEWAY", "name": "Gateway IoT Adicional", "price": 950}]'::jsonb,
+            '[{"code": "CUSTOM_DOMAIN", "name": "Subdominio Propio ({slug}.dommia.com.mx)", "price": 490}, {"code": "EXTRA_GATEWAY", "name": "Gateway IoT Adicional", "price": 950}]'::jsonb,
             true,
             false,
             3
@@ -482,11 +497,12 @@ BEGIN
             'Dommia Master / Enterprise',
             'Arquitectura distribuida para macro-desarrollos de 300+ viviendas, múltiples casetas en clúster, SQLite Edge local, SLA 99.9% y subdominio propio gratis.',
             8990.00,
+            301,
             1000,
             15.00,
             true,
             0.00,
-            '{slug}.dommia.com',
+            '{slug}.dommia.com.mx',
             '["directory", "finance", "resident_pwa", "dynamic_qr", "guard_console", "rfid_uhf", "stripe_fintech", "multi_gateway", "sqlite_edge", "cfdi_billing", "analytics_bi", "sla_24_7"]'::jsonb,
             '[]'::jsonb,
             true,
@@ -502,7 +518,7 @@ BEGIN
             'Fraccionamiento Residencial Las Palmas',
             'PROFESSIONAL',
             150,
-            'admin@laspalmas.dommia.com'
+            'admin@laspalmas.dommia.com.mx'
         );
     END IF;
 

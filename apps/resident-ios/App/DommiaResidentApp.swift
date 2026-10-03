@@ -8,5 +8,8 @@ struct DommiaResidentApp: App {
         WindowGroup {
             AppRoot(dependencies: dependencies)
         }
+        #if DEV
+        // Nota: En DEV, AppDependencies usa MockServer (MockURLProtocol) para simular el backend.
+        #endif
     }
 }

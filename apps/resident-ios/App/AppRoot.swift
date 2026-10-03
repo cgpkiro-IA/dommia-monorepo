@@ -7,7 +7,14 @@ struct AppRoot: View {
 
     init(dependencies: AppDependencies) {
         self.dependencies = dependencies
-        _loginViewModel = State(initialValue: LoginViewModel(authRepository: dependencies.auth))
+        let vm = LoginViewModel(authRepository: dependencies.auth)
+        if CommandLine.arguments.contains("-AutoLogin") {
+            vm.fillDemoCredentials()
+            Task { @MainActor in
+                await vm.login()
+            }
+        }
+        _loginViewModel = State(initialValue: vm)
     }
 
     var body: some View {
@@ -15,8 +22,7 @@ struct AppRoot: View {
             if case let .reset(token, _) = deepLink {
                 PasswordResetView(token: token, authRepository: dependencies.auth)
             } else if loginViewModel.isAuthenticated {
-                Text("DOMMIA Resident")
-                    .font(.title2.weight(.semibold))
+                ResidentDashboardView(dependencies: dependencies, loginViewModel: loginViewModel)
             } else if loginViewModel.requiresPasswordChange {
                 ChangePasswordView(viewModel: loginViewModel)
             } else {

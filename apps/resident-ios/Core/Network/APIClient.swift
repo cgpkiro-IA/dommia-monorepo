@@ -17,6 +17,14 @@ public struct APIClient: Sendable {
         self.encoder.dateEncodingStrategy = .iso8601
     }
 
+    public func send<Response: Decodable>(
+        path: String,
+        method: String = "GET",
+        accessToken: String? = nil
+    ) async throws -> APIEnvelope<Response> {
+        try await send(path: path, method: method, body: nil as EmptyBody?, accessToken: accessToken)
+    }
+
     public func send<Response: Decodable, Body: Encodable & Sendable>(
         path: String,
         method: String = "GET",
@@ -95,5 +103,9 @@ public struct APIClient: Sendable {
 }
 
 public struct EmptyResponse: Decodable, Sendable {
+    public init() {}
+}
+
+public struct EmptyBody: Encodable, Sendable {
     public init() {}
 }
